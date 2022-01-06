@@ -23,6 +23,19 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
     return Staggered_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,mass,_temporary_fermi)
 end
 
+function (D::Staggered_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
+    return Staggered_Dirac_operator{Dim,T,fermion}(
+        U,D.boundarycondition,D.mass,D._temporary_fermi)
+end
+
+struct DdagD_Staggered_operator <: DdagD_operator 
+    dirac::Staggered_Dirac_operator
+
+    function DdagD_Staggered_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
+        return new(Staggered_Dirac_operator(U,x,parameters))
+    end
+end
+
 struct Adjoint_Staggered_operator{T} <: Adjoint_Dirac_operator
     parent::T
 end
@@ -75,6 +88,21 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields
     return
 end
 
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <:  DdagD_Staggered_operator, T3 <:  AbstractFermionfields}
+    @assert typeof(A.dirac._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A.dirac._temporary_fermi[1])) should be type of x: $(typeof(x))"
+    temps = A.dirac._temporary_fermi
+    temp = temps[5]
+    temp2 = temps[6]
+    Dx!(temp,A.dirac.U,x,[temps[1],temps[2],temps[3]],A.dirac.boundarycondition)
+    Dx!(temp2,A.dirac.U,temp,[temps[1],temps[2],temps[3]],A.dirac.boundarycondition)
+
+    clear_fermion!(y)
+    add_fermion!(y,A.dirac.mass^2,x,-1,temp2)
+    set_wing_fermion!(y,A.dirac.boundarycondition)
+    
+    #error("xout")
+    return
+end
 
 
 

@@ -8,4 +8,5 @@ module LatticeDiracOperators
     include("Diracoperators.jl")
 
     export Initialize_pseudofermion_fields,Dirac_operator,gauss_distribution_fermion!,cg,bicg
+    export DdagD_operator
 end
