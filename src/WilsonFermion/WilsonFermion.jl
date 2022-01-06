@@ -12,6 +12,14 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}
     hopm::Array{ComplexF64,1}
 end
 
+struct DdagD_Wilson_operator <: DdagD_operator 
+    dirac::Wilson_Dirac_operator
+    function DdagD_Wilson_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
+        return new(Wilson_Dirac_operator(U,x,parameters))
+    end
+end
+
+
 include("./WilsonFermion_4D_wing.jl")
 
 
@@ -85,15 +93,15 @@ end
 
 
 
-function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1,T2 <: Wilson_Dirac_operator, T3}
-    Wx!(y,A.U,x,A._temporary_fermi) 
-    error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Wilson_Dirac_operator, T3 <:AbstractFermionfields}
+    Wx!(y,A.U,x,A) 
+    #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Adjoint_Wilson_operator, T3 <:  AbstractFermionfields}
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
-    Wdagx!(y,A.parent.U,x,A._temporary_fermi) 
-    error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+    Wdagx!(y,A.parent.U,x,A.parent) 
+    #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
     return
 end

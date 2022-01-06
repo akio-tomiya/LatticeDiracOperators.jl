@@ -63,35 +63,17 @@ function test_wilson()
     y = similar(x)
     mul!(y,D,x)
 
-
-    return 
-    x = Initialize_pseudofermion_fields(U[1],"staggered")
-    
-
-    gauss_distribution_fermion!(x)
-    #x[1,1,1,1,1,1] = 4
-    println(x[1,1,1,1,1,1])
-
-    params = Dict()
-    params["Dirac_operator"] = "staggered"
-    params["mass"] = 0.1
-    D = Dirac_operator(U,x,params)
-    y = similar(x)
-    mul!(y,D,x)
-
     println("BICG method")
     bicg(y,D,x,verbose = Verbose_3())
 
     DdagD = DdagD_operator(U,x,params)
     mul!(y,DdagD,x)
-
     cg(y,DdagD,x,verbose = Verbose_3())
 
-    x = Initialize_pseudofermion_fields(U[1],"Wilson")
 
-    
+    return 
 
 
 end
-test_staggered()
-#test_wilson()
+#test_staggered()
+test_wilson()
