@@ -22,6 +22,7 @@ end
 include("./AbstractFermions.jl")
 include("./StaggeredFermion/StaggeredFermion.jl")
 include("./WilsonFermion/WilsonFermion.jl")
+include("./action/FermiAction.jl")
 
 function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim} 
     @assert haskey(parameters,"Dirac_operator") "parameters should have Dirac_operator keyword!"

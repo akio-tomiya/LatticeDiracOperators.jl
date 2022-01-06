@@ -20,6 +20,7 @@ function test_staggered()
     params = Dict()
     params["Dirac_operator"] = "staggered"
     params["mass"] = 0.1
+    params["Nf"] = 4
     D = Dirac_operator(U,x,params)
     D2 = D(U2)
     
@@ -30,12 +31,12 @@ function test_staggered()
     mul!(y,D(U2),x)
 
     println("BICG method")
-    bicg(y,D,x,verbose = Verbose_3())
+    @time bicg(y,D,x,verbose = Verbose_3())
 
     DdagD = DdagD_operator(U,x,params)
     mul!(y,DdagD,x)
 
-    cg(y,DdagD,x,verbose = Verbose_3())
+    @time cg(y,DdagD,x,verbose = Verbose_3())
 
 
 
@@ -64,16 +65,16 @@ function test_wilson()
     mul!(y,D,x)
 
     println("BICG method")
-    bicg(y,D,x,verbose = Verbose_3())
+    @time bicg(y,D,x,verbose = Verbose_3())
 
     DdagD = DdagD_operator(U,x,params)
     mul!(y,DdagD,x)
-    cg(y,DdagD,x,verbose = Verbose_3())
+    @time cg(y,DdagD,x,verbose = Verbose_3())
 
 
     return 
 
 
 end
-#test_staggered()
+test_staggered()
 test_wilson()

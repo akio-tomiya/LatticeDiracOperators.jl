@@ -1,8 +1,9 @@
-struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim} 
+struct Staggered_Dirac_operator{Dim,T,fermion,Numf} <: Dirac_operator{Dim} 
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     mass::Float64
     _temporary_fermi::Vector{fermion}
+    Nf::Int64
 end
 
 include("./StaggeredFermion_4D_wing.jl")
@@ -15,17 +16,19 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
     @assert haskey(parameters,"mass") "parameters should have the keyword mass"
     mass = parameters["mass"]
     boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    @assert haskey(parameters,"Nf") "parameters should have the keyword Nf"
+    Nf = parameters["Nf"]
  
     for i=1:num
         _temporary_fermi[i] = similar(x)
     end
 
-    return Staggered_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,mass,_temporary_fermi)
+    return Staggered_Dirac_operator{Dim,eltype(U),xtype,Nf}(U,boundarycondition,mass,_temporary_fermi,Nf)
 end
 
-function (D::Staggered_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
-    return Staggered_Dirac_operator{Dim,T,fermion}(
-        U,D.boundarycondition,D.mass,D._temporary_fermi)
+function (D::Staggered_Dirac_operator{Dim,T,fermion,Nf})(U) where {Dim,T,fermion,Nf}
+    return Staggered_Dirac_operator{Dim,T,fermion,Nf}(
+        U,D.boundarycondition,D.mass,D._temporary_fermi,D.Nf)
 end
 
 struct DdagD_Staggered_operator <: DdagD_operator 
@@ -62,7 +65,7 @@ function Initialize_StaggeredFermion(NC,NN...)
 end
 
 
-function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1,T2 <: Staggered_Dirac_operator, T3}
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields ,T2 <: Staggered_Dirac_operator, T3 <:AbstractFermionfields}
     
     @assert typeof(A._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A._temporary_fermi[1])) should be type of x: $(typeof(x))"
     temps = A._temporary_fermi
