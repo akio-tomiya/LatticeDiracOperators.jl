@@ -1,4 +1,4 @@
-import .Rhmc:RHMC,get_order,get_α,get_β,get_α0
+import .Rhmc:RHMC,get_order,get_α,get_β,get_α0,get_β_inverse,get_α_inverse, get_α0_inverse
 
 struct StaggeredFermiAction{Dim,Dirac,fermion,Nf} <: FermiAction{Dim,Dirac,fermion}
     hascovnet::Bool
@@ -61,13 +61,59 @@ struct StaggeredFermiAction{Dim,Dirac,fermion,Nf} <: FermiAction{Dim,Dirac,fermi
     end
 end
 
-function gauss_sampling_in_action!(η::AbstractFermionfields,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,Nf}) where {Dim,Dirac,fermion,Nf}
+function evaluate_FermiAction(fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,Nf},U,ϕ::AbstractFermionfields) where {Dim,Dirac,fermion,Nf}
+    W = fermi_action.diracoperator(U)
+    WdagW = DdagD_Staggered_operator(W)
+
+    rhmc = fermi_action.rhmc_info_for_action
+
+    N = get_order(rhmc)
+    
+    x = fermi_action._temporary_fermionfields[1]
+    vec_x = fermi_action._temporary_fermionfields[2:N+1]
+    for j=1:N
+        clear_fermion!(vec_x[j])
+    end
+
+    vec_β = get_β_inverse(rhmc)
+    vec_α = get_α_inverse(rhmc)
+    α0 = get_α0_inverse(rhmc)
+    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose)
+    clear_fermion!(x)
+    add_fermion!(x,α0,ϕ)
+    for j=1:N
+        αk = vec_α[j]
+        add_fermion!(x,αk,vec_x[j])
+    end
+
+    Sf = dot(x,x)
+    return Sf
+end
+
+function evaluate_FermiAction(fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,8},U,ϕ::AbstractFermionfields) where {Dim,Dirac,fermion}
+    W = fermi_action.diracoperator(U)
+    η = fermi_action._temporary_fermionfields[1]
+    solve_DinvX!(η,W',ϕ)
+    Sf = dot(η,η)
+    return Sf
+end
+
+function evaluate_FermiAction(fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,4},U,ϕ::AbstractFermionfields) where {Dim,Dirac,fermion}
+    W = fermi_action.diracoperator(U)
+    η = fermi_action._temporary_fermionfields[1]
+    solve_DinvX!(η,W',ϕ)
+    Sf = dot(η,η)
+    return Sf
+end
+
+
+function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,Nf}) where {Dim,Dirac,fermion,Nf}
     gauss_distribution_fermion!(η)
 end
 
-function gauss_sampling_in_action!(η::AbstractFermionfields,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,4}) where {Dim,Dirac,fermion}
+function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,4}) where {Dim,Dirac,fermion}
     evensite = false
-    W = fermi_action.diracoperator
+    W = fermi_action.diracoperator(U)
     temp = fermi_action._temporary_fermionfields[1]
     gauss_distribution_fermion!(η)
     mul!(temp,W',η)
@@ -75,19 +121,21 @@ function gauss_sampling_in_action!(η::AbstractFermionfields,fermi_action::Stagg
     solve_DinvX!(η,W',temp)
 end
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,8},ξ::AbstractFermionfields) where {Dim,Dirac,fermion}
-    W = fermi_action.diracoperator
-    solve_DinvX!(ϕ,W',ξ)
+function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,8},ξ::AbstractFermionfields) where {Dim,Dirac,fermion}
+    W = fermi_action.diracoperator(U)
+    mul!(ϕ,W',ξ)
+    set_wing_fermion!(ϕ)
 end
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,4},ξ::AbstractFermionfields) where {Dim,Dirac,fermion}
-    W = fermi_action.diracoperator
-    solve_DinvX!(ϕ,W',ξ)
+function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,4},ξ::AbstractFermionfields) where {Dim,Dirac,fermion}
+    W = fermi_action.diracoperator(U)
+    mul!(ϕ,W',ξ)
+    set_wing_fermion!(ϕ)
 end
 
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,Nf},ξ::AbstractFermionfields) where {Dim,Dirac,Nf,fermion}
-    W = fermi_action.diracoperator
+function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,Nf},ξ::AbstractFermionfields) where {Dim,Dirac,Nf,fermion}
+    W = fermi_action.diracoperator(U)
     WdagW = DdagD_Staggered_operator(W)
 
     rhmc = fermi_action.rhmc_info_for_action

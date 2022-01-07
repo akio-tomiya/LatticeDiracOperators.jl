@@ -14,5 +14,5 @@ module LatticeDiracOperators
 
     export Initialize_pseudofermion_fields,Dirac_operator,gauss_distribution_fermion!,cg,bicg
     export DdagD_operator,solve_DinvX!,FermiAction
-    export sample_pseudofermions!,gauss_sampling_in_action!
+    export sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction
 end

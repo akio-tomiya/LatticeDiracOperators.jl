@@ -19,7 +19,11 @@ function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = not
     
 end
 
-function gauss_sampling_in_action!(η::AbstractFermionfields,fermi_action::FermiAction)
+function evaluate_FermiAction(fermi_action::FermiAction,U,ϕ::AbstractFermionfields)
+    error("evaluate_FermiAction(fermi_action,U,ϕ) is not implemented in type fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), and ϕ:$(typeof(ϕ)),  ")
+end
+
+function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::FermiAction)
     error("gauss_sampling_in_action!(η,fermi_action) is not implemented in type η:$(typeof(η)), fermi_action:$(typeof(fermi_action))")
 end
 
@@ -35,7 +39,7 @@ det(D)^Nf =
  = int dphi dphi^* exp[- phi^* D^{-Nf/2} D^{-Nf/2} phi]
 =#
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,fermi_action::FermiAction,ξ) 
+function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::FermiAction,ξ) 
     error("sample_pseudofermions!(ϕ,fermi_action,ξ) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action)), ξ:$(typeof(ξ))")
 end
 

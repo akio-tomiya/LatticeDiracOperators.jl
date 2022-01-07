@@ -1,4 +1,5 @@
 
+using LinearAlgebra
 import Gaugefields:Verbose_3
 function test_staggered()
     NX=4
@@ -29,10 +30,14 @@ function test_staggered()
         parameters_action = Dict()
         parameters_action["Nf"] = Nf
         fermi_action = FermiAction(D,parameters_action)
-        gauss_sampling_in_action!(x,fermi_action)
+        gauss_sampling_in_action!(x,U,fermi_action)
+        println("Sfold = ", dot(x,x))
         y = similar(x)
         
-        sample_pseudofermions!(y,fermi_action,x)
+        sample_pseudofermions!(y,U,fermi_action,x)
+        Sf = evaluate_FermiAction(fermi_action,U,y)
+        println("Sfnew = ", Sf)
+
     end
 
 
