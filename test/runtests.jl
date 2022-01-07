@@ -4,7 +4,16 @@ using Test
 using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
-    include("basic.jl")
+    #=
+    @testset "HMC" begin
+        include("hmc.jl")
+        @test true
+    end
+    =#
+
+    @testset "Basic operations" begin
+        include("basic.jl")
     # Write your tests here.
-    @test true
+        @test true
+    end
 end

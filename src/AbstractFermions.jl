@@ -1,4 +1,5 @@
-abstract type Abstractfermion <: AbstractVector{ComplexF64}
+
+abstract type Abstractfermion# <: AbstractVector{ComplexF64}
 end
 
 abstract type AbstractFermionfields{NC,Dim}  <: Abstractfermion
@@ -55,6 +56,12 @@ end
 
 function gauss_distribution_fermion!(F::T) where T <: AbstractFermionfields
     error("gauss_distribution_fermi! is not implemented in type $(typeof(F)) ")
+end
+
+function set_wing_fermion!(F::Vector{<: AbstractFermionfields{NC,Dim}},boundarycondition) where {NC,Dim}
+    for μ=1:Dim
+        set_wing_fermion!(F[μ],boundarycondition)
+    end
 end
 
 function set_wing_fermion!(F::T,boundarycondition) where T <: AbstractFermionfields

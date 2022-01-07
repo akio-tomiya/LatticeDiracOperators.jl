@@ -1,4 +1,4 @@
-abstract type FermiAction{Dim,Dirac,fermion} end
+abstract type FermiAction{Dim,Dirac,fermion,gauge} end
 
 
 include("./StaggeredFermiAction.jl")
@@ -41,5 +41,18 @@ det(D)^Nf =
 
 function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::FermiAction,ξ) 
     error("sample_pseudofermions!(ϕ,fermi_action,ξ) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action)), ξ:$(typeof(ξ))")
+end
+
+function calc_UdSfdU(fermi_action::FermiAction{Dim,Dirac,fermion,gauge},U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge}
+    x = U[1]
+    UdSfdU = Array{typeof(x),1}(undef,Dim)
+    for μ=1:Dim
+        UdSfdU[μ] = similar(x)
+    end
+    calc_UdSfdU!(UdSfdU,fermi_action,U,ϕ)
+end
+
+function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::FermiAction,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields)
+    error("cald_UdSfdU!(UdSfdU,fermi_action,U) is not implemented in type UdSfdU:$(typeof(UdSfdU)), fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), ϕ:$(typeof(ϕ))")
 end
 

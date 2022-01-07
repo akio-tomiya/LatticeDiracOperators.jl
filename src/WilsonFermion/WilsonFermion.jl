@@ -32,7 +32,7 @@ include("./WilsonFermion_4D_wing.jl")
 
 function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
     xtype = typeof(x)
-    num = 9
+    num = 6
     _temporary_fermi = Array{xtype,1}(undef,num)
 
     @assert haskey(parameters,"κ") "parameters should have the keyword κ"

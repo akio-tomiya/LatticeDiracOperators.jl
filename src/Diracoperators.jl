@@ -61,17 +61,17 @@ end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
     bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose) 
-    set_wing_fermion!(y)
+    set_wing_fermion!(y,A.boundarycondition)
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
     bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose) 
-    set_wing_fermion!(y)
+    set_wing_fermion!(y,A.parent.boundarycondition)
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  DdagD_operator, T3 <: AbstractFermionfields}
     cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = A.dirac.verbose) 
-    set_wing_fermion!(y)
+    set_wing_fermion!(y,A.dirac.boundarycondition)
 end
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}

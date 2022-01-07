@@ -33,8 +33,10 @@ function test_staggered()
         gauss_sampling_in_action!(x,U,fermi_action)
         println("Sfold = ", dot(x,x))
         y = similar(x)
-        
         sample_pseudofermions!(y,U,fermi_action,x)
+
+        UdSfdU = calc_UdSfdU(fermi_action,U,y)
+
         Sf = evaluate_FermiAction(fermi_action,U,y)
         println("Sfnew = ", Sf)
 
@@ -100,5 +102,5 @@ function test_wilson()
 
 
 end
-test_staggered()
+#test_staggered()
 test_wilson()

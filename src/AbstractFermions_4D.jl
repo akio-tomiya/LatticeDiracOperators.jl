@@ -1,4 +1,3 @@
-import Gaugefields:Abstractfields
 
 abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4}
 end
@@ -11,6 +10,21 @@ end
 
 function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_4D
     @inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
+end
+
+function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion  #F'
+    @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
+end
+
+function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfermion 
+    error("type $(typeof(F)) has no setindex method. This type is read only.")
+end
+
+
+function clear_fermion!(a::Vector{<: AbstractFermionfields_4D{NC}}) where NC 
+    for μ=1:4
+        clear_fermion!(a[μ])
+    end
 end
 
 function clear_fermion!(a::AbstractFermionfields_4D{NC}) where NC 
