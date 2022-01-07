@@ -1,9 +1,11 @@
-struct Staggered_Dirac_operator{Dim,T,fermion,Numf} <: Dirac_operator{Dim} 
+struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim} 
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     mass::Float64
     _temporary_fermi::Vector{fermion}
-    Nf::Int64
+    eps_CG::Float64
+    MaxCGstep::Float64
+    verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
 include("./StaggeredFermion_4D_wing.jl")
@@ -16,19 +18,33 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
     @assert haskey(parameters,"mass") "parameters should have the keyword mass"
     mass = parameters["mass"]
     boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
-    @assert haskey(parameters,"Nf") "parameters should have the keyword Nf"
-    Nf = parameters["Nf"]
- 
+    eps_CG = check_parameters(parameters,"eps",default_eps_CG)
+    MaxCGstep = check_parameters(parameters,"MaxCGstep",default_MaxCGstep)
+
+    verbose_level = check_parameters(parameters,"verbose_level",2)
+
+
     for i=1:num
         _temporary_fermi[i] = similar(x)
     end
 
-    return Staggered_Dirac_operator{Dim,eltype(U),xtype,Nf}(U,boundarycondition,mass,_temporary_fermi,Nf)
+    if verbose_level == 1 
+        verbose = Verbose_1()
+    elseif verbose_level == 2
+        verbose = Verbose_2()
+    elseif verbose_level == 3
+        verbose = Verbose_3()
+    else
+        error("verbose_level = $verbose_level is not supported")
+    end 
+
+    return Staggered_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,mass,_temporary_fermi,
+        eps_CG,MaxCGstep,verbose)
 end
 
-function (D::Staggered_Dirac_operator{Dim,T,fermion,Nf})(U) where {Dim,T,fermion,Nf}
-    return Staggered_Dirac_operator{Dim,T,fermion,Nf}(
-        U,D.boundarycondition,D.mass,D._temporary_fermi,D.Nf)
+function (D::Staggered_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
+    return Staggered_Dirac_operator{Dim,T,fermion}(
+        U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose)
 end
 
 struct DdagD_Staggered_operator <: DdagD_operator 
@@ -37,7 +53,14 @@ struct DdagD_Staggered_operator <: DdagD_operator
     function DdagD_Staggered_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
         return new(Staggered_Dirac_operator(U,x,parameters))
     end
+    
+    function DdagD_Staggered_operator(D::Staggered_Dirac_operator{Dim,T,fermion}) where  {Dim,T,fermion}
+        return new(D)
+    end
+
 end
+
+
 
 struct Adjoint_Staggered_operator{T} <: Adjoint_Dirac_operator
     parent::T

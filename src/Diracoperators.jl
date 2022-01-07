@@ -1,4 +1,5 @@
 import Gaugefields:AbstractGaugefields
+import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 using LinearAlgebra
 
 abstract type Operator#<: AbstractMatrix{ComplexF64}
@@ -11,12 +12,19 @@ abstract type DdagD_operator  <: Operator
 end
 
 
+
+
 abstract type Adjoint_Dirac_operator <: Operator
 end
 
 function Base.adjoint(A::Dirac_operator{Dim} ) where Dim
     error("Base.adjoint(A::T)  is not implemented in type $(typeof(A))")
 end
+
+Base.adjoint(A::Adjoint_Dirac_operator) = A.parent
+
+const default_eps_CG = 1e-19
+const default_MaxCGstep = 3000
 
 
 include("./AbstractFermions.jl")
@@ -47,6 +55,25 @@ function DdagD_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
 end
 
 
+function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}
+    error("solve_DinvX!(y,A,x) (y = A^{-1} x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+end
+
+function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
+    bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose) 
+    set_wing_fermion!(y)
+end
+
+function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
+    bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose) 
+    set_wing_fermion!(y)
+end
+
+function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  DdagD_operator, T3 <: AbstractFermionfields}
+    cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = A.dirac.verbose) 
+    set_wing_fermion!(y)
+end
+
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}
     error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
@@ -63,7 +90,7 @@ end
 
 function check_parameters(parameters,key,initial)
     if haskey(parameters,key)
-        value = key
+        value = parameters[key]
     else
         value = initial
     end

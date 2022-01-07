@@ -10,12 +10,19 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}
     r::Float64 #Wilson term
     hopp::Array{ComplexF64,1}
     hopm::Array{ComplexF64,1}
+    eps_CG::Float64
+    MaxCGstep::Float64
+    verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
 struct DdagD_Wilson_operator <: DdagD_operator 
     dirac::Wilson_Dirac_operator
     function DdagD_Wilson_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
         return new(Wilson_Dirac_operator(U,x,parameters))
+    end
+
+    function DdagD_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
+        return new(D)
     end
 end
 
@@ -44,6 +51,26 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         _temporary_fermi[i] = similar(x)
     end
 
+    eps_CG = check_parameters(parameters,"eps",default_eps_CG)
+    MaxCGstep = check_parameters(parameters,"MaxCGstep",default_MaxCGstep)
+
+    verbose_level = check_parameters(parameters,"verbose_level",2)
+
+
+    for i=1:num
+        _temporary_fermi[i] = similar(x)
+    end
+
+    if verbose_level == 1 
+        verbose = Verbose_1()
+    elseif verbose_level == 2
+        verbose = Verbose_2()
+    elseif verbose_level == 3
+        verbose = Verbose_3()
+    else
+        error("verbose_level = $verbose_level is not supported")
+    end 
+
     return Wilson_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,_temporary_fermi,
         γ,
         rplusγ,
@@ -51,7 +78,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         κ,
         r,
         hopp,
-        hopm
+        hopm,
+        eps_CG,MaxCGstep,verbose
         )
 end
 
@@ -63,7 +91,8 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.κ,
         D.r,
         D.hopp,
-        D.hopm
+        D.hopm,
+        D.eps_CG,D.MaxCGstep,D.verbose
         )
 end
 

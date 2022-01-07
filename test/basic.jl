@@ -20,10 +20,22 @@ function test_staggered()
     params = Dict()
     params["Dirac_operator"] = "staggered"
     params["mass"] = 0.1
-    params["Nf"] = 4
+    params["verbose_level"] = 3
     D = Dirac_operator(U,x,params)
     D2 = D(U2)
-    
+
+    for Nf in [8,4,2]
+        println("Nf = $Nf")
+        parameters_action = Dict()
+        parameters_action["Nf"] = Nf
+        fermi_action = FermiAction(D,parameters_action)
+        gauss_sampling_in_action!(x,fermi_action)
+        y = similar(x)
+        
+        sample_pseudofermions!(y,fermi_action,x)
+    end
+
+
 
     y = similar(x)
     mul!(y,D,x)
@@ -31,12 +43,15 @@ function test_staggered()
     mul!(y,D(U2),x)
 
     println("BICG method")
-    @time bicg(y,D,x,verbose = Verbose_3())
+    @time solve_DinvX!(y,D,x)
+    #@time bicg(y,D,x,verbose = Verbose_3())
 
     DdagD = DdagD_operator(U,x,params)
     mul!(y,DdagD,x)
 
-    @time cg(y,DdagD,x,verbose = Verbose_3())
+    @time solve_DinvX!(y,DdagD,x)
+
+    #@time cg(y,DdagD,x,verbose = Verbose_3())
 
 
 
@@ -58,6 +73,7 @@ function test_wilson()
     params = Dict()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = 0.1
+    params["verbose_level"] = 3
     D = Dirac_operator(U,x,params)
     D2 = D(U)
 
@@ -65,11 +81,14 @@ function test_wilson()
     mul!(y,D,x)
 
     println("BICG method")
-    @time bicg(y,D,x,verbose = Verbose_3())
+    @time solve_DinvX!(y,D,x)
+
+    #@time bicg(y,D,x,verbose = Verbose_3())
 
     DdagD = DdagD_operator(U,x,params)
     mul!(y,DdagD,x)
-    @time cg(y,DdagD,x,verbose = Verbose_3())
+    @time solve_DinvX!(y,DdagD,x)
+    #@time cg(y,DdagD,x,verbose = Verbose_3())
 
 
     return 
