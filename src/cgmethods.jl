@@ -1,6 +1,6 @@
 using LinearAlgebra
 import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
-
+using InteractiveUtils
 
 function add!(b,Y,a,X) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a,X,b,Y) #X*a + Y*b -> Y
@@ -73,6 +73,64 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
+function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+    println_verbose3(verbose,"--------------------------------------")
+    println_verbose3(verbose,"bicg-stab method")
+    r = deepcopy(b)
+    temp1 = similar(x)
+    mul!(temp1,A,x)
+    add!(r,-1,temp1)
+
+    rnorm = real(r⋅r)
+
+    if rnorm < eps
+        return
+    end
+    rs = deepcopy(r)
+    p = deepcopy(r)
+    Ap = similar(x)
+    s = similar(x)
+    As = similar(x)
+
+    for i=1:maxsteps
+        mul!(Ap,A,p)
+        c1 = dot(rs,r)
+        αk = c1/dot(rs,Ap)
+
+        add!(r,-αk,Ap)
+        mul!(As,A,r) 
+        ω = dot(As,r)/dot(As,As)
+        add!(x,αk,p)
+        add!(x,ω,r)
+
+        add!(r,-ω,As)
+        rnorm = real(r ⋅ r) 
+        println_verbose3(verbose,"$i-th eps: $rnorm")
+
+        if rnorm < eps
+            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose3(verbose,"--------------------------------------")
+            return
+        end
+
+        β = αk/ω*dot(rs,r)/c1
+
+        add!(β,p,1,s) #p = β*p + r - β*ω Ap
+        add!(p,-β*ω,Ap)
+
+    end
+
+
+ 
+    
+    error("""
+    The BICG is not converged! with maxsteps = $(maxsteps)
+    residual is $rnorm
+    maxsteps should be larger.""")
+
+
+end
+
 function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
     println_verbose3(verbose,"--------------------------------------")
     println_verbose3(verbose,"cg method")
@@ -96,17 +154,20 @@ function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
     for i=1:maxsteps
         mul!(q,A,p)
-        
-        c2 = p ⋅ q
+        c2 = dot(p,q)
+        #c2 = p ⋅ q
         
         α = c1 / c2
         #! ...  x   = x   + alpha * p  
+        #println("add2")
         add!(x,α,p)
         #...  res = res - alpha * q 
+        #println("add1")
         add!(res,-α,q)
         c3 = res ⋅ res
         rnorm = real(c3) 
         println_verbose3(verbose,"$i-th eps: $rnorm")
+        
         
 
         if rnorm < eps
@@ -118,6 +179,7 @@ function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         β = c3 / c1
         c1 = c3
 
+        #println("add3")
         add!(β,p,1,res) #p = beta*p + s
 
     end

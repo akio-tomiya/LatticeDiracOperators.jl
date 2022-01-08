@@ -123,9 +123,14 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
     temp1 = A._temporary_fermi[1] #temps[1]
     temp2 = A._temporary_fermi[2] #temps[2]
 
+    #temp = temps[4]
+    #temp1 = temps[1]
+    #temp2 = temps[2]
+
     clear_fermion!(temp)
     #set_wing_fermion!(x)
     for ν=1:4
+        
         xplus = shift_fermion(x,ν)
         mul!(temp1,U[ν],xplus)
 
@@ -135,8 +140,11 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
 
         mul!(temp1,view(A.rminusγ,:,:,ν))
 
+        
+
         xminus = shift_fermion(x,-ν)
         Uminus = shift_U(U[ν],-ν)
+
 
         mul!(temp2,Uminus',xminus)
      
@@ -146,7 +154,7 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
         mul!(temp2,view(A.rplusγ,:,:,ν))
 
         add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-        
+
     end
 
     clear_fermion!(xout)

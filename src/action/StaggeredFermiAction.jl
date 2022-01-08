@@ -162,7 +162,7 @@ function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::Stagge
     α0 = get_α0(rhmc)
     #set_wing_fermion!(ξ)
 
-    shiftedcg(vec_x,vec_β,x,WdagW,ξ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose)
+    shiftedcg(vec_x,vec_β,x,WdagW,ξ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = set_verbose(W.verbose_level))
     clear_fermion!(ϕ)
     add_fermion!(ϕ,α0,ξ)
     for j=1:N
@@ -193,7 +193,7 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Stagg
     vec_α = get_α_inverse(rhmc)
     #α0 = get_α0_inverse(rhmc)
 
-    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose)
+    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = set_verbose(W.verbose_level))
 
     for j=1:N
         set_wing_fermion!(vec_x[j])
@@ -249,7 +249,7 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_actio
 
         #U_{k,μ} X_{k+μ}) ⊗ Y_k
         mul!(temp0_g,temp0_f,Y') 
-        add_U!(UdSfdU[μ],coeff,temp0_g)
+        add_U!(UdSfdU[μ],coeff*0.5,temp0_g)
         #println(temp2_g[1,1,1,1,1,1])
         #mul!(dSfdU[μ],U[μ]',temp2_g) #additional term
 
@@ -260,7 +260,7 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_actio
 
         #X_k ⊗ Y_{k+μ}^dag U_{k,μ}^dag
         mul!(temp0_g,X,temp0_f) 
-        add_U!(UdSfdU[μ],coeff,temp0_g)
+        add_U!(UdSfdU[μ],coeff*0.5,temp0_g)
 
         #mul!(temp3_g,U[μ]',temp2_g)
         #add_U!(dSfdU[μ],temp3_g)

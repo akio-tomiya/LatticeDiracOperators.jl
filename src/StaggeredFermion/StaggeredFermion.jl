@@ -4,8 +4,9 @@ struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}
     mass::Float64
     _temporary_fermi::Vector{fermion}
     eps_CG::Float64
-    MaxCGstep::Float64
-    verbose::Union{Verbose_1,Verbose_2,Verbose_3}
+    MaxCGstep::Int64
+    verbose_level::Int8
+    #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
 include("./StaggeredFermion_4D_wing.jl")
@@ -38,24 +39,24 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
         error("verbose_level = $verbose_level is not supported")
     end 
 
-    return Staggered_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,mass,_temporary_fermi,
-        eps_CG,MaxCGstep,verbose)
+    return Staggered_Dirac_operator{Dim,eltype(U),xtype }(U,boundarycondition,mass,_temporary_fermi,
+        eps_CG,MaxCGstep,verbose_level)
 end
 
-function (D::Staggered_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
+function (D::Staggered_Dirac_operator{Dim,T,fermion })(U) where {Dim,T,fermion}
     return Staggered_Dirac_operator{Dim,T,fermion}(
-        U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose)
+        U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose_level)
 end
 
-struct DdagD_Staggered_operator <: DdagD_operator 
-    dirac::Staggered_Dirac_operator
+struct DdagD_Staggered_operator{Dim,T,fermion} <: DdagD_operator 
+    dirac::Staggered_Dirac_operator{Dim,T,fermion}
 
     function DdagD_Staggered_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
-        return new(Staggered_Dirac_operator(U,x,parameters))
+        return new{Dim,T,fermion}(Staggered_Dirac_operator(U,x,parameters))
     end
     
     function DdagD_Staggered_operator(D::Staggered_Dirac_operator{Dim,T,fermion}) where  {Dim,T,fermion}
-        return new(D)
+        return new{Dim,T,fermion}(D)
     end
 
 end

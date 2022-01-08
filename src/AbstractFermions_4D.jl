@@ -521,14 +521,13 @@ function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc)
 end
 
 
-function LinearAlgebra.dot(a::AbstractFermionfields_4D{NC},b::T2) where {NC, T2 <: AbstractFermionfields_4D}
+function LinearAlgebra.dot(a::AbstractFermionfields_4D{NC},b::AbstractFermionfields_4D{NC}) where {NC}
     NT = a.NT
     NZ = a.NZ
     NY = a.NY
     NX = a.NX
     NG = a.NG
 
-    α = 1
     c = 0.0im
     @inbounds for α=1:NG
         for it=1:NT

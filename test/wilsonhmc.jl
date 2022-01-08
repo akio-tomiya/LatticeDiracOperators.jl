@@ -1,19 +1,24 @@
 using Gaugefields
 using LinearAlgebra
+using InteractiveUtils
+using Random
 
 function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
     Uold = similar(U)
     substitute_U!(Uold,U)
-    MDsteps = 100
+    MDsteps = 10
     temp1 = similar(U[1])
     temp2 = similar(U[1])
     comb = 6
     factor = 1/(comb*U[1].NV*U[1].NC)
     numaccepted = 0
+    Random.seed!(123)
 
     numtrj = 10
     for itrj = 1:numtrj
+       #@code_warntype MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
+        #error("cc")
         @time accepted = MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
         numaccepted += ifelse(accepted,1,0)
 
@@ -34,7 +39,15 @@ end
 
 function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Δτ = 1/MDsteps
-    gauss_distribution!(p)
+    NC,_,NN... = size(U[1])
+    Random.seed!(123)
+    for μ=1:Dim
+        pwork = gauss_distribution(prod(NN)*(NC^2-1))
+        substitute_U!(p[μ],pwork)
+    end
+    println(p[1][1,1,1,1,1,1])
+
+    #gauss_distribution!(p)
     
     substitute_U!(Uold,U)
     gauss_sampling_in_action!(ξ,U,fermi_action)
@@ -42,13 +55,17 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Sfold = real(dot(ξ,ξ))
     println("Sfold = $Sfold")
 
+    #@code_warntype calc_action(gauge_action,U,p) 
+
     Sold = calc_action(gauge_action,U,p) + Sfold
+    println("Sold = ",Sold)
 
     for itrj=1:MDsteps
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
 
         P_update!(U,p,1.0,Δτ,Dim,gauge_action)
         P_update_fermion!(U,p,1.0,Δτ,Dim,gauge_action,fermi_action,η)
+        #error("dd")
 
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
     end
@@ -58,8 +75,11 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     
     println("Sold = $Sold, Snew = $Snew")
     println("Snew - Sold = $(Snew-Sold)")
-    ratio = min(1,exp(Snew-Sold))
-    if rand() > ratio
+
+    accept = exp(Sold - Snew) >= rand()
+
+    #ratio = min(1,exp(Snew-Sold))
+    if accept != true #rand() > ratio
         substitute_U!(U,Uold)
         return false
     else
@@ -128,28 +148,44 @@ function test1()
     
     show(gauge_action)
 
-    x = Initialize_pseudofermion_fields(U[1],"staggered")
+    x = Initialize_pseudofermion_fields(U[1],"Wilson")
     params = Dict()
-    params["Dirac_operator"] = "staggered"
-    params["mass"] = 0.1
+    params["Dirac_operator"] = "Wilson"
+    params["κ"] = 0.141139
     params["eps_CG"] = 1.0e-8
     params["verbose_level"] = 2
     D = Dirac_operator(U,x,params)
 
-    Nf = 2
 
-    println("Nf = $Nf")
     parameters_action = Dict()
-    parameters_action["Nf"] = Nf
     fermi_action = FermiAction(D,parameters_action)
-    gauss_sampling_in_action!(x,U,fermi_action)
-    println("Sfold = ", dot(x,x))
+    #gauss_sampling_in_action!(x,U,fermi_action)
+    #println("Sfold = ", dot(x,x))
     y = similar(x)
 
     
     MDtest!(gauge_action,U,Dim,fermi_action,x,y)
 
 end
+
+function gauss_distribution(nv) 
+    variance = 1
+    nvh = div(nv,2)
+    granf = zeros(Float64,nv)
+    for i=1:nvh
+        rho = sqrt(-2*log(rand())*variance)
+        theta = 2pi*rand()
+        granf[i] = rho*cos(theta)
+        granf[i+nvh] = rho*sin(theta)
+    end
+    if 2*nvh == nv
+        return granf
+    end
+
+    granf[nv] = sqrt(-2*log(rand())*variance) * cos(2pi*urand())
+    return granf
+end
+
 
 
 test1()

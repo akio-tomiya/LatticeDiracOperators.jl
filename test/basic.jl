@@ -85,6 +85,35 @@ function test_wilson()
     D2 = D(U)
 
     y = similar(x)
+
+    for i=1:3
+        y = similar(x)
+        y1 = deepcopy(y)
+        y2 = deepcopy(y)
+
+        println("BICG")
+        @time bicg(y1,D,x,verbose = Verbose_3())
+        println(dot(y1,y1))
+        println("BICGstab")
+        @time bicgstab(y2,D,x,verbose = Verbose_3())
+        println(dot(y2,y2))
+    end
+
+    parameters_action = Dict()
+    fermi_action = FermiAction(D,parameters_action)
+    gauss_sampling_in_action!(x,U,fermi_action)
+    println("Sfold = ", dot(x,x))
+    y = similar(x)
+    sample_pseudofermions!(y,U,fermi_action,x)
+
+    UdSfdU = calc_UdSfdU(fermi_action,U,y)
+
+    Sf = evaluate_FermiAction(fermi_action,U,y)
+    println("Sfnew = ", Sf)
+
+    #=
+
+    y = similar(x)
     mul!(y,D,x)
 
     println("BICG method")
@@ -96,6 +125,7 @@ function test_wilson()
     mul!(y,DdagD,x)
     @time solve_DinvX!(y,DdagD,x)
     #@time cg(y,DdagD,x,verbose = Verbose_3())
+    =#
 
 
     return 

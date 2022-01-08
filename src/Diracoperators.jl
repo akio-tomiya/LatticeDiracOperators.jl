@@ -60,17 +60,19 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
-    bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose) 
+    bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
     set_wing_fermion!(y,A.boundarycondition)
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
-    bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose) 
+    bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
     set_wing_fermion!(y,A.parent.boundarycondition)
 end
 
+using InteractiveUtils
+
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  DdagD_operator, T3 <: AbstractFermionfields}
-    cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = A.dirac.verbose) 
+    cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = set_verbose(A.dirac.verbose_level))  
     set_wing_fermion!(y,A.dirac.boundarycondition)
 end
 
@@ -78,8 +80,9 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfield
     error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
 
-function LinearAlgebra.mul!(y::T1,A::T,x::T2)  where {T <: DdagD_operator,T1 <: AbstractFermionfields,T2 <: AbstractFermionfields} #y = A*x
+function LinearAlgebra.mul!(y::AbstractFermionfields{NC,Dim},A::T,x::AbstractFermionfields{NC,Dim})  where {T <: DdagD_operator,NC,Dim} #y = A*x
     temp = A.dirac._temporary_fermi[5]
+
     mul!(temp,A.dirac,x)
     mul!(y,A.dirac',temp)
 
@@ -97,3 +100,15 @@ function check_parameters(parameters,key,initial)
     return value
 end
 
+function set_verbose(verbose_level)
+    if verbose_level == 1 
+        verbose = Verbose_1()
+    elseif verbose_level == 2
+        verbose = Verbose_2()
+    elseif verbose_level == 3
+        verbose = Verbose_3()
+    else
+        error("verbose_level = $verbose_level is not supported")
+    end 
+    return verbose
+end

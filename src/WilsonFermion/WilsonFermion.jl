@@ -2,7 +2,6 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     _temporary_fermi::Vector{fermion}
-
     γ::Array{ComplexF64,3}
     rplusγ::Array{ComplexF64,3}
     rminusγ::Array{ComplexF64,3}
@@ -11,18 +10,19 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}
     hopp::Array{ComplexF64,1}
     hopm::Array{ComplexF64,1}
     eps_CG::Float64
-    MaxCGstep::Float64
-    verbose::Union{Verbose_1,Verbose_2,Verbose_3}
+    MaxCGstep::Int64
+    verbose_level::Int8
+    #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
-struct DdagD_Wilson_operator <: DdagD_operator 
-    dirac::Wilson_Dirac_operator
+struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
+    dirac::Wilson_Dirac_operator{Dim,T,fermion}
     function DdagD_Wilson_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
-        return new(Wilson_Dirac_operator(U,x,parameters))
+        return new{Dim,T,fermion}(Wilson_Dirac_operator(U,x,parameters))
     end
 
     function DdagD_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
-        return new(D)
+        return new{Dim,T,fermion}(D)
     end
 end
 
@@ -51,7 +51,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         _temporary_fermi[i] = similar(x)
     end
 
-    eps_CG = check_parameters(parameters,"eps",default_eps_CG)
+    eps_CG = check_parameters(parameters,"eps_CG",default_eps_CG)
+    #println("eps_CG = ",eps_CG)
     MaxCGstep = check_parameters(parameters,"MaxCGstep",default_MaxCGstep)
 
     verbose_level = check_parameters(parameters,"verbose_level",2)
@@ -79,7 +80,7 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         r,
         hopp,
         hopm,
-        eps_CG,MaxCGstep,verbose
+        eps_CG,MaxCGstep,verbose_level
         )
 end
 
@@ -92,7 +93,7 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.r,
         D.hopp,
         D.hopm,
-        D.eps_CG,D.MaxCGstep,D.verbose
+        D.eps_CG,D.MaxCGstep,D.verbose_level 
         )
 end
 
@@ -120,10 +121,13 @@ function Initialize_WilsonFermion(NC,NN...)
     return fermion
 end
 
-
+using InteractiveUtils
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Wilson_Dirac_operator, T3 <:AbstractFermionfields}
+    
+    #@time Wx!(y,A.U,x,A,A._temporary_fermi) 
     Wx!(y,A.U,x,A) 
+    #error("w")
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
 
