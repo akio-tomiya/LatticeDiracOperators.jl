@@ -40,7 +40,7 @@ end
 function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Δτ = 1/MDsteps
     NC,_,NN... = size(U[1])
-    Random.seed!(123)
+    
     for μ=1:Dim
         pwork = gauss_distribution(prod(NN)*(NC^2-1))
         substitute_U!(p[μ],pwork)
