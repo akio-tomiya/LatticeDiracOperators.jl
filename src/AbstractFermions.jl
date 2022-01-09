@@ -25,7 +25,7 @@ const default_boundaryconditions = (nothing,[1,-1],nothing,[1,1,1,-1])
 include("./AbstractFermions_4D.jl")
 
 
-function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator) where {NC,Dim}
+function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String) where {NC,Dim}
     mpi = u.mpi
     if mpi
         error("mpi = $mpi is not supported")
@@ -35,6 +35,28 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 x = Initialize_StaggeredFermion(u)
             elseif Dirac_operator == "Wilson"
                 x = Initialize_WilsonFermion(u)
+            else
+                error("Dirac_operator = $Dirac_operator is not supported")
+            end
+        else
+            error("Dim = $Dim is not supported")
+        end
+    end
+
+    return x
+end
+
+function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},parameters) where {NC,Dim}
+    mpi = u.mpi
+    if mpi
+        error("mpi = $mpi is not supported")
+    else
+        if Dim == 4
+            if Dirac_operator == "staggered"
+                x = Initialize_StaggeredFermion(u)
+            elseif parameters["Dirac_operator"] == "Wilson"
+                x = WilsonFermion_4D_wing(parameters,u.NC,u.NX,u.NY,u.NZ,u.NT)
+                #x = Initialize_WilsonFermion(u)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end

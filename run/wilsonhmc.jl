@@ -1,7 +1,11 @@
+include("../src/LatticeDiracOperators.jl")
+
 using Gaugefields
 using LinearAlgebra
 using InteractiveUtils
 using Random
+using .LatticeDiracOperators
+import Gaugefields:Initialize_4DGaugefields
 
 function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
@@ -165,6 +169,8 @@ function test1()
     #x = Initialize_pseudofermion_fields(U[1],params)
 
     x = Initialize_4DWilsonFermion(U[1])#Initialize_pseudofermion_fields(U[1],"Wilson")
+
+    #=
     xplus = shift_fermion(x,1)
     
 
@@ -217,7 +223,7 @@ function test1()
     #error("dd")
     #return 
 
-
+    =#
     params = Dict()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = 0.141139

@@ -3,14 +3,21 @@ abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4}
 end
 
 
-
 function Base.setindex!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <: AbstractFermionfields_4D
     @inbounds x.f[i1,i2 + x.NDW,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6] = v
 end
 
 function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_4D
+    #=
+    i2new = i2 .+ x.NDW
+    i3new = i3 .+ x.NDW
+    i4new = i4 .+ x.NDW
+    i5new = i5 .+ x.NDW
+    @inbounds return x.f[i1,i2new,i3new,i4new,i5new,i6]
+    =#
     @inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
 end
+
 
 function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion  #F'
     @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
@@ -55,6 +62,54 @@ struct Shifted_fermionfields_4D{NC,T} <: Shifted_fermionfields{NC,4}
         return new{NC,typeof(F)}(F,shift,NC)
     end
 end
+using InteractiveUtils
+
+#=
+function shift_fermion(U::AbstractFermionfields_4D{NC},ν::T) where {T <: Integer,NC}
+    return shift_fermion(U,Val(ν))
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{1}) where {T <: Integer,NC}
+    shift = (1,0,0,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{2}) where {T <: Integer,NC}
+    shift = (0,1,0,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{3}) where {T <: Integer,NC}
+    shift = (0,0,1,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{4}) where {T <: Integer,NC}
+    shift = (0,0,0,1)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{-1}) where {T <: Integer,NC}
+    shift = (-1,0,0,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{-2}) where {T <: Integer,NC}
+    shift = (0,-1,0,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{-3}) where {T <: Integer,NC}
+    shift = (0,0,-1,0)
+    return Shifted_fermionfields_4D(U,shift)
+end
+
+function shift_fermion(U::AbstractFermionfields_4D{NC},::Val{-4}) where {T <: Integer,NC}
+    shift = (0,0,0,-1)
+    return Shifted_fermionfields_4D(U,shift)
+end
+=#
+
 
         #lattice shift
 function shift_fermion(F::AbstractFermionfields_4D{NC},ν::T) where {T <: Integer,NC}
@@ -79,8 +134,9 @@ function shift_fermion(F::AbstractFermionfields_4D{NC},ν::T) where {T <: Intege
     return Shifted_fermionfields_4D(F,shift)
 end
 
+
 function shift_fermion(F::TF,shift::NTuple{Dim,T}) where {Dim,T <: Integer,TF <: AbstractFermionfields_4D}
-    return shift_fermion(F,shift)
+    return Shifted_fermionfields_4D(F,shift)
 end
 
 function Base.setindex!(F::T,v,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields_4D
@@ -91,8 +147,48 @@ function Base.getindex(F::T,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields
     @inbounds return F.parent[i1,i2.+ F.shift[1],i3.+ F.shift[2],i4.+ F.shift[3],i5.+ F.shift[4],i6]
 end
 
+function Base.getindex(F::T,i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {T <: Shifted_fermionfields_4D,N <: Integer}
+    @inbounds return F.parent[i1,i2 + F.shift[1],i3 + F.shift[2],i4 + F.shift[3],i5 + F.shift[4],i6]
+end
+
+#=
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(1,0,0,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2.+ 1,i3,i4,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(-1,0,0,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2 .- 1,i3,i4,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,1,0,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3 .+ 1,i4,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,-1,0,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3 .- 1,i4,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,0,1,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3 ,i4 .+ 1,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,0,-1,0)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3,i4 .- 1 ,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,0,0,1)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3 ,i4 ,i5 .+ 1,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,T,Val{(0,0,0,-1)}},i1,i2,i3,i4,i5,i6)  where {NC,T,shift}
+    @inbounds return F.parent[i1,i2,i3,i4 ,i5 .- 1,i6]
+end
+=#
+
 function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {NC,T<:Abstractfields,T3 <:Abstractfermion}
     #@assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
+    @assert NC != 3 "NC should not be 3"
     NX = y.NX
     NY = y.NY
     NZ = y.NZ
@@ -117,6 +213,25 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {N
     end
 end
 
+@inline function updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+    #@code_llvm  @inbounds x[1,ix,iy,iz,it,ialpha]
+    #@code_typed x[1,ix,iy,iz,it,ialpha]
+    #error("dd")
+    #@code_lowered x[1,ix,iy,iz,it,ialpha]
+    x1 = x[1,ix,iy,iz,it,ialpha]
+    x2 = x[2,ix,iy,iz,it,ialpha]
+    x3 = x[3,ix,iy,iz,it,ialpha]
+    y[1,ix,iy,iz,it,ialpha] = A[1,1,ix,iy,iz,it]*x1 + 
+                                A[1,2,ix,iy,iz,it]*x2+ 
+                                A[1,3,ix,iy,iz,it]*x3
+    y[2,ix,iy,iz,it,ialpha] = A[2,1,ix,iy,iz,it]*x1+ 
+                                A[2,2,ix,iy,iz,it]*x2 + 
+                                A[2,3,ix,iy,iz,it]*x3
+    y[3,ix,iy,iz,it,ialpha] = A[3,1,ix,iy,iz,it]*x1+ 
+                                A[3,2,ix,iy,iz,it]*x2 + 
+                                A[3,3,ix,iy,iz,it]*x3
+end
+
 function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion}
     #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
     NX = y.NX
@@ -127,9 +242,13 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<
 
     @inbounds for ialpha=1:NG
         for it=1:NT
+            #println("it = ",it, " ialpha = $ialpha")
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
+                        updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        #=
                         x1 = x[1,ix,iy,iz,it,ialpha]
                         x2 = x[2,ix,iy,iz,it,ialpha]
                         x3 = x[3,ix,iy,iz,it,ialpha]
@@ -142,6 +261,7 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<
                         y[3,ix,iy,iz,it,ialpha] = A[3,1,ix,iy,iz,it]*x1+ 
                                                     A[3,2,ix,iy,iz,it]*x2 + 
                                                     A[3,3,ix,iy,iz,it]*x3
+                        =#
                     end
                 end
             end

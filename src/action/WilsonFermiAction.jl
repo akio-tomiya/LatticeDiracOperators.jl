@@ -18,7 +18,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <: FermiAction{D
             clover_data = nothing
         end
 
-        num = 4
+        num = 6
 
         x = D._temporary_fermi[1]
         xtype = typeof(x)
@@ -57,11 +57,13 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Wilso
     #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
-    X = fermi_action._temporary_fermionfields[1]
+    X = fermi_action._temporary_fermionfields[end]
     Y = fermi_action._temporary_fermionfields[2]
     #X = (D^dag D)^(-1) ϕ 
     #
+    println("Xd ",X[1,1,1,1,1,1])
     solve_DinvX!(X,WdagW,ϕ)
+    println("X ",X[1,1,1,1,1,1])
     clear_U!(UdSfdU)
 
     calc_UdSfdU_fromX!(UdSfdU,Y,fermi_action,U,X) 
@@ -83,6 +85,9 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_actio
 
         # U_{k,μ} X_{k+μ}
         Xplus = shift_fermion(X,μ)
+
+        #@time mul!(temp0_f,U[μ],X)
+
         mul!(temp0_f,U[μ],Xplus)
         
         
@@ -123,6 +128,8 @@ function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::Wil
     #gauss_distribution_fermion!(η)
     gauss_distribution_fermion!(η,rand)
 end
+
+using InteractiveUtils
 
 function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,ξ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge,hascloverterm} 
     W = fermi_action.diracoperator(U)

@@ -1,4 +1,4 @@
-import .Rhmc:RHMC,get_order,get_α,get_β,get_α0,get_β_inverse,get_α_inverse, get_α0_inverse
+import ..Rhmc:RHMC,get_order,get_α,get_β,get_α0,get_β_inverse,get_α_inverse, get_α0_inverse
 
 struct StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf} <: FermiAction{Dim,Dirac,fermion,gauge}
     hascovnet::Bool

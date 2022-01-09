@@ -1,6 +1,10 @@
-import Gaugefields:AbstractGaugefields
+module Dirac_operators
+
+import Gaugefields:AbstractGaugefields,Abstractfields,CovNeuralnet,shift_U,clear_U!,set_wing_U!,add_U!
 import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 using LinearAlgebra
+
+include("./cgmethods.jl")
 
 abstract type Operator#<: AbstractMatrix{ComplexF64}
 end 
@@ -111,4 +115,6 @@ function set_verbose(verbose_level)
         error("verbose_level = $verbose_level is not supported")
     end 
     return verbose
+end
+
 end

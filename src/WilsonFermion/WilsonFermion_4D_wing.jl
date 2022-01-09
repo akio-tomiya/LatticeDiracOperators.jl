@@ -1,7 +1,10 @@
+import Base
+
 """
 Struct for WilsonFermion
 """
-struct WilsonFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
+struct WilsonFermion_4D_wing{NC,NDW} <: AbstractFermionfields_4D{NC}
+    f::Array{ComplexF64,6}
     NC::Int64
     NX::Int64
     NY::Int64
@@ -9,8 +12,8 @@ struct WilsonFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
     NT::Int64
     NG::Int64
     NDW::Int64
-    f::Array{ComplexF64,6}
     Dirac_operator::String
+    #BoundaryCondition::Vector{Int8}
 
 
     function WilsonFermion_4D_wing(NC::T,NX::T,NY::T,NZ::T,NT::T) where T<: Integer
@@ -19,15 +22,88 @@ struct WilsonFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
         #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
         f = zeros(ComplexF64,NC,NX+2NDW,NY+2NDW,NZ+2NDW,NT+2NDW,NG)
         Dirac_operator = "Wilson"
-        return new{NC}(NC,NX,NY,NZ,NT,NG,NDW,f,Dirac_operator)
+        return new{NC,NDW}(f,NC,NX,NY,NZ,NT,NG,NDW,Dirac_operator)
+    end
+
+    function WilsonFermion_4D_wing{NC}(NX::T,NY::T,NZ::T,NT::T) where {T<: Integer,NC}
+        NG = 4
+        NDW = 1
+        #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
+        f = zeros(ComplexF64,NC,NX+2NDW,NY+2NDW,NZ+2NDW,NT+2NDW,NG)
+        Dirac_operator = "Wilson"
+        return new{NC,NDW}(f,NC,NX,NY,NZ,NT,NG,NDW,Dirac_operator)
     end
 
 
 end
 
+function Base.setindex!(x::WilsonFermion_4D_wing{NC,NDW},v,i1,i2,i3,i4,i5,i6)  where {NC,NDW}
+    @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6] = v
+end
+
+function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
+    #=
+    i2new = i2 .+ x.NDW
+    i3new = i3 .+ x.NDW
+    i4new = i4 .+ x.NDW
+    i5new = i5 .+ x.NDW
+    @inbounds return x.f[i1,i2new,i3new,i4new,i5new,i6]
+    =#
+    #return @inbounds Base.getindex(x.f,i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6)
+    @inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
+end
+
+function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N) where {NC,NDW,N<: Integer}
+    return @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
+end
+
+
+function Base.getindex(F::Shifted_fermionfields_4D{NC,WilsonFermion_4D_wing{NC,NDW}},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {NC,NDW,N <: Integer}
+    
+    @inbounds begin
+    si2 = i2 + NDW  + F.shift[1]
+    si3 = i3 + NDW  + F.shift[2]
+    si4 = i4 + NDW  + F.shift[3]
+    si5 = i5 + NDW  + F.shift[4]
+    end
+    #v = F.parent.f
+    #return  v[i1,si2,si3,si4,si5,i6]
+    
+   return  @inbounds F.parent.f[i1,si2,si3,si4,si5,i6]
+end
+
+
+function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
+    #=
+    i2new = i2 .+ x.NDW
+    i3new = i3 .+ x.NDW
+    i4new = i4 .+ x.NDW
+    i5new = i5 .+ x.NDW
+    @inbounds return x.f[i1,i2new,i3new,i4new,i5new,i6]
+    =#
+    #return @inbounds Base.getindex(x.f,i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6)
+    @inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
+end
+
 function Base.similar(x::T) where T <: WilsonFermion_4D_wing
     return WilsonFermion_4D_wing(x.NC,x.NX,x.NY,x.NZ,x.NT)
 end
+
+#=
+function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: WilsonFermion_4D_wing{NC} where NC
+    i2new = i2 + x.NDW
+    i3new = i3 + x.NDW
+    i4new = i4 + x.NDW
+    i5new = i5 + x.NDW
+    f1 = x.f
+    #println((i1,i2new,i3new,i4new,i5new,i6))
+    @inbounds v = f1[i1,i2new,i3new,i4new,i5new,i6]
+    #x.f[i1,i2new,i3new,i4new,i5new,i6]
+    return v
+    @inbounds return x.f[i1,i2new,i3new,i4new,i5new,i6]
+    #@inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
+end
+=#
 
 function set_wing_fermion!(a::WilsonFermion_4D_wing{NC},boundarycondition) where NC 
     NT = a.NT
@@ -132,7 +208,11 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
     for ν=1:4
         
         xplus = shift_fermion(x,ν)
+        #println(xplus)
+        
+
         mul!(temp1,U[ν],xplus)
+       
 
         #fermion_shift!(temp1,U,ν,x)
 

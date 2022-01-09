@@ -1,4 +1,4 @@
-struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim} 
+struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     _temporary_fermi::Vector{fermion}
@@ -28,6 +28,7 @@ end
 
 
 include("./WilsonFermion_4D_wing.jl")
+#include("./WilsonFermion_4D_wing_fast.jl")
 
 
 function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
@@ -111,10 +112,16 @@ function Initialize_WilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
     return Initialize_WilsonFermion(NC,NN...) 
 end
 
+function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
+    _,_,NN... = size(u)
+    return WilsonFermion_4D_wing{NC}(NN...)
+end
+
 function Initialize_WilsonFermion(NC,NN...) 
     Dim = length(NN)
     if Dim == 4
-        fermion = WilsonFermion_4D_wing(NC,NN...)
+        fermion = WilsonFermion_4D_wing{NC}(NN...)
+        #fermion = WilsonFermion_4D_wing(NC,NN...)
     else
         error("Dimension $Dim is not supported")
     end

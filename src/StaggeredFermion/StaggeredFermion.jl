@@ -1,4 +1,4 @@
-struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim} 
+struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     mass::Float64
