@@ -9,7 +9,7 @@
 This is used in [LatticeQCD.jl](https://github.com/akio-tomiya/LatticeQCD.jl)
 
 # What this package can do:
-- Constructing actions and its derivative for Staggered Fermion with 1-8 flavors (with the use of the rational HMC technique)
+- Constructing actions and its derivative for Staggered Fermion with 1-8 tastes (with the use of the rational HMC technique)
 - Constructing actions and its derivative for Wilson Fermion
 - Hybrid Monte Carlo method with fermions.
 
@@ -64,7 +64,7 @@ params["verbose_level"] = 2
 D = Dirac_operator(U,x,params)
 ```
 
-If you want to get the Gaussiann distributed pseudo-fermions, just do
+If you want to get the Gaussian distributed pseudo-fermions, just do
 
 ```julia
 gauss_distribution_fermion!(x)
@@ -160,7 +160,7 @@ solve_DinvX!(y,D,x)
 println(y[1,1,1,1,1,1])
 ```
 
-The "tastes" of the Staggered Fermmion is defined in the action. 
+The "tastes" of the Staggered Fermion is defined in the action. 
 
 
 # Fermion Action
