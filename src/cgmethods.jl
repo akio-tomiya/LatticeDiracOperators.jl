@@ -171,7 +171,7 @@ function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         
 
         if rnorm < eps
-            println("$i eps: $eps rnorm $rnorm")
+            #println("$i eps: $eps rnorm $rnorm")
             println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
             println_verbose3(verbose,"--------------------------------------")
             return

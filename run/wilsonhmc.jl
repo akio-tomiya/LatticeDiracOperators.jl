@@ -68,8 +68,8 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
 
         P_update!(U,p,1.0,Δτ,Dim,gauge_action)
-        println(" U1 = ", U[1][1,1,1,1,1,1])
-                println(" p = ", p[1][1,1,1,1,1])
+        #println(" U1 = ", U[1][1,1,1,1,1,1])
+        #        println(" p = ", p[1][1,1,1,1,1])
         P_update_fermion!(U,p,1.0,Δτ,Dim,gauge_action,fermi_action,η)
         #error("dd")
 
@@ -131,7 +131,7 @@ function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,fermi_action,η)  # p ->
 
     for μ=1:Dim
         Traceless_antihermitian_add!(p[μ],factor,UdSfdUμ[μ])
-        println(" p[μ] = ", p[μ][1,1,1,1,1])
+        #println(" p[μ] = ", p[μ][1,1,1,1,1])
     end
 end
 
@@ -168,7 +168,8 @@ function test1()
     params["verbose_level"] = 2
     #x = Initialize_pseudofermion_fields(U[1],params)
 
-    x = Initialize_4DWilsonFermion(U[1])#Initialize_pseudofermion_fields(U[1],"Wilson")
+    #x = Initialize_4DWilsonFermion(U[1])
+    x = Initialize_pseudofermion_fields(U[1],"Wilson")
 
     #=
     xplus = shift_fermion(x,1)

@@ -17,8 +17,8 @@ end
 
 struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
     dirac::Wilson_Dirac_operator{Dim,T,fermion}
-    function DdagD_Wilson_operator(U::Array{T,1},x,parameters) where  T <: AbstractGaugefields
-        return new{Dim,T,fermion}(Wilson_Dirac_operator(U,x,parameters))
+    function DdagD_Wilson_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where  {NC,Dim}
+        return new{Dim,eltype(U),typeof(x)}(Wilson_Dirac_operator(U,x,parameters))
     end
 
     function DdagD_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}

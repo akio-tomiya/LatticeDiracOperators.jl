@@ -61,9 +61,9 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Wilso
     Y = fermi_action._temporary_fermionfields[2]
     #X = (D^dag D)^(-1) ϕ 
     #
-    println("Xd ",X[1,1,1,1,1,1])
+    #println("Xd ",X[1,1,1,1,1,1])
     solve_DinvX!(X,WdagW,ϕ)
-    println("X ",X[1,1,1,1,1,1])
+    #println("X ",X[1,1,1,1,1,1])
     clear_U!(UdSfdU)
 
     calc_UdSfdU_fromX!(UdSfdU,Y,fermi_action,U,X) 

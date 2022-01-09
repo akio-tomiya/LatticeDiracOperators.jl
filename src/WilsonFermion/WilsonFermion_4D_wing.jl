@@ -42,14 +42,6 @@ function Base.setindex!(x::WilsonFermion_4D_wing{NC,NDW},v,i1,i2,i3,i4,i5,i6)  w
 end
 
 function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
-    #=
-    i2new = i2 .+ x.NDW
-    i3new = i3 .+ x.NDW
-    i4new = i4 .+ x.NDW
-    i5new = i5 .+ x.NDW
-    @inbounds return x.f[i1,i2new,i3new,i4new,i5new,i6]
-    =#
-    #return @inbounds Base.getindex(x.f,i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6)
     @inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
 end
 
@@ -58,6 +50,7 @@ function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1::N,i2::N,i3::N,i4::N,
 end
 
 
+#=
 function Base.getindex(F::Shifted_fermionfields_4D{NC,WilsonFermion_4D_wing{NC,NDW}},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {NC,NDW,N <: Integer}
     
     @inbounds begin
@@ -71,7 +64,9 @@ function Base.getindex(F::Shifted_fermionfields_4D{NC,WilsonFermion_4D_wing{NC,N
     
    return  @inbounds F.parent.f[i1,si2,si3,si4,si5,i6]
 end
+=#
 
+#=
 
 function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
     #=
@@ -84,6 +79,8 @@ function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where
     #return @inbounds Base.getindex(x.f,i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6)
     @inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
 end
+
+=#
 
 function Base.similar(x::T) where T <: WilsonFermion_4D_wing
     return WilsonFermion_4D_wing(x.NC,x.NX,x.NY,x.NZ,x.NT)
@@ -105,7 +102,7 @@ function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: WilsonFermion_4D_wing{
 end
 =#
 
-function set_wing_fermion!(a::WilsonFermion_4D_wing{NC},boundarycondition) where NC 
+function set_wing_fermion!(a::WilsonFermion_4D_wing{NC,NDW},boundarycondition) where {NC,NDW} 
     NT = a.NT
     NZ = a.NZ
     NY = a.NY
@@ -292,7 +289,7 @@ function Wdagx!(xout::T,U::Array{G,1},
     return
 end
 
-function LinearAlgebra.mul!(x::WilsonFermion_4D_wing{NC},A::TA) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(x::WilsonFermion_4D_wing{NC,NDW},A::TA) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -325,7 +322,7 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_wing{NC},A::TA) where {TA <: Abs
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC},A::TA,x::WilsonFermion_4D_wing{NC}) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC,NDW},A::TA,x::WilsonFermion_4D_wing{NC}) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -358,7 +355,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC},A::TA,x::WilsonFermi
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC},A::TA) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC,NDW},x::WilsonFermion_4D_wing{NC},A::TA) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -391,6 +388,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_
     
 end
 
+#=
 function set_wing_fermion!(a::WilsonFermion_4D_wing{NC},boundarycondition) where NC 
     NT = a.NT
     NZ = a.NZ
@@ -477,6 +475,8 @@ function set_wing_fermion!(a::WilsonFermion_4D_wing{NC},boundarycondition) where
     end
 
 end
+
+=#
 
 """
 c--------------------------------------------------------------------------c

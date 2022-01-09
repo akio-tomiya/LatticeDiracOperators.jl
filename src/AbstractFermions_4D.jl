@@ -246,9 +246,9 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
                         #error("oo")
-                        #=
+                        # #=
                         x1 = x[1,ix,iy,iz,it,ialpha]
                         x2 = x[2,ix,iy,iz,it,ialpha]
                         x3 = x[3,ix,iy,iz,it,ialpha]
@@ -261,7 +261,7 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<
                         y[3,ix,iy,iz,it,ialpha] = A[3,1,ix,iy,iz,it]*x1+ 
                                                     A[3,2,ix,iy,iz,it]*x2 + 
                                                     A[3,3,ix,iy,iz,it]*x3
-                        =#
+                        # =#
                     end
                 end
             end
