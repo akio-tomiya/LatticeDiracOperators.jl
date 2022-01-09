@@ -88,22 +88,33 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
     end
     rs = deepcopy(r)
     p = deepcopy(r)
+    s = similar(r)
     Ap = similar(x)
-    s = similar(x)
     As = similar(x)
+    β = 0.0im    
+    ω = 0.0im
 
-    for i=1:maxsteps
-        mul!(Ap,A,p)
+    for i=0:maxsteps
+        if i != 0
+            add!(β,p,1,r)
+            add!(p,-ω*β,Ap)
+        end
         c1 = dot(rs,r)
-        αk = c1/dot(rs,Ap)
+        mul!(Ap,A,p)
+        c2 = dot(rs,Ap)
+        α = c1/c2
+        add!(0,s,1,r)
+        add!(s,-α,Ap)
+        mul!(As,A,s)
+        s1 = dot(As,s)
+        s2 = dot(As,As)
 
-        add!(r,-αk,Ap)
-        mul!(As,A,r) 
-        ω = dot(As,r)/dot(As,As)
-        add!(x,αk,p)
-        add!(x,ω,r)
-
+        ω = s1/s2
+        add!(x,α,p)
+        add!(x,ω,s)
+        add!(0,r,1,s)
         add!(r,-ω,As)
+
         rnorm = real(r ⋅ r) 
         println_verbose3(verbose,"$i-th eps: $rnorm")
 
@@ -113,10 +124,7 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
             return
         end
 
-        β = αk/ω*dot(rs,r)/c1
-
-        add!(β,p,1,s) #p = β*p + r - β*ω Ap
-        add!(p,-β*ω,Ap)
+        β = (α/ω)*dot(rs,r)/c1
 
     end
 

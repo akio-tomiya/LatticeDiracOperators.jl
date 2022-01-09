@@ -6,6 +6,7 @@ struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <
     eps_CG::Float64
     MaxCGstep::Int64
     verbose_level::Int8
+    method_CG::String
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
@@ -24,6 +25,8 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
 
     verbose_level = check_parameters(parameters,"verbose_level",2)
 
+    method_CG = check_parameters(parameters,"method_CG","bicg")
+
 
     for i=1:num
         _temporary_fermi[i] = similar(x)
@@ -40,12 +43,13 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
     end 
 
     return Staggered_Dirac_operator{Dim,eltype(U),xtype }(U,boundarycondition,mass,_temporary_fermi,
-        eps_CG,MaxCGstep,verbose_level)
+        eps_CG,MaxCGstep,verbose_level,method_CG)
 end
 
 function (D::Staggered_Dirac_operator{Dim,T,fermion })(U) where {Dim,T,fermion}
     return Staggered_Dirac_operator{Dim,T,fermion}(
-        U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose_level)
+        U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose_level,
+        D.method_CG)
 end
 
 struct DdagD_Staggered_operator{Dim,T,fermion} <: DdagD_operator 

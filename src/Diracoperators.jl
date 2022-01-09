@@ -64,7 +64,15 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
-    bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+    if A.method_CG == "bicg"
+        bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+    elseif A.method_CG == "bicgstab"
+        bicgstab(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+    elseif A.method_CG == "preconditiond_bicgstab"
+    else
+        error("A.method_CG = $(A.method_CG) is not supported")
+    end
+
     set_wing_fermion!(y,A.boundarycondition)
 end
 

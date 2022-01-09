@@ -12,6 +12,7 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: A
     eps_CG::Float64
     MaxCGstep::Int64
     verbose_level::Int8
+    method_CG::String
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
@@ -58,6 +59,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
 
     verbose_level = check_parameters(parameters,"verbose_level",2)
 
+    method_CG = check_parameters(parameters,"method_CG","bicg")
+
 
     for i=1:num
         _temporary_fermi[i] = similar(x)
@@ -81,7 +84,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         r,
         hopp,
         hopm,
-        eps_CG,MaxCGstep,verbose_level
+        eps_CG,MaxCGstep,verbose_level,
+        method_CG
         )
 end
 
@@ -94,7 +98,8 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.r,
         D.hopp,
         D.hopm,
-        D.eps_CG,D.MaxCGstep,D.verbose_level 
+        D.eps_CG,D.MaxCGstep,D.verbose_level,
+        D.method_CG 
         )
 end
 
