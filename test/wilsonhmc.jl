@@ -168,6 +168,7 @@ function test1()
     xplus = shift_fermion(x,1)
     
 
+    #=
     ix = 1
     iy = 1
     iz = 1
@@ -193,6 +194,8 @@ function test1()
     iz = 1
     it = 1
     ialpha  =1
+
+    =#
     #=
     @time @inbounds x.f[1,ix,iy,iz,it,ialpha]
     @code_llvm   @inbounds x.f[1,ix,iy,iz,it,ialpha]
