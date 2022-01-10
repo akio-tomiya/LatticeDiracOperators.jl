@@ -45,13 +45,15 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Δτ = 1/MDsteps
     NC,_,NN... = size(U[1])
     
+    #=
     for μ=1:Dim
         pwork = gauss_distribution(prod(NN)*(NC^2-1))
         substitute_U!(p[μ],pwork)
     end
-    println(p[1][1,1,1,1,1,1])
+    =#
+    #println(p[1][1,1,1,1,1,1])
 
-    #gauss_distribution!(p)
+    gauss_distribution!(p)
     
     substitute_U!(Uold,U)
     gauss_sampling_in_action!(ξ,U,fermi_action)
@@ -127,12 +129,15 @@ function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,fermi_action,η)  # p ->
     UdSfdUμ = temps[1:Dim]
     factor =  -ϵ*Δτ
 
+    #calc_p_UdSfdU!(p,fermi_action,U,η,factor)
+
     calc_UdSfdU!(UdSfdUμ,fermi_action,U,η)
 
     for μ=1:Dim
         Traceless_antihermitian_add!(p[μ],factor,UdSfdUμ[μ])
         #println(" p[μ] = ", p[μ][1,1,1,1,1])
     end
+    
 end
 
 function test1()
@@ -230,6 +235,8 @@ function test1()
     params["κ"] = 0.141139
     params["eps_CG"] = 1.0e-8
     params["verbose_level"] = 2
+    params["method_CG"] = "preconditiond_bicgstab"
+    #params["method_CG"] = "bicgstab"
     D = Dirac_operator(U,x,params)
 
 

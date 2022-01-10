@@ -46,7 +46,7 @@ function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1,i2,i3,i4,i5,i6) where
 end
 
 function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N) where {NC,NDW,N<: Integer}
-    return @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
+    @inbounds return  x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
 end
 
 
@@ -189,6 +189,134 @@ function set_wing_fermion!(a::WilsonFermion_4D_wing{NC,NDW},boundarycondition) w
 
 end
 
+function set_wing_fermion!(a::WilsonFermion_4D_wing{NC,NDW},boundarycondition,iseven::Bool) where {NC,NDW} 
+    NT = a.NT
+    NZ = a.NZ
+    NY = a.NY
+    NX = a.NX
+
+    #!  X-direction
+    @inbounds for ialpha=1:4
+        for it=1:NT
+            for iz = 1:NZ
+                for iy=1:NY
+                    ix = NX
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,0,iy,iz,it,ialpha] = boundarycondition[1]*a[k,NX,iy,iz,it,ialpha]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    @inbounds for ialpha=1:4
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    ix = 1
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,NX+1,iy,iz,it,ialpha] = boundarycondition[1]*a[k,1,iy,iz,it,ialpha]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    #Y-direction
+    @inbounds for ialpha = 1:4
+        for it=1:NT
+            for iz=1:NZ
+                for ix=1:NX
+                    iy = NY
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+
+                        @simd for k=1:NC
+                            a[k,ix,0,iz,it,ialpha] = boundarycondition[2]*a[k,ix,NY,iz,it,ialpha]
+                        end
+                    end
+                end
+
+            end
+        end
+    end
+
+    @inbounds for ialpha=1:4
+        for it=1:NT
+            for iz=1:NZ
+                for ix=1:NX
+                    iy = 1
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+
+                        @simd for k=1:NC
+                            a[k,ix,NY+1,iz,it,ialpha] = boundarycondition[2]*a[k,ix,1,iz,it,ialpha]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    
+    @inbounds for ialpha=1:4
+        # Z-direction
+        for it=1:NT
+            for iy=1:NY
+                for ix=1:NX
+                    iz = NX
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,ix,iy,0,it,ialpha] = boundarycondition[3]*a[k,ix,iy,NZ,it,ialpha]
+                        end
+                    end
+
+                    iz = 1
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,ix,iy,NZ+1,it,ialpha] = boundarycondition[3]*a[k,ix,iy,1,it,ialpha]
+                        end
+                    end
+                end
+            end
+        end
+
+        #T-direction
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    it = NT
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,ix,iy,iz,0,ialpha] = boundarycondition[4]*a[k,ix,iy,iz,NT,ialpha]
+                        end
+                    end
+
+                    it = 1
+                    evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                    if evenodd == iseven
+                        @simd for k=1:NC
+                            a[k,ix,iy,iz,NT+1,ialpha] =boundarycondition[4]*a[k,ix,iy,iz,1,ialpha]
+                        end
+                    end
+
+                end
+            end
+        end
+
+    end
+
+end
+
 
 
 
@@ -246,6 +374,60 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
     return
 end
 
+function Tx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields} # Tx, W = (1 - T)x
+    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    #temp = temps[4]
+    #temp1 = temps[1]
+    #temp2 = temps[2]
+
+    clear_fermion!(temp)
+    #set_wing_fermion!(x)
+    for ν=1:4
+        
+        xplus = shift_fermion(x,ν)
+        #println(xplus)
+        
+
+        mul!(temp1,U[ν],xplus)
+       
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+
+        mul!(temp1,view(A.rminusγ,:,:,ν))
+
+        
+
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+
+
+        mul!(temp2,Uminus',xminus)
+     
+        #
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+        mul!(temp2,view(A.rplusγ,:,:,ν))
+
+        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
+
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,0,x,1,temp)
+
+    set_wing_fermion!(xout,A.boundarycondition)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
 
 
 function Wdagx!(xout::T,U::Array{G,1},
@@ -294,12 +476,24 @@ function Wdagx!(xout::T,U::Array{G,1},
 end
 
 function calc_beff!(xout,U,x,A) #be + K Teo bo
-    iseven = false
+    isodd = false
     temp = A._temporary_fermi[4]#temps[4]
-    Toex!(temp,U,x,A,iseven) 
+    clear_fermion!(temp,isodd)
+    Toex!(temp,U,x,A,isodd) 
 
     iseven = true
-    add_fermion!(xout,1,x,A.κ,temp,iseven)
+    add_fermion!(xout,1,x,1,temp,iseven)
+
+end
+
+function calc_beff_dag!(xout,U,x,A) #be + K Teo bo
+    isodd = false
+    temp = A._temporary_fermi[4]#temps[4]
+    clear_fermion!(temp)
+    Tdagoex!(temp,U,x,A,isodd) 
+
+    iseven = true
+    add_fermion!(xout,1,x,1,temp,iseven)
 
 end
 
@@ -327,6 +521,8 @@ function Toex!(xout::T,U::Array{G,1},x::T,A,iseven)  where  {T <: WilsonFermion_
         
 
         mul!(temp1,U[ν],xplus,isodd)
+
+        
        
 
         #fermion_shift!(temp1,U,ν,x)
@@ -355,9 +551,68 @@ function Toex!(xout::T,U::Array{G,1},x::T,A,iseven)  where  {T <: WilsonFermion_
     #clear_fermion!(xout,isodd)
     #add_fermion!(xout,1,x,-1,temp)
 
+    set_wing_fermion!(xout,A.boundarycondition,isodd)
+
+end
+
+function Tdagoex!(xout::T,U::Array{G,1},x::T,A,iseven)  where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields} #T_oe xe
+    #temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    #temp = temps[4]
+    #temp1 = temps[1]
+    #temp2 = temps[2]
+    if iseven 
+        isodd = false
+    else
+        isodd  =true
+    end
+
+    #clear_fermion!(temp,isodd)
+    clear_fermion!(xout,isodd)
+    #set_wing_fermion!(x)
+    for ν=1:4
+        
+        xplus = shift_fermion(x,ν)
+        #println(xplus)
+        
+
+        mul!(temp1,U[ν],xplus,isodd)
+
+        
+       
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+
+        mul!(temp1,view(A.rplusγ,:,:,ν),isodd)
+
+        
+
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+
+
+        mul!(temp2,Uminus',xminus,isodd)
+     
+        #
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+        mul!(temp2,view(A.rminusγ,:,:,ν),isodd)
+
+        add_fermion!(xout,A.hopp[ν],temp1,A.hopm[ν],temp2,isodd)
+
+    end
+
+    #clear_fermion!(xout,isodd)
+    #add_fermion!(xout,1,x,-1,temp)
+
     set_wing_fermion!(xout,A.boundarycondition)
 
 end
+
 
 function add_fermion!(c::WilsonFermion_4D_wing{NC,NDW},α::Number,a::T1,β::Number,b::T2,iseven) where {NC,NDW,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
     n1,n2,n3,n4,n5,n6 = size(c.f)
@@ -415,16 +670,66 @@ end
 
 function WWx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
-    temp = A._temporary_fermi[4]#temps[4]
-    temp2 = A._temporary_fermi[5]#temps[4]
-    Toex!(temp2,U,x,A,iseven) 
+    isodd = false
+    temp = A._temporary_fermi[7]#temps[4]
+    temp2 = A._temporary_fermi[6]#temps[4]
 
-    iseven = false
-    Toex!(temp,U,temp2,A,iseven) 
+    #println("Wx")
+    #@time Wx!(xout,U,x,A) 
+    clear_fermion!(xout,iseven)
+    
+
+    #Tx!(temp,U,x,A) 
+    Toex!(temp,U,x,A,iseven) #Toe
+    #Tx!(temp2,U,temp,A) 
+    Toex!(temp2,U,temp,A,isodd) #Teo
+
+    #set_wing_fermion!(temp,A.boundarycondition)
+    #add_fermion!(xout,1,x,-1,temp2)
+    add_fermion!(xout,1,x,-1,temp2,iseven)
+    set_wing_fermion!(xout,A.boundarycondition,iseven)
+    
+
+
+    #Wx!(xout,U,x,A) 
+    return
+
+    #Tx!(temp2,U,x,A) #Toe
+    
+    #Toex!(temp2,U,x,A,iseven) #Toe
+
+    #Toex!(temp,U,temp2,A,isodd) #Teo
+    #Tx!(temp,U,temp2,A) #Toe
+
+    Tx!(temp,U,x,A) #Toe
+
     add_fermion!(xout,1,x,-1,temp)
+    #add_fermion!(xout,1,x,-1,temp,iseven)
 
     iseven = true
     set_wing_fermion!(xout,A.boundarycondition)
+
+    return
+end
+
+function WWdagx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields} #(1 - K^2 Teo Toe) xe
+    iseven = true
+    isodd = false
+    temp = A._temporary_fermi[7]#temps[4]
+    temp2 = A._temporary_fermi[6]#temps[4]
+
+    clear_fermion!(xout)
+
+    #Tx!(temp,U,x,A) 
+    Tdagoex!(temp,U,x,A,iseven) #Toe
+    #Tx!(temp2,U,temp,A) 
+    Tdagoex!(temp2,U,temp,A,isodd) #Teo
+
+    #set_wing_fermion!(temp,A.boundarycondition)
+    #add_fermion!(xout,1,x,-1,temp2)
+    add_fermion!(xout,1,x,-1,temp2,iseven)
+    set_wing_fermion!(xout,A.boundarycondition)
+    
 
     return
 end
@@ -656,6 +961,61 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_wing{NC,NDW},x::WilsonFermion
         end
     end
     
+end
+
+function LinearAlgebra.dot(a::WilsonFermion_4D_wing{NC,NDW},b::WilsonFermion_4D_wing{NC,NDW},iseven::Bool) where {NC,NDW}
+    NT = a.NT
+    NZ = a.NZ
+    NY = a.NY
+    NX = a.NX
+    NG = a.NG
+
+    c = 0.0im
+    @inbounds for α=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                        if evenodd == iseven
+                            @simd for ic=1:NC
+                                c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end  
+    return c
+end
+
+
+#Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
+function LinearAlgebra.axpby!(a::Number, X::T, b::Number, Y::WilsonFermion_4D_wing{NC,NDW},iseven::Bool) where {NC,NDW,T <: AbstractFermionfields_4D}
+    n1,n2,n3,n4,n5,n6 = size(Y.f)
+    #println("axpby")
+
+    @inbounds for i6=1:n6
+        for i5=1:n5
+            it = i5+NDW
+            for i4=1:n4
+                iz = i4+NDW
+                for i3=1:n3
+                    iy = i3+NDW
+                    for i2=1:n2
+                        ix = i2+NDW
+                        evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
+                        if evenodd == iseven
+                            @simd for i1=1:NC
+                                Y.f[i1,i2,i3,i4,i5,i6] = a*X.f[i1,i2,i3,i4,i5,i6] + b*Y.f[i1,i2,i3,i4,i5,i6]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 #=

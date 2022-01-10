@@ -1,3 +1,5 @@
+include("./WilsoncloverFermion.jl")
+
 struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
     U::Array{T,1}
     boundarycondition::Vector{Int8}
@@ -13,8 +15,11 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: A
     MaxCGstep::Int64
     verbose_level::Int8
     method_CG::String
+    cloverterm::Union{Nothing,WilsonClover}
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
+
+
 
 struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
     parent::Wilson_Dirac_operator{Dim,T,fermion}
@@ -22,6 +27,7 @@ struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <: Dirac_operator{Dim}  wher
         new{Dim,T,fermion}(D)
     end
 end
+
 
 struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
     dirac::Wilson_Dirac_operator{Dim,T,fermion}
@@ -36,6 +42,16 @@ end
 
 
 include("./WilsonFermion_4D_wing.jl")
+
+
+#=
+function __init__()
+    @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
+        include("./WilsonFermion_4D_mpi.jl")    
+    end
+end
+
+=#
 #include("./WilsonFermion_4D_wing_fast.jl")
 
 
@@ -83,6 +99,14 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         error("verbose_level = $verbose_level is not supported")
     end 
 
+    hasclover = check_parameters(parameters,"hasclover",false)
+    if hasclover
+        error("notsupported")
+    else
+        cloverterm = nothing
+    end
+
+
     return Wilson_Dirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,_temporary_fermi,
         γ,
         rplusγ,
@@ -92,7 +116,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         hopp,
         hopm,
         eps_CG,MaxCGstep,verbose_level,
-        method_CG
+        method_CG,
+        cloverterm
         )
 end
 
@@ -106,7 +131,8 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.hopp,
         D.hopm,
         D.eps_CG,D.MaxCGstep,D.verbose_level,
-        D.method_CG 
+        D.method_CG,
+        D.cloverterm
         )
 end
 
@@ -118,6 +144,14 @@ end
 
 function Base.adjoint(A::T) where T <: Wilson_Dirac_operator
     Adjoint_Wilson_operator{typeof(A)}(A)
+end
+
+struct Adjoint_Wilson_operator_evenodd{T} <: Adjoint_Dirac_operator
+    parent::T
+end
+
+function Base.adjoint(A::T) where T <: Wilson_Dirac_operator_evenodd
+    Adjoint_Wilson_operator_evenodd{typeof(A)}(A)
 end
 
 function Initialize_WilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
@@ -153,6 +187,10 @@ end
 
 function LinearAlgebra.mul!(y::T1,A::Wilson_Dirac_operator_evenodd{Dim,T,fermion},x::T3) where {T1 <:AbstractFermionfields,T, Dim,fermion, T3 <:AbstractFermionfields}
     WWx!(y,A.parent.U,x,A.parent) 
+end
+
+function LinearAlgebra.mul!(y::T1,A::Adjoint_Wilson_operator_evenodd,x::T3) where {T1 <:AbstractFermionfields, T3 <:AbstractFermionfields}
+    WWdagx!(y,A.parent.parent.U,x,A.parent.parent) 
 end
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Adjoint_Wilson_operator, T3 <:  AbstractFermionfields}

@@ -66,29 +66,66 @@ end
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
     if A.method_CG == "bicg"
         bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        set_wing_fermion!(y,A.boundarycondition)
     elseif A.method_CG == "bicgstab"
         bicgstab(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        set_wing_fermion!(y,A.boundarycondition)
     elseif A.method_CG == "preconditiond_bicgstab"
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
         WW = Wilson_Dirac_operator_evenodd(A)
-        beff = A._temporary_fermi[6]
+        #b = A._temporary_fermi[6]
+        #substitute_fermion!(beff,x)
         bout = A._temporary_fermi[7]
-        calc_beff!(bout,A.U,beff,A)
-        bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        calc_beff!(bout,A.U,x,A)
+        iseven = true
+        isodd = false
+
+        #bout = x
+        #bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        bicgstab_evenodd(y,WW,bout,iseven;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        Tx = A._temporary_fermi[6]
+        set_wing_fermion!(y,A.boundarycondition,iseven)
+
+        Toex!(Tx,A.U,y,A,iseven)
+        #set_wing_fermion!(Tx,A.boundarycondition)
+        add_fermion!(y,1,x,1,Tx,isodd)
+        set_wing_fermion!(y,A.boundarycondition,isodd)
+
+        #Toex!(y,U,x,A,iseven)
+        #xo = K Toe xe + b0
     else
         error("A.method_CG = $(A.method_CG) is not supported")
     end
 
-    set_wing_fermion!(y,A.boundarycondition)
+    
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
-    if A.method_CG == "bicg"
+    if A.parent.method_CG == "bicg"
         bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
-    elseif A.method_CG == "bicgstab"
+    elseif A.parent.method_CG == "bicgstab"
         bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
-    elseif A.method_CG == "preconditiond_bicgstab"
-        @assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
+    elseif A.parent.method_CG == "preconditiond_bicgstab"
+        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+        #=
+        #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
+        WWdag = Wilson_Dirac_operator_evenodd(A.parent)'
+        #b = A._temporary_fermi[6]
+        #substitute_fermion!(beff,x)
+        bout = A.parent._temporary_fermi[7]
+        #calc_beff!(bout,A.parent.U,x,A.parent)
+        calc_beff_dag!(bout,A.parent.U,x,A.parent)
+        iseven = true
+
+        #bout = x
+        #bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        bicgstab_evenodd(y,WW',bout,iseven;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+        Tx = A.parent._temporary_fermi[6]
+        set_wing_fermion!(y,A.parent.boundarycondition)
+        Tdagoex!(Tx,A.parent.U,y,A.parent,iseven)
+        #set_wing_fermion!(Tx,A.boundarycondition)
+        add_fermion!(y,1,x,1,Tx,isodd)
+        =#
         
     else
         error("A.method_CG = $(A.method_CG) is not supported")

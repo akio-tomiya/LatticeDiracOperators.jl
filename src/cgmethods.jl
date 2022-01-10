@@ -11,6 +11,16 @@ function add!(Y,a,X) #Y + a*X -> Y
 end
 
 
+function add!(b,Y,a,X,iseven::Bool) #b*Y + a*X -> Y
+    LinearAlgebra.axpby!(a,X,b,Y,iseven) #X*a + Y*b -> Y
+end
+
+function add!(Y,a,X,iseven::Bool) #Y + a*X -> Y
+    LinearAlgebra.axpby!(a,X,1,Y,iseven) #X*a + Y -> Y
+end
+
+
+
 function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
     println_verbose3(verbose,"--------------------------------------")
     println_verbose3(verbose,"bicg method")
@@ -125,6 +135,75 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         end
 
         β = (α/ω)*dot(rs,r)/c1
+
+    end
+
+
+ 
+    
+    error("""
+    The BICG is not converged! with maxsteps = $(maxsteps)
+    residual is $rnorm
+    maxsteps should be larger.""")
+
+
+end
+
+function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+    println_verbose3(verbose,"--------------------------------------")
+    println_verbose3(verbose,"bicg-stab even-odd method")
+    r = deepcopy(b)
+    temp1 = similar(x)
+    mul!(temp1,A,x)
+    println(dot(temp1,temp1,iseven))
+
+    add!(r,-1,temp1,iseven)
+
+    rnorm = real(dot(r,r,iseven))
+    #println(rnorm)
+
+    if rnorm < eps
+        return
+    end
+    rs = deepcopy(r)
+    p = deepcopy(r)
+    s = similar(r)
+    Ap = similar(x)
+    As = similar(x)
+    β = 0.0im    
+    ω = 0.0im
+
+    for i=0:maxsteps
+        if i != 0
+            add!(β,p,1,r,iseven)
+            add!(p,-ω*β,Ap,iseven)
+        end
+        c1 = dot(rs,r,iseven)
+        mul!(Ap,A,p)
+        c2 = dot(rs,Ap,iseven)
+        α = c1/c2
+        add!(0,s,1,r,iseven)
+        add!(s,-α,Ap,iseven)
+        mul!(As,A,s)
+        s1 = dot(As,s,iseven)
+        s2 = dot(As,As,iseven)
+
+        ω = s1/s2
+        add!(x,α,p,iseven)
+        add!(x,ω,s,iseven)
+        add!(0,r,1,s,iseven)
+        add!(r,-ω,As,iseven)
+
+        rnorm = real(dot(r,r,iseven)) 
+        println_verbose3(verbose,"$i-th eps: $rnorm")
+
+        if rnorm < eps
+            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose3(verbose,"--------------------------------------")
+            return
+        end
+
+        β = (α/ω)*dot(rs,r,iseven)/c1
 
     end
 

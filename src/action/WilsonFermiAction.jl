@@ -1,3 +1,5 @@
+import Gaugefields:Traceless_antihermitian_add!
+
 struct Wilsonclover_data 
 end
 
@@ -123,6 +125,83 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_actio
 
 
 end
+
+
+function calc_p_UdSfdU!(p,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields,coeff = 1) where  {Dim,Dirac,fermion,gauge,hascloverterm} 
+    #println("------dd")
+    W = fermi_action.diracoperator(U)
+    WdagW = DdagD_Wilson_operator(W)
+    X = fermi_action._temporary_fermionfields[end]
+    Y = fermi_action._temporary_fermionfields[2]
+    #X = (D^dag D)^(-1) ϕ 
+    #
+    #println("Xd ",X[1,1,1,1,1,1])
+    solve_DinvX!(X,WdagW,ϕ)
+    #println("X ",X[1,1,1,1,1,1])
+    #clear_U!(UdSfdU)
+
+    calc_p_UdSfdU_fromX!(p,Y,fermi_action,U,X,coeff= coeff) 
+    #println("----aa--")
+    #set_wing_U!(UdSfdU)
+end
+
+function calc_p_UdSfdU_fromX!(p,Y,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,U,X;coeff = 1) where {Dim,Dirac,fermion,gauge,hascloverterm}
+    W = fermi_action.diracoperator(U)
+    mul!(Y,W,X)
+    #set_wing_fermion!(Y)
+
+    temp0_f = fermi_action._temporary_fermionfields[3]
+    temp1_f = fermi_action._temporary_fermionfields[4]
+    temp0_g = fermi_action._temporary_gaugefields[1]
+
+    for μ=1:Dim
+        #!  Construct U(x,mu)*P1
+
+        # U_{k,μ} X_{k+μ}
+        Xplus = shift_fermion(X,μ)
+
+        #@time mul!(temp0_f,U[μ],X)
+
+        mul!(temp0_f,U[μ],Xplus)
+        
+        
+        # (r-γ_μ) U_{k,μ} X_{k+μ}
+        mul!(temp1_f,view(W.rminusγ,:,:,μ),temp0_f)
+        
+        # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+        mul!(temp0_f,W.hopp[μ],temp1_f)
+
+        # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+        mul!(temp0_g,temp0_f,Y') 
+
+        Traceless_antihermitian_add!(p[μ],-coeff,temp0_g)
+
+        #add_U!(UdSfdU[μ],-coeff,temp0_g)
+
+        #!  Construct P2*U_adj(x,mu)
+        # Y_{k+μ}^dag U_{k,μ}^dag
+        Yplus = shift_fermion(Y,μ)
+        mul!(temp0_f,Yplus',U[μ]')
+
+        # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+        mul!(temp1_f,temp0_f,view(W.rplusγ,:,:,μ))
+
+        # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+        mul!(temp0_f,W.hopm[μ],temp1_f)
+
+        # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+        mul!(temp0_g,X,temp0_f) 
+
+        Traceless_antihermitian_add!(p[μ],coeff,temp0_g)
+
+        #add_U!(UdSfdU[μ],coeff,temp0_g)
+
+
+    end
+
+
+end
+
 
 function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ) where {Dim,Dirac,fermion,gauge,hascloverterm} 
     #gauss_distribution_fermion!(η)
