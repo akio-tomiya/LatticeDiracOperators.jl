@@ -1,7 +1,7 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["cometscome <cometscome@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.0.1"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -14,6 +14,8 @@ Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 
 [compat]
 julia = "1.6"
+Wilsonloop = "0.0.1"
+Gaugefields = "0.0.1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

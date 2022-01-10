@@ -193,6 +193,7 @@ function test1()
     iz = 1
     it = 1
     ialpha  =1
+    #=
     @time @inbounds x.f[1,ix,iy,iz,it,ialpha]
     @code_llvm   @inbounds x.f[1,ix,iy,iz,it,ialpha]
     println("dd")
@@ -216,6 +217,7 @@ function test1()
     end
     #error("dd")
     #return 
+    =#
 
 
     params = Dict()

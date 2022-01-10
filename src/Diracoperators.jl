@@ -69,6 +69,12 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
     elseif A.method_CG == "bicgstab"
         bicgstab(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
     elseif A.method_CG == "preconditiond_bicgstab"
+        #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
+        WW = Wilson_Dirac_operator_evenodd(A)
+        beff = A._temporary_fermi[6]
+        bout = A._temporary_fermi[7]
+        calc_beff!(bout,A.U,beff,A)
+        bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
     else
         error("A.method_CG = $(A.method_CG) is not supported")
     end
@@ -77,7 +83,17 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
-    bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+    if A.method_CG == "bicg"
+        bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+    elseif A.method_CG == "bicgstab"
+        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+    elseif A.method_CG == "preconditiond_bicgstab"
+        @assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
+        
+    else
+        error("A.method_CG = $(A.method_CG) is not supported")
+    end
+
     set_wing_fermion!(y,A.parent.boundarycondition)
 end
 

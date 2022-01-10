@@ -16,6 +16,13 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: A
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
+struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
+    parent::Wilson_Dirac_operator{Dim,T,fermion}
+    function Wilson_Dirac_operator_evenodd(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion} 
+        new{Dim,T,fermion}(D)
+    end
+end
+
 struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
     dirac::Wilson_Dirac_operator{Dim,T,fermion}
     function DdagD_Wilson_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where  {NC,Dim}
@@ -34,7 +41,7 @@ include("./WilsonFermion_4D_wing.jl")
 
 function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
     xtype = typeof(x)
-    num = 6
+    num = 7
     _temporary_fermi = Array{xtype,1}(undef,num)
 
     @assert haskey(parameters,"κ") "parameters should have the keyword κ"
@@ -103,10 +110,11 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         )
 end
 
+
+
 struct Adjoint_Wilson_operator{T} <: Adjoint_Dirac_operator
     parent::T
 end
-
 
 function Base.adjoint(A::T) where T <: Wilson_Dirac_operator
     Adjoint_Wilson_operator{typeof(A)}(A)
@@ -141,6 +149,10 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields
     Wx!(y,A.U,x,A) 
     #error("w")
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+end
+
+function LinearAlgebra.mul!(y::T1,A::Wilson_Dirac_operator_evenodd{Dim,T,fermion},x::T3) where {T1 <:AbstractFermionfields,T, Dim,fermion, T3 <:AbstractFermionfields}
+    WWx!(y,A.parent.U,x,A.parent) 
 end
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Adjoint_Wilson_operator, T3 <:  AbstractFermionfields}

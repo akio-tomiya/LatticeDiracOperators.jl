@@ -17,10 +17,11 @@ module LatticeDiracOperators
     include("Diracoperators.jl")
 
     import .Dirac_operators:Initialize_pseudofermion_fields,Dirac_operator,gauss_distribution_fermion!,
-    Initialize_WilsonFermion,Initialize_4DWilsonFermion,
-    DdagD_operator,solve_DinvX!,FermiAction,
-    shift_fermion,
-    sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction,calc_UdSfdU,calc_UdSfdU!,bicgstab
+            Initialize_WilsonFermion,Initialize_4DWilsonFermion,
+            DdagD_operator,solve_DinvX!,FermiAction,
+            shift_fermion,
+            sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction,calc_UdSfdU,calc_UdSfdU!,bicgstab,
+            Wilson_Dirac_operator_evenodd
 
     export Initialize_pseudofermion_fields,Dirac_operator,gauss_distribution_fermion!,cg,bicg
     export Initialize_WilsonFermion,Initialize_4DWilsonFermion
@@ -28,4 +29,5 @@ module LatticeDiracOperators
     export shift_fermion
     export WilsonFermion_4D_wing
     export sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction,calc_UdSfdU,calc_UdSfdU!,bicgstab
+    export Wilson_Dirac_operator_evenodd
 end
