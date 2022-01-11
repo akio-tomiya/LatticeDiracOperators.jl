@@ -45,15 +45,15 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Δτ = 1/MDsteps
     NC,_,NN... = size(U[1])
     
-    #=
+    
     for μ=1:Dim
         pwork = gauss_distribution(prod(NN)*(NC^2-1))
         substitute_U!(p[μ],pwork)
     end
-    =#
+    
     #println(p[1][1,1,1,1,1,1])
 
-    gauss_distribution!(p)
+    #gauss_distribution!(p)
     
     substitute_U!(Uold,U)
     gauss_sampling_in_action!(ξ,U,fermi_action)
@@ -144,7 +144,7 @@ function test1()
     NX = 4
     NY = 4
     NZ = 4
-    NT = 4
+    NT = 12
     Nwing = 1
     Dim = 4
     NC = 3
@@ -166,11 +166,7 @@ function test1()
     #@code_warntype Initialize_pseudofermion_fields(U[1],"Wilson")
     #error("init")
     
-    params = Dict()
-    params["Dirac_operator"] = "Wilson"
-    params["κ"] = 0.141139
-    params["eps_CG"] = 1.0e-8
-    params["verbose_level"] = 2
+
     #x = Initialize_pseudofermion_fields(U[1],params)
 
     #x = Initialize_4DWilsonFermion(U[1])
@@ -233,10 +229,11 @@ function test1()
     params = Dict()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = 0.141139
-    params["eps_CG"] = 1.0e-8
-    params["verbose_level"] = 2
-    params["method_CG"] = "preconditiond_bicgstab"
-    #params["method_CG"] = "bicgstab"
+    params["eps_CG"] = 1.0e-19
+    params["verbose_level"] = 3
+    #params["method_CG"] = "preconditiond_bicgstab"
+    params["method_CG"] = "bicgstab"
+    #params["method_CG"] = "bicg"
     D = Dirac_operator(U,x,params)
 
 

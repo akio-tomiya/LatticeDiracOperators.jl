@@ -74,17 +74,27 @@ function get_myrank(myrank_xyzt,PEs)
 end
 
 function Base.setindex!(x::WilsonFermion_4D_mpi{NC,NDW},v,i1,i2,i3,i4,i5,i6)  where {NC,NDW}
-    @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6] = v
+    error("Each element can not be accessed by global index in $(typeof(x)). Use setvalue! function")
+    #@inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6] = v
 end
 
 function Base.getindex(x::WilsonFermion_4D_mpi{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
-    @inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
+    error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+    #@inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
 end
 
 function Base.getindex(x::WilsonFermion_4D_mpi{NC,NDW},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N) where {NC,NDW,N<: Integer}
     return @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
 end
 
+
+@inline function getvalue(x::WilsonFermion_4D_mpi{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
+    @inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
+end
+
+@inline  function setvalue!(x::WilsonFermion_4D_mpi{NC,NDW},v,i1,i2,i3,i4,i5,i6) where {NC,NDW}
+    @inbounds  x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6] = v
+end
 
 #=
 function Base.getindex(F::Shifted_fermionfields_4D{NC,WilsonFermion_4D_mpi{NC,NDW}},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {NC,NDW,N <: Integer}
@@ -164,11 +174,14 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for iy=1:PN[2]
                     for id=1:NDW
+                        ix_real = myrank_xyzt[1]*PN[1] + PN[1]+(id-NDW)
+                        phase =ifelse(ix_real >= NX,boundarycondition[1],1)
                         for k2=1:NC
                             #for k1=1:NC
                                 count += 1
+                                
                                 #a[k,0,iy,iz,it,ialpha] = boundarycondition[1]*a[k,NX,iy,iz,it,ialpha]
-                                send_mesg1[count] = boundarycondition[1]*getvalue(u,k2,PN[1]+(id-NDW),iy,iz,it,ialpha)
+                                send_mesg1[count] = phase*getvalue(u,k2,PN[1]+(id-NDW),iy,iz,it,ialpha)
                                 #u[k1,k2,-NDW+id,iy,iz,it] = u[k1,k2,NX+(id-NDW),iy,iz,it]
                             #end
                         end
@@ -204,10 +217,12 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for iy=1:PN[2]
                     for id=1:NDW
+                        ix_real = myrank_xyzt[1]*PN[1] + id
+                        phase =ifelse(ix_real <= NDW,boundarycondition[1],1)
                         for k2=1:NC
                             #for k1=1:NC
                                 count += 1
-                                send_mesg2[count] = boundarycondition[1]*getvalue(u,k2,id,iy,iz,it,ialpha)
+                                send_mesg2[count] = phase*getvalue(u,k2,id,iy,iz,it,ialpha)
                             #end
                         end
                     end
@@ -260,6 +275,7 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for iy=1:PN[2]
                     for id=1:NDW
+                        
                         for k2=1:NC
                             #for k1=1:NC
                                 count += 1
@@ -312,10 +328,12 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for ix=-NDW+1:PN[1]+NDW
                     for id=1:NDW
+                        iy_real = myrank_xyzt[2]*PN[2] + PN[2]+(id-NDW)
+                        phase =ifelse(iy_real >= NY,boundarycondition[2],1)
                         for k1=1:NC
                             #for k2=1:NC
                                 count += 1
-                                send_mesg1[count] = boundarycondition[2]*getvalue(u,k1,ix,PN[2]+(id-NDW),iz,it,ialpha)
+                                send_mesg1[count] = phase*getvalue(u,k1,ix,PN[2]+(id-NDW),iz,it,ialpha)
                                 #u[k1,k2,ix,-NDW+id,iz,it] = u[k1,k2,ix,NY+(id-NDW),iz,it]
                             #end
                         end
@@ -339,10 +357,12 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for ix=-NDW+1:PN[1]+NDW
                     for id=1:NDW
+                        iy_real = myrank_xyzt[2]*PN[2] + id
+                        phase =ifelse(iy_real <= NDW,boundarycondition[2],1)
                         for k1=1:NC
                             #for k2=1:NC
                                 count += 1
-                                send_mesg2[count] = boundarycondition[2]*getvalue(u,k1,ix,id,iz,it,ialpha)
+                                send_mesg2[count] = phase*getvalue(u,k1,ix,id,iz,it,ialpha)
                                 #u[k1,k2,ix,NY+id,iz,it] = u[k1,k2,ix,id,iz,it]
                             #end
                         end
@@ -371,6 +391,7 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
             for iz=1:PN[3]
                 for ix=-NDW+1:PN[1]+NDW
                     for id=1:NDW
+
                         for k1=1:NC
                             #for k2=1:NC
                                 count += 1
@@ -422,14 +443,18 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
     count = 0
     for ialpha = 1:4
         for id=1:NDW
+            iz_real1 = myrank_xyzt[3]*PN[3] + PN[3]+(id-NDW)
+            phase1 =ifelse(iz_real1 >= NZ,boundarycondition[3],1)
+            iz_real2 = myrank_xyzt[3]*PN[3] + id
+            phase2 =ifelse(iz_real2 <= NDW,boundarycondition[3],1)
             for it=1:PN[4]
                 for iy=-NDW+1:PN[2]+NDW
                     for ix=-NDW+1:PN[1]+NDW
                         for k1=1:NC
                             #for k2=1:NC
                                 count += 1
-                                send_mesg1[count] = boundarycondition[3]*getvalue(u,k2,ix,iy,PN[3]+(id-NDW),it,ialpha)
-                                send_mesg2[count] = boundarycondition[3]*getvalue(u,k2,ix,iy,id,it,ialpha)
+                                send_mesg1[count] = phase1*getvalue(u,k2,ix,iy,PN[3]+(id-NDW),it,ialpha)
+                                send_mesg2[count] = phase2*getvalue(u,k2,ix,iy,id,it,ialpha)
                                 #u[k1,k2,ix,iy,id-NDW,it] = u[k1,k2,ix,iy,NZ+(id-NDW),it]
                                 #u[k1,k2,ix,iy,NZ+id,it] = u[k1,k2,ix,iy,id,it]
                             #end
@@ -497,14 +522,19 @@ function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC,NDW},boundarycondition) wh
     count = 0
     for ialpha=1:4
         for id=1:NDW
+            it_real1 = myrank_xyzt[4]*PN[4] + PN[4]+(id-NDW)
+            phase1 =ifelse(it_real1 >= NT,boundarycondition[4],1)
+            it_real2 = myrank_xyzt[4]*PN[4] + id
+            phase2 =ifelse(it_real2 <= NDW,boundarycondition[4],1)
+
             for iz=-NDW+1:PN[3]+NDW
                 for iy=-NDW+1:PN[2]+NDW
                     for ix=-NDW+1:PN[1]+NDW
                         for k1=1:NC
                             #for k2=1:NC
                                 count += 1
-                                send_mesg1[count] = boundarycondition[4]*getvalue(u,k1,ix,iy,iz,PN[4]+(id-NDW),ialpha)
-                                send_mesg2[count] = boundarycondition[4]*getvalue(u,k1,ix,iy,iz,id,ialpha)
+                                send_mesg1[count] = phase1*getvalue(u,k1,ix,iy,iz,PN[4]+(id-NDW),ialpha)
+                                send_mesg2[count] = phase2*getvalue(u,k1,ix,iy,iz,id,ialpha)
                                 #u[k1,k2,ix,iy,iz,id-NDW] = u[k1,k2,ix,iy,iz,PN[4]+(id-NDW)]
                                 #u[k1,k2,ix,iy,iz,PN[4]+id] = u[k1,k2,ix,iy,iz,id]
                             #end
@@ -759,72 +789,7 @@ function Wdagx!(xout::T,U::Array{G,1},
     return
 end
 
-function calc_beff!(xout,U,x,A) #be + K Teo bo
-    isodd = false
-    temp = A._temporary_fermi[4]#temps[4]
-    clear_fermion!(temp)
-    Toex!(temp,U,x,A,isodd) 
 
-    iseven = true
-    add_fermion!(xout,1,x,1,temp,iseven)
-
-end
-
-function Toex!(xout::T,U::Array{G,1},x::T,A,iseven)  where  {T <: WilsonFermion_4D_mpi,G <: AbstractGaugefields} #T_oe xe
-    #temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    #temp = temps[4]
-    #temp1 = temps[1]
-    #temp2 = temps[2]
-    if iseven 
-        isodd = false
-    else
-        isodd  =true
-    end
-
-    #clear_fermion!(temp,isodd)
-    clear_fermion!(xout,isodd)
-    #set_wing_fermion!(x)
-    for ν=1:4
-        
-        xplus = shift_fermion(x,ν)
-        #println(xplus)
-        
-
-        mul!(temp1,U[ν],xplus,isodd)
-       
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1,view(A.rminusγ,:,:,ν),isodd)
-
-        
-
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-
-
-        mul!(temp2,Uminus',xminus,isodd)
-     
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rplusγ,:,:,ν),isodd)
-
-        add_fermion!(xout,A.hopp[ν],temp1,A.hopm[ν],temp2,isodd)
-
-    end
-
-    #clear_fermion!(xout,isodd)
-    #add_fermion!(xout,1,x,-1,temp)
-
-    set_wing_fermion!(xout,A.boundarycondition)
-
-end
 
 function add_fermion!(c::WilsonFermion_4D_mpi{NC,NDW},α::Number,a::T1,β::Number,b::T2,iseven) where {NC,NDW,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
     n1,n2,n3,n4,n5,n6 = size(c.f)
