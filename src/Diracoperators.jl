@@ -165,6 +165,11 @@ function check_parameters(parameters,key,initial)
     return value
 end
 
+function check_important_parameters(parameters,key)
+    @assert haskey(parameters,key) "parameters should have the keyword $key"
+    return parameters[key]
+end
+
 function set_verbose(verbose_level)
     if verbose_level == 1 
         verbose = Verbose_1()
@@ -177,5 +182,7 @@ function set_verbose(verbose_level)
     end 
     return verbose
 end
+
+
 
 end
