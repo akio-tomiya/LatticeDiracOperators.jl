@@ -6,7 +6,12 @@
 
 # This is the package for Lattice QCD codes. 
 
-This will be used in [LatticeQCD.jl](https://github.com/akio-tomiya/LatticeQCD.jl)
+This is a package for lattice QCD codes.
+Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI.
+
+<img src="LQCDjl_block.png" width=300> 
+
+This package will be used in [LatticeQCD.jl](https://github.com/akio-tomiya/LatticeQCD.jl). 
 
 # What this package can do:
 - Constructing actions and its derivative for Staggered Fermion with 1-8 tastes (with the use of the rational HMC technique)
