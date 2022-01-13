@@ -42,6 +42,8 @@ function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         Staggered_Dirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         Wilson_Dirac_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "Wilson_general"
+        Wilson_GeneralDirac_operator(U,x,parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -104,6 +106,7 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
     if A.parent.method_CG == "bicg"
         bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
     elseif A.parent.method_CG == "bicgstab"
+        #println("Adag")
         bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
     elseif A.parent.method_CG == "preconditiond_bicgstab"
         bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
@@ -165,8 +168,14 @@ function check_parameters(parameters,key,initial)
     return value
 end
 
-function check_important_parameters(parameters,key)
-    @assert haskey(parameters,key) "parameters should have the keyword $key"
+function check_important_parameters(parameters,key,sample = nothing)
+    if sample == nothing
+        errstring = ""
+    else
+        errstring = "sample is $sample"
+    end
+
+    @assert haskey(parameters,key) "\"parameters\" should have the keyword $key. $errstring. Now \"parameters\" have $parameters"
     return parameters[key]
 end
 

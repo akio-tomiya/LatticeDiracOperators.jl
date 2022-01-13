@@ -231,8 +231,8 @@ function test1()
     params["κ"] = 0.141139
     params["eps_CG"] = 1.0e-19
     params["verbose_level"] = 3
-    #params["method_CG"] = "preconditiond_bicgstab"
-    params["method_CG"] = "bicgstab"
+    params["method_CG"] = "preconditiond_bicgstab"
+    #params["method_CG"] = "bicgstab"
     #params["method_CG"] = "bicg"
     D = Dirac_operator(U,x,params)
 

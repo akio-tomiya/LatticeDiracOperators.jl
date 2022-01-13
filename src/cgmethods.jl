@@ -57,6 +57,7 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         println_verbose3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
+            println("Converged at $i-th step. eps: $rnorm")
             println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
             println_verbose3(verbose,"--------------------------------------")
             return
@@ -83,8 +84,78 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
-
 function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+    println_verbose3(verbose,"--------------------------------------")
+    println_verbose3(verbose,"bicg-stab method")
+    r = deepcopy(b)
+    temp1 = similar(x)
+    mul!(temp1,A,x)
+    add!(r,-1,temp1)
+
+    rnorm = real(r⋅r)
+
+    if rnorm < eps
+        return
+    end
+
+    rs = deepcopy(r)
+    p = deepcopy(r)
+    Ap = similar(r)
+    s = similar(r)
+    t = similar(r)
+    
+    
+    for i=1:maxsteps
+        c1 = dot(rs,r)
+        mul!(Ap,A,p)
+        c2 = dot(rs,Ap)
+        α = c1/c2
+        #s = r - α*A*p
+        add!(0,s,1,r)
+        add!(s,-α,Ap)
+        mul!(t,A,s)
+        d1 = dot(t,s)
+        d2 = dot(t,t)
+        ω = d1/d2
+
+        #r = (1-ω A)s
+        add!(0,r,1,s)
+        add!(r,-ω,t)
+
+        #x = x + ωs+ αp
+        add!(x,ω,s)
+        add!(x,α,p)
+
+        β = (dot(rs,r)/c1)*(α/ω)
+
+        #p = r + β*(1-ωA)*p
+        add!(β,p,1,r)
+        add!(p,-ω*β,Ap)
+        
+        rnorm = real(r ⋅ r) 
+        println_verbose3(verbose,"$i-th eps: $rnorm")
+
+        if rnorm < eps
+            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose3(verbose,"--------------------------------------")
+            return
+        end
+
+
+
+    end
+
+
+
+    error("""
+    The BICGstab is not converged! with maxsteps = $(maxsteps)
+    residual is $rnorm
+    maxsteps should be larger.""")
+
+
+end
+
+function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
     println_verbose3(verbose,"--------------------------------------")
     println_verbose3(verbose,"bicg-stab method")
     r = deepcopy(b)
@@ -253,7 +324,7 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
-function bicgstab_2(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+function bicgstab_YN(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
     println_verbose3(verbose,"--------------------------------------")
     println_verbose3(verbose,"bicg-stab method")
     r = deepcopy(b)
@@ -325,12 +396,85 @@ function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbo
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
+    #println(dot(temp1,temp1,iseven))
+    add!(r,-1,temp1,iseven)
+
+    rnorm = real(dot(r,r,iseven))
+
+
+    if rnorm < eps
+        return
+    end
+
+    rs = deepcopy(r)
+    p = deepcopy(r)
+    Ap = similar(r)
+    s = similar(r)
+    t = similar(r)
+    
+    
+    for i=1:maxsteps
+        c1 = dot(rs,r,iseven)
+        mul!(Ap,A,p)
+        c2 = dot(rs,Ap,iseven)
+        α = c1/c2
+        #s = r - α*A*p
+        add!(0,s,1,r,iseven)
+        add!(s,-α,Ap,iseven)
+        mul!(t,A,s)
+        d1 = dot(t,s,iseven)
+        d2 = dot(t,t,iseven)
+        ω = d1/d2
+
+        #r = (1-ω A)s
+        add!(0,r,1,s,iseven)
+        add!(r,-ω,t,iseven)
+
+        #x = x + ωs+ αp
+        add!(x,ω,s,iseven)
+        add!(x,α,p,iseven)
+
+        β = (dot(rs,r,iseven)/c1)*(α/ω)
+
+        #p = r + β*(1-ωA)*p
+        add!(β,p,1,r,iseven)
+        add!(p,-ω*β,Ap,iseven)
+        
+        rnorm = real(dot(r,r,iseven)) 
+        println_verbose3(verbose,"$i-th eps: $rnorm")
+
+        if rnorm < eps
+            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose3(verbose,"--------------------------------------")
+            return
+        end
+
+
+
+    end
+
+
+
+    error("""
+    The BICGstab is not converged! with maxsteps = $(maxsteps)
+    residual is $rnorm
+    maxsteps should be larger.""")
+
+
+end
+
+function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+    println_verbose3(verbose,"--------------------------------------")
+    println_verbose3(verbose,"bicg-stab even-odd method")
+    r = deepcopy(b)
+    temp1 = similar(x)
+    mul!(temp1,A,x)
     println(dot(temp1,temp1,iseven))
 
     add!(r,-1,temp1,iseven)
 
     rnorm = real(dot(r,r,iseven))
-    #println(rnorm)
+
 
     if rnorm < eps
         return
@@ -343,11 +487,16 @@ function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbo
     β = 0.0im    
     ω = 0.0im
 
+
+
     for i=0:maxsteps
+
+        #=
         if i != 0
             add!(β,p,1,r,iseven)
             add!(p,-ω*β,Ap,iseven)
         end
+        =#
         c1 = dot(rs,r,iseven)
         mul!(Ap,A,p)
         c2 = dot(rs,Ap,iseven)
@@ -375,6 +524,10 @@ function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbo
 
         β = (α/ω)*dot(rs,r,iseven)/c1
 
+        #if i != 0
+            add!(β,p,1,r,iseven)
+            add!(p,-ω*β,Ap,iseven)
+        #end
     end
 
 

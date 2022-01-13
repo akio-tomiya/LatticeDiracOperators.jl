@@ -327,7 +327,7 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
     temp2 = A._temporary_fermi[2] #temps[2]
 
     #temp = temps[4]
-    #temp1 = temps[1]
+    #temp1 = temps[1]cc
     #temp2 = temps[2]
 
     clear_fermion!(temp)

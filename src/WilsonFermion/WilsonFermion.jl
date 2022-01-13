@@ -1,4 +1,5 @@
 include("./WilsoncloverFermion.jl")
+using Requires
 
 struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
     U::Array{T,1}
@@ -44,14 +45,14 @@ end
 include("./WilsonFermion_4D_wing.jl")
 
 
-#=
+
 function __init__()
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
-        include("./WilsonFermion_4D_mpi.jl")    
+        include("./WilsonFermion_4D_wing_mpi.jl")    
     end
 end
 
-=#
+
 #include("./WilsonFermion_4D_wing_fast.jl")
 
 
@@ -290,3 +291,5 @@ function mk_gamma(r)
 
 
 end
+
+include("./WilsontypeFermion.jl")

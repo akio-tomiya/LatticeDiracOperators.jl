@@ -28,7 +28,21 @@ include("./AbstractFermions_4D.jl")
 function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String) where {NC,Dim}
     mpi = u.mpi
     if mpi
-        error("mpi = $mpi is not supported")
+        if Dim == 4
+            if Dirac_operator == "staggered"
+                error("Dirac_operator  = $Dirac_operator  is not supported")
+                #x = Initialize_StaggeredFermion(u)
+            elseif Dirac_operator == "Wilson"
+                x = WilsonFermion_4D_mpi(u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                #x = Initialize_WilsonFermion(u)
+            else
+                error("Dirac_operator = $Dirac_operator is not supported")
+            end
+        else
+            error("Dim = $Dim is not supported")
+        end
+
+        #error("mpi = $mpi is not supported")
     else
         if Dim == 4
             if Dirac_operator == "staggered"
