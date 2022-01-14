@@ -144,7 +144,7 @@ function test1()
     NX = 4
     NY = 4
     NZ = 4
-    NT = 12
+    NT = 16
     Nwing = 1
     Dim = 4
     NC = 3
@@ -228,12 +228,12 @@ function test1()
     =#
     params = Dict()
     params["Dirac_operator"] = "Wilson"
-    params["κ"] = 0.141139
+    params["κ"] = 0.141139/2
     params["eps_CG"] = 1.0e-19
-    params["verbose_level"] = 3
-    params["method_CG"] = "preconditiond_bicgstab"
+    params["verbose_level"] = 2
+    #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
-    #params["method_CG"] = "bicg"
+    params["method_CG"] = "bicg"
     D = Dirac_operator(U,x,params)
 
 

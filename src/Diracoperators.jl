@@ -1,8 +1,11 @@
 module Dirac_operators
 
 import Gaugefields:AbstractGaugefields,Abstractfields,CovNeuralnet,shift_U,clear_U!,set_wing_U!,add_U!
-import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
+#import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
+#import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 using LinearAlgebra
+import Gaugefields.Verboseprint_mpi:Verbose_print,println_verbose_level1,println_verbose_level2,println_verbose_level3
+
 
 include("./cgmethods.jl")
 
@@ -21,11 +24,21 @@ end
 abstract type Adjoint_Dirac_operator <: Operator
 end
 
+
 function Base.adjoint(A::Dirac_operator{Dim} ) where Dim
     error("Base.adjoint(A::T)  is not implemented in type $(typeof(A))")
 end
 
 Base.adjoint(A::Adjoint_Dirac_operator) = A.parent
+
+
+function get_temporaryvectors_forCG(A::T) where T <: Dirac_operator
+    return A._temporary_fermion_forCG
+end
+
+function get_temporaryvectors_forCG(A::T) where T <: Adjoint_Dirac_operator
+    return A.parent._temporary_fermion_forCG
+end
 
 const default_eps_CG = 1e-19
 const default_MaxCGstep = 3000
@@ -60,6 +73,9 @@ function DdagD_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
     end
 end
 
+function get_temporaryvectors_forCG(A::T) where T <: DdagD_operator
+    return A.dirac._temporary_fermion_forCG
+end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}
     error("solve_DinvX!(y,A,x) (y = A^{-1} x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
@@ -67,10 +83,10 @@ end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
     if A.method_CG == "bicg"
-        bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        bicg(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print)#set_verbose(A.verbose_level)) 
         set_wing_fermion!(y,A.boundarycondition)
     elseif A.method_CG == "bicgstab"
-        bicgstab(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        bicgstab(y,A,x;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print) 
         set_wing_fermion!(y,A.boundarycondition)
     elseif A.method_CG == "preconditiond_bicgstab"
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
@@ -84,7 +100,7 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
 
         #bout = x
         #bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
-        bicgstab_evenodd(y,WW,bout,iseven;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
+        bicgstab_evenodd(y,WW,bout,iseven;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print)
         Tx = A._temporary_fermi[6]
         set_wing_fermion!(y,A.boundarycondition,iseven)
 
@@ -104,12 +120,12 @@ end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Adjoint_Dirac_operator, T3 <: AbstractFermionfields}
     if A.parent.method_CG == "bicg"
-        bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+        bicg(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose_print)
     elseif A.parent.method_CG == "bicgstab"
         #println("Adag")
-        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose_print) 
     elseif A.parent.method_CG == "preconditiond_bicgstab"
-        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = set_verbose(A.parent.verbose_level)) 
+        bicgstab(y,A,x;eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose_print)
         #=
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
         WWdag = Wilson_Dirac_operator_evenodd(A.parent)'
@@ -140,7 +156,7 @@ end
 using InteractiveUtils
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  DdagD_operator, T3 <: AbstractFermionfields}
-    cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = set_verbose(A.dirac.verbose_level))  
+    cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = A.dirac.verbose_print)  
     set_wing_fermion!(y,A.dirac.boundarycondition)
 end
 

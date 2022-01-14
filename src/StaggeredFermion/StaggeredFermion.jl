@@ -7,6 +7,8 @@ struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <
     MaxCGstep::Int64
     verbose_level::Int8
     method_CG::String
+    verbose_print::Verbose_print
+    _temporary_fermion_forCG::Vector{fermion}
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
@@ -32,24 +34,22 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
         _temporary_fermi[i] = similar(x)
     end
 
-    if verbose_level == 1 
-        verbose = Verbose_1()
-    elseif verbose_level == 2
-        verbose = Verbose_2()
-    elseif verbose_level == 3
-        verbose = Verbose_3()
-    else
-        error("verbose_level = $verbose_level is not supported")
-    end 
+    numcg = 7
+    _temporary_fermion_forCG= Array{xtype,1}(undef,numcg)
+    for i=1:numcg
+        _temporary_fermion_forCG[i] = similar(x)
+    end
+
+    verbose_print = Verbose_print(verbose_level)
 
     return Staggered_Dirac_operator{Dim,eltype(U),xtype }(U,boundarycondition,mass,_temporary_fermi,
-        eps_CG,MaxCGstep,verbose_level,method_CG)
+        eps_CG,MaxCGstep,verbose_level,method_CG,verbose_print,_temporary_fermion_forCG)
 end
 
 function (D::Staggered_Dirac_operator{Dim,T,fermion })(U) where {Dim,T,fermion}
     return Staggered_Dirac_operator{Dim,T,fermion}(
         U,D.boundarycondition,D.mass,D._temporary_fermi,D.eps_CG,D.MaxCGstep,D.verbose_level,
-        D.method_CG)
+        D.method_CG,D.verbose_print,D._temporary_fermion_forCG)
 end
 
 struct DdagD_Staggered_operator{Dim,T,fermion} <: DdagD_operator 

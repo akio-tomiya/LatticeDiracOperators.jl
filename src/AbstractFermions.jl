@@ -17,6 +17,10 @@ function Base.adjoint(F::T) where T <: Abstractfermion
     Adjoint_fermionfields{T}(F)
 end
 
+
+
+
+
 abstract type Shifted_fermionfields{NC,Dim} <: Abstractfermion
 end
 

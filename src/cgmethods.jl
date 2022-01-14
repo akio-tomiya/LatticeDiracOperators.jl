@@ -1,6 +1,8 @@
 using LinearAlgebra
-import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
+#import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose_level3
 using InteractiveUtils
+import Gaugefields.Verboseprint_mpi:Verbose_print,println_verbose_level1,println_verbose_level2,println_verbose_level3
+
 
 function add!(b,Y,a,X) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a,X,b,Y) #X*a + Y*b -> Y
@@ -21,9 +23,11 @@ end
 
 
 
-function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg method")
+function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    #println_verbose_level3()
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg method")
+    #=
     res = deepcopy(b)
     temp1 = similar(x)
     p = similar(x)
@@ -32,9 +36,22 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
     mul!(temp1,A,x)
     add!(res,-1,temp1)
+    =#
+
+    
+    temps = get_temporaryvectors_forCG(A)
+    res = temps[1]
+    substitute_fermion!(res,b)
+    temp1 = temps[2]
+    mul!(temp1,A,x)
+    add!(res,-1,temp1)
+    p = temps[4]
+    q = temps[5]
+    s = temps[6]
+    
+
 
     rnorm = real(res⋅res)
-
     if rnorm < eps
         return
     end
@@ -54,12 +71,12 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         #...  res = res - alpha * q 
         add!(res,-alpha,q)
         rnorm = real(res ⋅ res) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println("Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            #println("Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -84,25 +101,48 @@ function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
-function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg-stab method")
+function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg-stab method")
+
+    #=
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
     add!(r,-1,temp1)
-
-    rnorm = real(r⋅r)
-
-    if rnorm < eps
-        return
-    end
 
     rs = deepcopy(r)
     p = deepcopy(r)
     Ap = similar(r)
     s = similar(r)
     t = similar(r)
+    =#
+    
+
+    
+    temps = get_temporaryvectors_forCG(A)
+    r = temps[1]
+    substitute_fermion!(r,b)
+    temp1 = temps[2]
+    mul!(temp1,A,x)
+    add!(r,-1,temp1)
+
+    rs = temps[3]
+    substitute_fermion!(rs,r)
+    p = temps[4]
+    substitute_fermion!(p,r)
+    Ap = temps[5]
+    s = temps[6]
+    t = temps[7]
+    
+    
+
+
+    rnorm = real(r⋅r)
+
+    if rnorm < eps
+        return
+    end
     
     
     for i=1:maxsteps
@@ -133,11 +173,11 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         add!(p,-ω*β,Ap)
         
         rnorm = real(r ⋅ r) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -155,9 +195,9 @@ function bicgstab(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
-function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg-stab method")
+function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg-stab method")
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
@@ -205,11 +245,11 @@ function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 
         rnorm = real(r ⋅ r) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
     end
@@ -255,11 +295,11 @@ function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         add!(r,-ωm,t)
 
         rnorm = real(r ⋅ r) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
     end
@@ -295,8 +335,8 @@ function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         rnorm = real(dot(s,s))
         if rnorm < eps
             add!(x,α,p)
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             
             return
         end
@@ -324,9 +364,9 @@ function bicgstab_3(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
 
 end
 
-function bicgstab_YN(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg-stab method")
+function bicgstab_YN(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg-stab method")
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
@@ -367,11 +407,11 @@ function bicgstab_YN(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=
         add!(r,-ω,As)
 
         rnorm = real(r ⋅ r) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -390,9 +430,9 @@ function bicgstab_YN(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=
 
 end
 
-function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg-stab even-odd method")
+function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg-stab even-odd method")
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
@@ -441,11 +481,11 @@ function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbo
         add!(p,-ω*β,Ap,iseven)
         
         rnorm = real(dot(r,r,iseven)) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -463,22 +503,15 @@ function bicgstab_evenodd(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbo
 
 end
 
-function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"bicg-stab even-odd method")
+function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"bicg-stab even-odd method")
+
     r = deepcopy(b)
     temp1 = similar(x)
     mul!(temp1,A,x)
     println(dot(temp1,temp1,iseven))
-
     add!(r,-1,temp1,iseven)
-
-    rnorm = real(dot(r,r,iseven))
-
-
-    if rnorm < eps
-        return
-    end
     rs = deepcopy(r)
     p = deepcopy(r)
     s = similar(r)
@@ -486,6 +519,15 @@ function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Ve
     As = similar(x)
     β = 0.0im    
     ω = 0.0im
+
+
+
+
+    rnorm = real(dot(r,r,iseven))
+    if rnorm < eps
+        return
+    end
+
 
 
 
@@ -514,11 +556,11 @@ function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Ve
         add!(r,-ω,As,iseven)
 
         rnorm = real(dot(r,r,iseven)) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
 
         if rnorm < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -541,17 +583,38 @@ function bicgstab_evenodd_YN(x,A,b,iseven;eps=1e-10,maxsteps = 1000,verbose = Ve
 
 end
 
-function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"cg method")
+function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    temps = get_temporaryvectors_forCG(A)
+
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"cg method")
+
+    #=
     res = deepcopy(b)
     temp1 = similar(x)
-    
-    q = similar(x)
-
     mul!(temp1,A,x)
     add!(res,-1,temp1)
+    q = similar(x)
     p = deepcopy(res)
+    =#
+
+        
+    res = temps[1]
+    substitute_fermion!(res,b)
+    temp1 = temps[2]
+    mul!(temp1,A,x)
+    add!(res,-1,temp1)
+    q = temps[3]
+    p = temps[4]
+    substitute_fermion!(p,res)
+
+    
+    
+    
+    
+
+
+    #p = deepcopy(res)
 
     rnorm = real(res⋅res)
     #println(rnorm)
@@ -576,14 +639,14 @@ function cg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         add!(res,-α,q)
         c3 = res ⋅ res
         rnorm = real(c3) 
-        println_verbose3(verbose,"$i-th eps: $rnorm")
+        println_verbose_level3(verbose,"$i-th eps: $rnorm")
         
         
 
         if rnorm < eps
             #println("$i eps: $eps rnorm $rnorm")
-            println_verbose3(verbose,"Converged at $i-th step. eps: $rnorm")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $rnorm")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -610,10 +673,10 @@ end
 
 
 
-function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
     
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"shifted cg method")
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"shifted cg method")
     N = length(vec_β)
     temp1 = similar(b)
     r = deepcopy(b)
@@ -677,11 +740,11 @@ function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbos
 
         ρMAX = maximum(abs.(ρp))^2
         residual = abs(rr*ρMAX)
-        println_verbose3(verbose,"$i-th eps: $residual")
+        println_verbose_level3(verbose,"$i-th eps: $residual")
 
         if abs(residual) < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $residual")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $residual")
+            println_verbose_level3(verbose,"--------------------------------------")
             return
         end
 
@@ -697,9 +760,9 @@ function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbos
 
 end
 
-function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
-    println_verbose3(verbose,"--------------------------------------")
-    println_verbose3(verbose,"shifted cg method")
+function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"shifted cg method")
     N = length(vec_β)
     temp1 = similar(b)
     r = deepcopy(b)
@@ -776,11 +839,11 @@ function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose
 
         ρMAX = maximum(abs.(ρp))^2
         residual = abs(rr*ρMAX)
-        println_verbose3(verbose,"$i-th eps: $residual")
+        println_verbose_level3(verbose,"$i-th eps: $residual")
 
         if abs(residual) < eps
-            println_verbose3(verbose,"Converged at $i-th step. eps: $residual")
-            println_verbose3(verbose,"--------------------------------------")
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $residual")
+            println_verbose_level3(verbose,"--------------------------------------")
             return θ
         end
 

@@ -5,7 +5,7 @@ function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
     Uold = similar(U)
     substitute_U!(Uold,U)
-    MDsteps = 100
+    MDsteps = 20
     temp1 = similar(U[1])
     temp2 = similar(U[1])
     comb = 6
@@ -18,9 +18,10 @@ function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
         numaccepted += ifelse(accepted,1,0)
 
         plaq_t = calculate_Plaquette(U,temp1,temp2)*factor
-        println("$itrj plaq_t = $plaq_t")
-        println("acceptance ratio ",numaccepted/itrj)
+        println_verbose_level1(U[1],"$itrj plaq_t = $plaq_t")
+        println_verbose_level1(U[1],"acceptance ratio ",numaccepted/itrj)
     end
+    @test numaccepted/numtrj > 0.7
 end
 
 function calc_action(gauge_action,U,p)
@@ -40,7 +41,8 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     gauss_sampling_in_action!(ξ,U,fermi_action)
     sample_pseudofermions!(η,U,fermi_action,ξ)
     Sfold = real(dot(ξ,ξ))
-    println("Sfold = $Sfold")
+    println_verbose_level2(U[1],"Sfold = $Sfold")
+    #println("Sfold = $Sfold")
 
     Sold = calc_action(gauge_action,U,p) + Sfold
 
@@ -53,11 +55,14 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
     end
     Sfnew = evaluate_FermiAction(fermi_action,U,η)
-    println("Sfnew = $Sfnew")
+    println_verbose_level2(U[1],"Sfnew = $Sfnew")
+    #println("Sfnew = $Sfnew")
     Snew = calc_action(gauge_action,U,p) + Sfnew
     
-    println("Sold = $Sold, Snew = $Snew")
-    println("Snew - Sold = $(Snew-Sold)")
+    println_verbose_level2(U[1],"Sold = $Sold, Snew = $Snew")
+    #println("Sold = $Sold, Snew = $Snew")
+    println_verbose_level2(U[1],"Snew - Sold = $(Snew-Sold)")
+    #println("Snew - Sold = $(Snew-Sold)")
     accept = exp(Sold - Snew) >= rand()
 
     #ratio = min(1,exp(Snew-Sold))
@@ -139,17 +144,17 @@ function test1()
     D = Dirac_operator(U,x,params)
 
     Nf = 2
+    for Nf  in [8,4,2]
+        println("Nf = $Nf")
+        parameters_action = Dict()
+        parameters_action["Nf"] = Nf
+        fermi_action = FermiAction(D,parameters_action)
+        gauss_sampling_in_action!(x,U,fermi_action)
+        println("Sfold = ", dot(x,x))
+        y = similar(x)
 
-    println("Nf = $Nf")
-    parameters_action = Dict()
-    parameters_action["Nf"] = Nf
-    fermi_action = FermiAction(D,parameters_action)
-    gauss_sampling_in_action!(x,U,fermi_action)
-    println("Sfold = ", dot(x,x))
-    y = similar(x)
-
-    
-    MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+        MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+    end
 
 end
 

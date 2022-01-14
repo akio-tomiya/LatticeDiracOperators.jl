@@ -1,6 +1,7 @@
 
 using LinearAlgebra
-import Gaugefields:Verbose_3
+using LatticeDiracOperators
+
 function test_staggered()
     NX=4
     NY=4
@@ -92,10 +93,10 @@ function test_wilson()
         y2 = deepcopy(y)
 
         println("BICG")
-        @time bicg(y1,D,x,verbose = Verbose_3())
+        @time bicg(y1,D,x, verbose = Verbose_print(3))
         println(dot(y1,y1))
         println("BICGstab")
-        @time bicgstab(y2,D,x,verbose = Verbose_3())
+        @time bicgstab(y2,D,x,verbose = Verbose_print(3))
         println(dot(y2,y2))
     end
 

@@ -52,6 +52,23 @@ function clear_fermion!(a::AbstractFermionfields_4D{NC}) where NC
 end
 
 
+function substitute_fermion!(a::AbstractFermionfields_4D{NC},b::AbstractFermionfields_4D{NC}) where NC 
+    n1,n2,n3,n4,n5,n6 = size(a.f)
+    @inbounds for i6=1:n6
+        for i5=1:n5
+            for i4=1:n4
+                for i3=1:n3
+                    for i2=1:n2
+                        @simd for i1=1:NC
+                            a.f[i1,i2,i3,i4,i5,i6]= b.f[i1,i2,i3,i4,i5,i6]
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 
 
 

@@ -112,7 +112,7 @@ uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 
 [[Gaugefields]]
 deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JLD2", "LinearAlgebra", "Random", "Requires", "Wilsonloop"]
-git-tree-sha1 = "c2d066566424ffbab9146e525cda3e3d9400e9c9"
+git-tree-sha1 = "34ee4b0792ce102c50bbd064241cdaecaa8cf2eb"
 repo-rev = "master"
 repo-url = "https://github.com/akio-tomiya/Gaugefields.jl"
 uuid = "a461e10c-0d91-493e-bc41-027b226eee91"

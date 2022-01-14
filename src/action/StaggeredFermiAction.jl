@@ -87,7 +87,7 @@ function evaluate_FermiAction(fermi_action::StaggeredFermiAction{Dim,Dirac,fermi
     vec_β = get_β_inverse(rhmc)
     vec_α = get_α_inverse(rhmc)
     α0 = get_α0_inverse(rhmc)
-    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = set_verbose(W.verbose_level))
+    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose_print)
     clear_fermion!(x)
     add_fermion!(x,α0,ϕ)
     for j=1:N
@@ -162,7 +162,7 @@ function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::Stagge
     α0 = get_α0(rhmc)
     #set_wing_fermion!(ξ)
 
-    shiftedcg(vec_x,vec_β,x,WdagW,ξ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = set_verbose(W.verbose_level))
+    shiftedcg(vec_x,vec_β,x,WdagW,ξ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose_print)
     clear_fermion!(ϕ)
     add_fermion!(ϕ,α0,ξ)
     for j=1:N
@@ -193,7 +193,7 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Stagg
     vec_α = get_α_inverse(rhmc)
     #α0 = get_α0_inverse(rhmc)
 
-    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = set_verbose(W.verbose_level))
+    shiftedcg(vec_x,vec_β,x,WdagW,ϕ,eps = W.eps_CG,maxsteps= W.MaxCGstep, verbose = W.verbose_print)
 
     for j=1:N
         set_wing_fermion!(vec_x[j])

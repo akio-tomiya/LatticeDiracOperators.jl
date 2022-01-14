@@ -1,7 +1,10 @@
+
 using Gaugefields
 using LinearAlgebra
 using InteractiveUtils
 using Random
+using LatticeDiracOperators
+import Gaugefields:Initialize_4DGaugefields
 
 function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
@@ -23,9 +26,12 @@ function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
         numaccepted += ifelse(accepted,1,0)
 
         plaq_t = calculate_Plaquette(U,temp1,temp2)*factor
-        println("$itrj plaq_t = $plaq_t")
-        println("acceptance ratio ",numaccepted/itrj)
+        println_verbose_level1(U[1],"$itrj plaq_t = $plaq_t")
+        println_verbose_level1(U[1],"acceptance ratio ",numaccepted/itrj)
+        #println("$itrj plaq_t = $plaq_t")
+        #println("acceptance ratio ",numaccepted/itrj)
     end
+    @test numaccepted/numtrj > 0.8
 end
 
 function calc_action(gauge_action,U,p)
@@ -41,11 +47,13 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     Δτ = 1/MDsteps
     NC,_,NN... = size(U[1])
     
+    
     for μ=1:Dim
         pwork = gauss_distribution(prod(NN)*(NC^2-1))
         substitute_U!(p[μ],pwork)
     end
-    println(p[1][1,1,1,1,1,1])
+    
+    #println(p[1][1,1,1,1,1,1])
 
     #gauss_distribution!(p)
     
@@ -53,30 +61,36 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
     gauss_sampling_in_action!(ξ,U,fermi_action)
     sample_pseudofermions!(η,U,fermi_action,ξ)
     Sfold = real(dot(ξ,ξ))
-    println("Sfold = $Sfold")
+    println_verbose_level2(U[1],"Sfold = $Sfold")
+
+    #println("Sfold = $Sfold")
 
     #@code_warntype calc_action(gauge_action,U,p) 
 
     Sold = calc_action(gauge_action,U,p) + Sfold
-    println("Sold = ",Sold)
+    println_verbose_level2(U[1],"Sold = ",Sold)
+    #println("Sold = ",Sold)
 
     for itrj=1:MDsteps
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
 
         P_update!(U,p,1.0,Δτ,Dim,gauge_action)
-        println(" U1 = ", U[1][1,1,1,1,1,1])
-                println(" p = ", p[1][1,1,1,1,1])
+        #println(" U1 = ", U[1][1,1,1,1,1,1])
+        #        println(" p = ", p[1][1,1,1,1,1])
         P_update_fermion!(U,p,1.0,Δτ,Dim,gauge_action,fermi_action,η)
         #error("dd")
 
         U_update!(U,p,0.5,Δτ,Dim,gauge_action)
     end
     Sfnew = evaluate_FermiAction(fermi_action,U,η)
-    println("Sfnew = $Sfnew")
+    println_verbose_level2(U[1],"Sfnew = $Sfnew")
+    #println("Sfnew = $Sfnew")
     Snew = calc_action(gauge_action,U,p) + Sfnew
     
-    println("Sold = $Sold, Snew = $Snew")
-    println("Snew - Sold = $(Snew-Sold)")
+    println_verbose_level2(U[1],"Sold = $Sold, Snew = $Snew")
+    #println("Sold = $Sold, Snew = $Snew")
+    println_verbose_level2(U[1],"Snew - Sold = $(Snew-Sold)")
+    #println("Snew - Sold = $(Snew-Sold)")
 
     accept = exp(Sold - Snew) >= rand()
 
@@ -123,12 +137,15 @@ function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,fermi_action,η)  # p ->
     UdSfdUμ = temps[1:Dim]
     factor =  -ϵ*Δτ
 
+    #calc_p_UdSfdU!(p,fermi_action,U,η,factor)
+
     calc_UdSfdU!(UdSfdUμ,fermi_action,U,η)
 
     for μ=1:Dim
         Traceless_antihermitian_add!(p[μ],factor,UdSfdUμ[μ])
-        println(" p[μ] = ", p[μ][1,1,1,1,1])
+        #println(" p[μ] = ", p[μ][1,1,1,1,1])
     end
+    
 end
 
 function test1()
@@ -152,92 +169,23 @@ function test1()
     
     show(gauge_action)
 
-    #Initialize_4DWilsonFermion(U[1])
-    #error("init")
-    #@code_warntype Initialize_pseudofermion_fields(U[1],"Wilson")
-    #error("init")
-    
-    params = Dict()
-    params["Dirac_operator"] = "Wilson"
-    params["κ"] = 0.141139
-    params["eps_CG"] = 1.0e-8
-    params["verbose_level"] = 2
-    #x = Initialize_pseudofermion_fields(U[1],params)
-
-    x = Initialize_4DWilsonFermion(U[1])#Initialize_pseudofermion_fields(U[1],"Wilson")
-    xplus = shift_fermion(x,1)
-    
-
-    #=
-    ix = 1
-    iy = 1
-    iz = 1
-    it = 1
-    ialpha  =1
-    xplus[1,ix,iy,iz,it,ialpha]
-    println("dd")
-
-    @inbounds for ix= 1:2
-         @code_llvm x.f[1,ix,iy,iz,it,ialpha]
-    end
-
-    vv = rand(ComplexF64,2,2,2,2,2,2)
-    @inbounds for ix= 1:2
-        @code_llvm vv[1,ix,iy,iz,it,ialpha]
-    end
-
-    #error("err")
-    @code_warntype shift_fermion(x,1)
-    #error("2")
-    ix = 1
-    iy = 1
-    iz = 1
-    it = 1
-    ialpha  =1
-
-    =#
-    #=
-    @time @inbounds x.f[1,ix,iy,iz,it,ialpha]
-    @code_llvm   @inbounds x.f[1,ix,iy,iz,it,ialpha]
-    println("dd")
-    @code_lowered   Base.getindex(x,1,ix,iy,iz,it,ialpha)
-    println("dt")
-    println(x[1,ix,iy,iz,it,ialpha])
-    @code_llvm   @inbounds  x[1,ix,iy,iz,it,ialpha]
-
-    @code_llvm  x[1,ix,iy,iz,it,ialpha]
-
-    @code_llvm xplus[1,ix,iy,iz,it,ialpha]
-    println(xplus[1,ix,iy,iz,it,ialpha])
-    @code_llvm xplus[1,ix,iy,iz,it,ialpha]
-
-    @code_warntype xplus[1,ix,iy,iz,it,ialpha]
-
-    @time xplus[1,ix,iy,iz,it,ialpha]
-    for ix = 1:4
-        @time xplus.parent[1,ix,iy,iz,it,ialpha]
-       # @time xplus[1,ix,iy,iz,it,ialpha]
-    end
-    #error("dd")
-    #return 
-    =#
+    x = Initialize_pseudofermion_fields(U[1],"Wilson")
 
 
     params = Dict()
     params["Dirac_operator"] = "Wilson"
-    params["κ"] = 0.141139
-    params["eps_CG"] = 1.0e-8
+    params["κ"] = 0.141139/2
+    params["eps_CG"] = 1.0e-19
     params["verbose_level"] = 2
+    #params["method_CG"] = "preconditiond_bicgstab"
+    #params["method_CG"] = "bicgstab"
+    params["method_CG"] = "bicg"
     D = Dirac_operator(U,x,params)
-
 
     parameters_action = Dict()
     fermi_action = FermiAction(D,parameters_action)
-    #gauss_sampling_in_action!(x,U,fermi_action)
-    #println("Sfold = ", dot(x,x))
     y = similar(x)
 
-    
     MDtest!(gauge_action,U,Dim,fermi_action,x,y)
 
 end

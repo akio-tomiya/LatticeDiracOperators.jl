@@ -17,6 +17,8 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: A
     verbose_level::Int8
     method_CG::String
     cloverterm::Union{Nothing,WilsonClover}
+    verbose_print::Verbose_print
+    _temporary_fermion_forCG::Vector{fermion}
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
@@ -77,11 +79,19 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         _temporary_fermi[i] = similar(x)
     end
 
+    numcg = 7
+    _temporary_fermion_forCG= Array{xtype,1}(undef,numcg)
+    for i=1:numcg
+        _temporary_fermion_forCG[i] = similar(x)
+    end
+
+
     eps_CG = check_parameters(parameters,"eps_CG",default_eps_CG)
     #println("eps_CG = ",eps_CG)
     MaxCGstep = check_parameters(parameters,"MaxCGstep",default_MaxCGstep)
 
     verbose_level = check_parameters(parameters,"verbose_level",2)
+    verbose_print = Verbose_print(verbose_level)
 
     method_CG = check_parameters(parameters,"method_CG","bicg")
 
@@ -89,16 +99,6 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
     for i=1:num
         _temporary_fermi[i] = similar(x)
     end
-
-    if verbose_level == 1 
-        verbose = Verbose_1()
-    elseif verbose_level == 2
-        verbose = Verbose_2()
-    elseif verbose_level == 3
-        verbose = Verbose_3()
-    else
-        error("verbose_level = $verbose_level is not supported")
-    end 
 
     hasclover = check_parameters(parameters,"hasclover",false)
     if hasclover
@@ -118,7 +118,9 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         hopm,
         eps_CG,MaxCGstep,verbose_level,
         method_CG,
-        cloverterm
+        cloverterm,
+        verbose_print,
+        _temporary_fermion_forCG
         )
 end
 
@@ -133,7 +135,9 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.hopm,
         D.eps_CG,D.MaxCGstep,D.verbose_level,
         D.method_CG,
-        D.cloverterm
+        D.cloverterm,
+        D.verbose_print,
+        D._temporary_fermion_forCG
         )
 end
 
