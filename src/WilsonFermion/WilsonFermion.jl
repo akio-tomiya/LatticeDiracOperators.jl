@@ -43,6 +43,17 @@ struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator
     end
 end
 
+struct γ5D_Wilson_operator{Dim,T,fermion} <: γ5D_operator
+    dirac::Wilson_Dirac_operator{Dim,T,fermion}
+    function γ5D_Wilson_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where  {NC,Dim}
+        return new{Dim,eltype(U),typeof(x)}(Wilson_Dirac_operator(U,x,parameters))
+    end
+
+    function γ5D_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
+        return new{Dim,T,fermion}(D)
+    end
+end
+
 
 include("./WilsonFermion_4D_wing.jl")
 

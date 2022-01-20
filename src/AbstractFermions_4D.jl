@@ -18,6 +18,47 @@ function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_
     @inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
 end
 
+@inline function get_latticeindex_fermion(i,NC,NX,NY,NZ,NT)
+    #i =(((((ig-1)*NT+it-1)*NZ+iz-1)*NY+iy-1)*NX+ix-1)*NC+ic
+    ic = (i-1) % NC + 1
+    ii = div(i-ic,NC)
+    #ii = (((ig-1)*NT+it-1)*NZ+iz-1)*NY+iy-1)*NX+ix-1
+    ix = ii % NX + 1
+    ii = div(ii-(ix-1),NX)
+    #ii = ((ig-1)*NT+it-1)*NZ+iz-1)*NY+iy-1
+    iy = ii % NY + 1
+    ii = div(ii-(iy-1),NY)
+    #ii = ((ig-1)*NT+it-1)*NZ+iz-1
+    iz = ii % NZ + 1
+    ii = div(ii-(iz-1),NZ)
+    #ii = (ig-1)*NT+it-1
+    it = ii % NT + 1
+    ig = div(ii-(it-1),NT) + 1
+    return ic,ix,iy,iz,it,ig        
+end
+
+Base.length(x::T) where T <: AbstractFermionfields_4D = x.NC*x.NX*x.NY*x.NZ*x.NT*x.NG
+
+function Base.iterate(x::T,state = 1) where T <: AbstractFermionfields_4D
+    if state > length(x)
+        return nothing
+    end
+    
+    return (x[state],state+1)
+end
+
+
+function Base.setindex!(x::T,v,i)  where T <: AbstractFermionfields_4D
+    ic,ix,iy,iz,it,ig  = get_latticeindex_fermion(i,x.NC,x.NX,x.NY,x.NZ,x.NT)
+    @inbounds x[ic,ix,iy,iz,it,ig] = v
+end
+
+function Base.getindex(x::T,i) where T <: AbstractFermionfields_4D
+    ic,ix,iy,iz,it,ig  = get_latticeindex_fermion(i,x.NC,x.NX,x.NY,x.NZ,x.NT)
+    @inbounds return x[ic,ix,iy,iz,it,ig]
+end
+
+
 
 function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion  #F'
     @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
@@ -25,6 +66,14 @@ end
 
 function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfermion 
     error("type $(typeof(F)) has no setindex method. This type is read only.")
+end
+
+function Base.setindex!(x::Adjoint_fermionfields{T},v,i)  where T <: Abstractfermion
+    error("type $(typeof(x)) has no setindex method. This type is read only.")
+end
+
+function Base.getindex(x::Adjoint_fermionfields{T},i)  where T <: Abstractfermion 
+    @inbounds return conj(x.parent[i])
 end
 
 
@@ -686,6 +735,51 @@ function LinearAlgebra.axpby!(a::Number, X::T, b::Number, Y::AbstractFermionfiel
             end
         end
     end
+    return Y
+end
+
+function LinearAlgebra.axpy!(a::Number, X::T, Y::AbstractFermionfields_4D{NC}) where {NC,T <: AbstractFermionfields_4D}
+    LinearAlgebra.axpby!(a,X,1,Y)
+    return Y
+end
+
+function Base.:*(a::Number,x::AbstractFermionfields_4D{NC}) where {NC}
+    y = similar(x)
+    n1,n2,n3,n4,n5,n6 = size(y.f)
+
+    @inbounds for i6=1:n6
+        for i5=1:n5
+            for i4=1:n4
+                for i3=1:n3
+                    for i2=1:n2
+                        @simd for i1=1:NC
+                            y.f[i1,i2,i3,i4,i5,i6] = a*x.f[i1,i2,i3,i4,i5,i6] 
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return y
+end
+
+function LinearAlgebra.rmul!(x::AbstractFermionfields_4D{NC},a::Number) where {NC}
+    n1,n2,n3,n4,n5,n6 = size(x.f)
+
+    @inbounds for i6=1:n6
+        for i5=1:n5
+            for i4=1:n4
+                for i3=1:n3
+                    for i2=1:n2
+                        @simd for i1=1:NC
+                            x.f[i1,i2,i3,i4,i5,i6] = a*x.f[i1,i2,i3,i4,i5,i6] 
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return x
 end
 
 
@@ -805,6 +899,120 @@ end
 function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc) where NC
     σ = 1
     gauss_distribution_fermion!(x,randomfunc,σ)
+end
+
+function Z2_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    for mu = 1:n6
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ic=1:NC
+                            x[ic,ix,iy,iz,it,mu] = rand([-1,1])
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    set_wing_fermion!(x)
+
+    return
+end
+
+function uniform_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    for mu = 1:n6
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ic=1:NC
+                            x[ic,ix,iy,iz,it,mu] = rand()*2 - 1 #each element should be in (-1,1)   
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    set_wing_fermion!(x)
+
+    return
+end
+
+function fermion2vector!(vector,x::AbstractFermionfields_4D{NC}) where NC
+    vector .= 0
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    count = 0
+    for mu = 1:n6
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ic=1:NC
+                            count += 1
+                            vector[count] = x[ic,ix,iy,iz,it,mu] 
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+end
+
+function fermions2vectors!(vector,x::Vector{<: AbstractFermionfields_4D{NC}}) where NC
+    M = length(x)
+    n,m = size(vector)
+    @assert M == m
+
+    vector .= 0
+    NX = x[1].NX
+    NY = x[1].NY
+    NZ = x[1].NZ
+    NT = x[1].NT
+    n6 = size(x[1].f)[6]
+    #σ = sqrt(1/2)
+
+    for im = 1:M
+        count = 0
+        for mu = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                count += 1
+                                vector[count,im] = x[im][ic,ix,iy,iz,it,mu] 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
 end
 
 

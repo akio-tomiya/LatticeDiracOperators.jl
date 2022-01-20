@@ -37,6 +37,10 @@ struct WilsonFermion_4D_wing{NC,NDW} <: AbstractFermionfields_4D{NC}
 
 end
 
+function Base.length(x::WilsonFermion_4D_wing{NC,NDW}) where {NC,NDW}
+    return NC*x.NX*x.NY*x.NZ*x.NT*x.NG
+end
+
 function Base.setindex!(x::WilsonFermion_4D_wing{NC,NDW},v,i1,i2,i3,i4,i5,i6)  where {NC,NDW}
     @inbounds x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6] = v
 end
@@ -48,6 +52,7 @@ end
 function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1::N,i2::N,i3::N,i4::N,i5::N,i6::N) where {NC,NDW,N<: Integer}
     @inbounds return  x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
 end
+
 
 
 #=
@@ -1119,6 +1124,26 @@ c                  (       +1 )
 c--------------------------------------------------------------------------c
     """
     function mul_γ5x!(y::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC}) where NC
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        @inbounds for i6=1:n6
+            for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for ic=1:NC
+                                y.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        #=
         NX = x.NX
         NY = x.NY
         NZ = x.NZ
@@ -1138,4 +1163,31 @@ c--------------------------------------------------------------------------c
                 end
             end
         end
+        =#
+
+
+    end
+
+    function apply_γ5!(x::WilsonFermion_4D_wing{NC}) where NC
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        @inbounds for i6=1:n6
+            for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for ic=1:NC
+                                x.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
     end

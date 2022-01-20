@@ -28,6 +28,10 @@ function Base.size(x::StaggeredFermion_4D_wing{NC}) where NC
     return (x.NV,)
 end
 
+function Base.length(x::StaggeredFermion_4D_wing{NC}) where {NC}
+    return NC*x.NX*x.NY*x.NZ*x.NT*x.NG
+end
+
 function Base.similar(x::T) where T <: StaggeredFermion_4D_wing
     return StaggeredFermion_4D_wing(x.NC,x.NX,x.NY,x.NZ,x.NT)
 end

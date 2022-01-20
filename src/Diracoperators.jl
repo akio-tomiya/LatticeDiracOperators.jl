@@ -5,9 +5,10 @@ import Gaugefields:AbstractGaugefields,Abstractfields,CovNeuralnet,shift_U,clear
 #import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 using LinearAlgebra
 import Gaugefields.Verboseprint_mpi:Verbose_print,println_verbose_level1,println_verbose_level2,println_verbose_level3
-
+using SparseArrays
 
 include("./cgmethods.jl")
+include("./SakuraiSugiura/SakuraiSugiuramethod.jl")
 
 abstract type Operator#<: AbstractMatrix{ComplexF64}
 end 
@@ -18,10 +19,28 @@ end
 abstract type DdagD_operator  <: Operator
 end
 
-
-
+abstract type γ5D_operator  <: Operator #hermitian matrix
+end
 
 abstract type Adjoint_Dirac_operator <: Operator
+end
+
+function Base.size(D::Operator)
+    error("Base.size(D::T)  is not implemented in type $(typeof(D))")
+end
+
+function Base.size(D::Dirac_operator)
+    x = get_temporaryvectors_forCG(D)[1]
+    NN = length(x)
+    return (NN,NN)
+end
+
+function Base.size(D::DdagD_operator)
+    return size(D.dirac)
+end
+
+function Base.size(D::γ5D_operator)
+    return size(D.dirac)
 end
 
 
@@ -30,6 +49,8 @@ function Base.adjoint(A::Dirac_operator{Dim} ) where Dim
 end
 
 Base.adjoint(A::Adjoint_Dirac_operator) = A.parent
+
+Base.adjoint(A::γ5D_operator) = A
 
 
 function get_temporaryvectors_forCG(A::T) where T <: Dirac_operator
@@ -173,6 +194,13 @@ function LinearAlgebra.mul!(y::AbstractFermionfields{NC,Dim},A::T,x::AbstractFer
     return
 end
 
+function LinearAlgebra.mul!(y::AbstractFermionfields{NC,Dim},A::T,x::AbstractFermionfields{NC,Dim})  where {T <: γ5D_operator,NC,Dim} #y = A*x
+    mul!(y,A.dirac,x)
+    apply_γ5!(y)
+    return
+end
+
+
 
 
 function check_parameters(parameters,key,initial)
@@ -208,6 +236,23 @@ function set_verbose(verbose_level)
     return verbose
 end
 
+function construct_sparsematrix(D::Operator) # D_ij = e_i D e_j
+    NN,_ = size(D)
+    mat_D = spzeros(ComplexF64,NN,NN)
+    temp1 = get_temporaryvectors_forCG(D)[1]
+    temp2 = get_temporaryvectors_forCG(D)[2]
+
+    for j=1:NN
+        clear_fermion!(temp1)
+        temp1[j] = 1
+        set_wing_fermion!(temp1)
+        mul!(temp2,D,temp1)
+        for i=1:NN
+            mat_D[i,j] = temp2[i]
+        end
+    end
+    return mat_D
+end
 
 
 end

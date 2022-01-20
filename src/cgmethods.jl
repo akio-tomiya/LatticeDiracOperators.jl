@@ -1,7 +1,11 @@
+
+
 using LinearAlgebra
 #import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose_level3
 using InteractiveUtils
 import Gaugefields.Verboseprint_mpi:Verbose_print,println_verbose_level1,println_verbose_level2,println_verbose_level3
+
+#export bicg,bicgstag,shiftedcg,bicgstab_evenodd,reducedshiftedcg,cg
 
 
 function add!(b,Y,a,X) #b*Y + a*X -> Y
@@ -760,6 +764,107 @@ function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbos
 
 end
 
+function shiftedbicg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
+    
+    println_verbose_level3(verbose,"--------------------------------------")
+    println_verbose_level3(verbose,"shifted cg method")
+    N = length(vec_β)
+    temp1 = similar(b)
+    r = deepcopy(b)
+    p = deepcopy(b)
+    q = similar(b)
+    s = similar(b)
+
+
+    vec_r = Array{typeof(r),1}(undef,N)
+    vec_p = Array{typeof(p),1}(undef,N)
+    for j=1:N
+        vec_r[j] = deepcopy(b)
+        vec_p[j] = deepcopy(b)
+    end
+
+    αm = 1.0
+    βm = 0.0
+
+    ρm = ones(ComplexF64,N)
+    ρ0 = ones(ComplexF64,N)
+    ρp = ones(ComplexF64,N)
+    residual = 0
+
+    mul!(p,A',r)
+    c1 = p ⋅ p
+
+
+    for i=1:maxsteps
+        mul!(q,A,p)
+        c2 = q ⋅ q
+        alpha = c1 / c2
+        rr = dot(r,r)
+        #! ...  x   = x   + alpha * p  
+        add!(x,alpha,p)
+        #...  res = res - alpha * q 
+        add!(r,-alpha,q)
+        
+ 
+        mul!(s,A',r)
+
+        #c3 = s * s
+        c3 = s ⋅ s
+
+        beta = c3 / c1
+        c1 = c3
+
+        add!(beta,p,1,s) #p = beta*p + s
+
+        αk = alpha
+        βk = beta
+
+
+        for j=1:N
+            ρkj = ρ0[j]
+            if abs(ρkj) < eps
+                continue
+            end
+            ρkmj =ρm[j]
+            ρp[j] = ρkj*ρkmj*αm/(ρkmj*αm*(1.0+αk*vec_β[j])+αk*βm*(ρkmj-ρkj))
+            αkj = (ρp[j]/ρkj)*αk
+
+            add!(vec_x[j],αkj,vec_p[j])
+            βkj = (ρp[j]/ρkj)^2*βk
+            #add!(βkj,vec_p[j],ρp[j],r) 
+            add!(βkj,vec_p[j],ρp[j],s) 
+
+        end
+
+        ρm[:] = ρ0[:]
+        ρ0[:] = ρp[:]
+        αm = αk
+        βm = βk
+
+
+        ρMAX = maximum(abs.(ρp))^2
+        residual = abs(rr*ρMAX)
+        println_verbose_level3(verbose,"$i-th eps: $residual")
+
+        if abs(residual) < eps
+            println_verbose_level3(verbose,"Converged at $i-th step. eps: $residual")
+            println_verbose_level3(verbose,"--------------------------------------")
+            return
+        end
+
+
+    end
+
+    
+    error("""
+    The shifted CG is not converged! with maxsteps = $(maxsteps)
+    residual is $residual
+    maxsteps should be larger.""")
+
+
+end
+
+
 function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #Ax=b
     println_verbose_level3(verbose,"--------------------------------------")
     println_verbose_level3(verbose,"shifted cg method")
@@ -858,3 +963,4 @@ function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose
 
 
 end
+

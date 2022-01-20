@@ -90,8 +90,16 @@ function clear_fermion!(F::T) where T <: AbstractFermionfields
     error("clear_fermion! is not implemented in type $(typeof(F)) ")
 end
 
+function apply_γ5!(F::T) where T <: AbstractFermionfields
+    error("apply_γ5! is not implemented in type $(typeof(F)) ")
+end
+
 function Base.similar(F::T) where T <: AbstractFermionfields
     error("Base.similar is not implemented in type $(typeof(F)) ")
+end
+
+function Base.length(F::T) where T <: AbstractFermionfields
+    error("Base.length(F) is not implemented in type $(typeof(F)) ")
 end
 
 function gauss_distribution_fermion!(F::T) where T <: AbstractFermionfields
