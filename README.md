@@ -277,6 +277,33 @@ UdSfdUμ = calc_UdSfdU(fermi_action,U,x)
 
 This package uses the RHMC techniques. 
 
+## Domainwall Fermions
+In the case of the domainwall fermion, the action is defined as 
+
+```julia
+ L5 = 4
+x = Initialize_pseudofermion_fields(U[1],"Domainwall",L5 = L5)
+gauss_distribution_fermion!(x)
+
+params = Dict()
+params["Dirac_operator"] = "Domainwall"
+params["mass"] = 0.1
+params["L5"] = L5
+params["eps_CG"] = 1.0e-19
+params["verbose_level"] = 2
+params["method_CG"] = "bicg"
+D = Dirac_operator(U,x,params)
+
+parameters_action = Dict()
+fermi_action = FermiAction(D,parameters_action)
+
+Sfnew = evaluate_FermiAction(fermi_action,U,x)
+println(Sfnew)
+
+UdSfdUμ = calc_UdSfdU(fermi_action,U,x)
+```
+
+
 # Hybrid Monte Carlo with fermions
 
 ## Wilson Fermion
