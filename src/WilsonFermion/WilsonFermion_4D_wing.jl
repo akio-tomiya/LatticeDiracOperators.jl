@@ -379,6 +379,73 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G
     return
 end
 
+function Dx!(xout::T1,U::Array{G,1},x::T2,A) where  {T1 <: WilsonFermion_4D_wing,T2 <: WilsonFermion_4D_wing,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    #clear!(temp1)
+    #clear!(temp2)
+    set_wing_fermion!(x)
+    for ν=1:4
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rminusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rplusγ,:,:,ν),temp2)
+        add_fermion!(temp,0.5,temp1,0.5,temp2)
+        
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function Ddagx!(xout::T1,U::Array{G,1},x::T2,A) where  {T1 <: WilsonFermion_4D_wing,T2 <: WilsonFermion_4D_wing,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    #clear!(temp1)
+    #clear!(temp2)
+    set_wing_fermion!(x)
+    for ν=1:4
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rplusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rminusγ,:,:,ν),temp2)
+        add_fermion!(temp,0.5,temp1,0.5,temp2)
+        
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+
 function Tx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields} # Tx, W = (1 - T)x
     #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D_wing,G <: AbstractGaugefields}
     temp = A._temporary_fermi[4]#temps[4]
@@ -1023,6 +1090,8 @@ function LinearAlgebra.axpby!(a::Number, X::T, b::Number, Y::WilsonFermion_4D_wi
     end
 end
 
+
+
 #=
 function set_wing_fermion!(a::WilsonFermion_4D_wing{NC},boundarycondition) where NC 
     NT = a.NT
@@ -1190,4 +1259,89 @@ c--------------------------------------------------------------------------c
             end
         end
 
+    end
+
+
+    function mul_1plusγ5x!(y::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC})  where NC#(1+gamma_5)/2
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        #NC = x.NC
+        for ic=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        @simd for ix=1:NX
+                            y[ic,ix,iy,iz,it,1] = 0#-1*x[ic,ix,iy,iz,it,1]
+                            y[ic,ix,iy,iz,it,2] = 0#-1*x[ic,ix,iy,iz,it,2]
+                            y[ic,ix,iy,iz,it,3] = x[ic,ix,iy,iz,it,3]
+                            y[ic,ix,iy,iz,it,4] = x[ic,ix,iy,iz,it,4]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function mul_1plusγ5x_add!(y::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC},factor) where NC#x = x +(1+gamma_5)/2
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        #NC = x.NC
+        for ic=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        @simd for ix=1:NX
+                            y[ic,ix,iy,iz,it,3] += factor*x[ic,ix,iy,iz,it,3]
+                            y[ic,ix,iy,iz,it,4] += factor*x[ic,ix,iy,iz,it,4]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function mul_1minusγ5x!(y::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC}) where NC#(1-gamma_5)/2
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        #NC = x.NC
+        for ic=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        @simd for ix=1:NX
+                            y[ic,ix,iy,iz,it,1] = x[ic,ix,iy,iz,it,1]
+                            y[ic,ix,iy,iz,it,2] = x[ic,ix,iy,iz,it,2]
+                            y[ic,ix,iy,iz,it,3] = 0#x[ic,ix,iy,iz,it,3]
+                            y[ic,ix,iy,iz,it,4] = 0#x[ic,ix,iy,iz,it,4]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function mul_1minusγ5x_add!(y::WilsonFermion_4D_wing{NC},x::WilsonFermion_4D_wing{NC},factor) where NC#+(1-gamma_5)/2
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        #NC = x.NC
+        for ic=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        @simd for ix=1:NX
+                            y[ic,ix,iy,iz,it,1] += factor*x[ic,ix,iy,iz,it,1]
+                            y[ic,ix,iy,iz,it,2] += factor*x[ic,ix,iy,iz,it,2]
+                        end
+                    end
+                end
+            end
+        end
     end

@@ -322,6 +322,7 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},A::T,x::T3) where {T<
                         x1 = x[1,ix,iy,iz,it,ialpha]
                         x2 = x[2,ix,iy,iz,it,ialpha]
                         x3 = x[3,ix,iy,iz,it,ialpha]
+                    
                         y[1,ix,iy,iz,it,ialpha] = A[1,1,ix,iy,iz,it]*x1 + 
                                                     A[1,2,ix,iy,iz,it]*x2+ 
                                                     A[1,3,ix,iy,iz,it]*x3

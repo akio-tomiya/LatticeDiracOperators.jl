@@ -71,7 +71,8 @@ end
 
 function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
     xtype = typeof(x)
-    num = 7
+    num = check_parameters(parameters,"numtempvec",7)
+    #num = 7
     _temporary_fermi = Array{xtype,1}(undef,num)
 
     @assert haskey(parameters,"κ") "parameters should have the keyword κ"
@@ -90,7 +91,8 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
         _temporary_fermi[i] = similar(x)
     end
 
-    numcg = 7
+    numcg = check_parameters(parameters,"numtempvec_CG",7)
+    #numcg = 7
     _temporary_fermion_forCG= Array{xtype,1}(undef,numcg)
     for i=1:numcg
         _temporary_fermion_forCG[i] = similar(x)

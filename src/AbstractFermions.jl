@@ -27,9 +27,10 @@ end
 const default_boundaryconditions = (nothing,[1,-1],nothing,[1,1,1,-1])
 
 include("./AbstractFermions_4D.jl")
+include("./AbstractFermions_5D.jl")
 
 
-function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String) where {NC,Dim}
+function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2) where {NC,Dim}
     mpi = u.mpi
     if mpi
         if Dim == 4
@@ -53,6 +54,8 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 x = Initialize_StaggeredFermion(u)
             elseif Dirac_operator == "Wilson"
                 x = Initialize_WilsonFermion(u)
+            elseif Dirac_operator == "Domainwall"
+                x = Initialize_DomainwallFermion(u,L5)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -102,6 +105,10 @@ function Base.length(F::T) where T <: AbstractFermionfields
     error("Base.length(F) is not implemented in type $(typeof(F)) ")
 end
 
+function substitute_fermion!(a::T1,b::T2) where {T1 <: AbstractFermionfields, T2  <: AbstractFermionfields}
+    error("substitute_fermion!(a,b) is not implemented in type $(typeof(a)) and type $(typeof(b)) ")
+end
+
 function gauss_distribution_fermion!(F::T) where T <: AbstractFermionfields
     error("gauss_distribution_fermi! is not implemented in type $(typeof(F)) ")
 end
@@ -121,7 +128,7 @@ function set_wing_fermion!(F::AbstractFermionfields{NC,Dim}) where {NC,Dim}
 end
 
 function Dx!(temp::T,U,x,temps)  where T <: AbstractFermionfields
-    error("Dx! is not implemented in type $(typeof(temp)) ")
+    error("Dx!(temp,U,x,temps) is not implemented in type $(typeof(temp)) ")
 end
 
 

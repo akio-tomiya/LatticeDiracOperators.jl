@@ -68,6 +68,7 @@ const default_MaxCGstep = 3000
 include("./AbstractFermions.jl")
 include("./StaggeredFermion/StaggeredFermion.jl")
 include("./WilsonFermion/WilsonFermion.jl")
+include("./DomainwallFermion/DomainwallFermion.jl")
 include("./action/FermiAction.jl")
 
 function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim} 
@@ -78,6 +79,8 @@ function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         Wilson_Dirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "Domainwall"
+        Domainwall_Dirac_operator(U,x,parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -89,6 +92,8 @@ function DdagD_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         DdagD_Staggered_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         DdagD_Wilson_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "Domainwall"
+        DdagD_Domainwall_operator(U,x,parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end

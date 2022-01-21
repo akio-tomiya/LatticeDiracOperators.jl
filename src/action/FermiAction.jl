@@ -3,6 +3,7 @@ abstract type FermiAction{Dim,Dirac,fermion,gauge} end
 
 include("./StaggeredFermiAction.jl")
 include("./WilsonFermiAction.jl")
+include("./DomainwallFermiAction.jl")
 
 function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = nothing) where {NC,Dim}
     diractype = typeof(D)
@@ -16,6 +17,8 @@ function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = not
         return StaggeredFermiAction(D,hascovnet,covneuralnet,parameters_action)
     elseif diractype <: Wilson_Dirac_operator
         return WilsonFermiAction(D,hascovnet,covneuralnet,parameters_action)
+    elseif diractype <: Domainwall_Dirac_operator
+        return DomainwallFermiAction(D,hascovnet,covneuralnet) 
     else
         error("Action type $diractype is not supported")
     end
