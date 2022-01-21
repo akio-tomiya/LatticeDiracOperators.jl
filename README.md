@@ -27,8 +27,6 @@ This package can be regarded as the additional package of the Gaugefields.jl to 
 # Install
 
 ```
-add https://github.com/akio-tomiya/Wilsonloop.jl
-add https://github.com/akio-tomiya/Gaugefields.jl
 add https://github.com/akio-tomiya/LatticeDiracOperators.jl
 ```
 

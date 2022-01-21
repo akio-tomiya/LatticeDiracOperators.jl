@@ -23,9 +23,9 @@ version = "1.3.2+0"
 
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "6e39c91fb4b84dcb870813c91674bdebb9145895"
+git-tree-sha1 = "54fc4400de6e5c3e27be6047da2ef6ba355511f8"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.11.5"
+version = "1.11.6"
 
 [[ChangesOfVariables]]
 deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
@@ -113,8 +113,6 @@ uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 [[Gaugefields]]
 deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JLD2", "LinearAlgebra", "Random", "Requires", "StableRNGs", "Wilsonloop"]
 git-tree-sha1 = "e7d7757d180de2504dfa85549e076ffc6cba5198"
-repo-rev = "master"
-repo-url = "https://github.com/akio-tomiya/Gaugefields.jl"
 uuid = "a461e10c-0d91-493e-bc41-027b226eee91"
 version = "0.1.0"
 
