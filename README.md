@@ -16,6 +16,7 @@ This package will be used in [LatticeQCD.jl](https://github.com/akio-tomiya/Latt
 # What this package can do:
 - Constructing actions and its derivative for Staggered Fermion with 1-8 tastes (with the use of the rational HMC technique)
 - Constructing actions and its derivative for Wilson Fermion
+- Constructing actions and its derivative for Standard Domainwall Fermion
 - Hybrid Monte Carlo method with fermions.
 
 With the use of the Gaugefields.jl, we can also do the HMC with STOUT smearing. 
@@ -165,6 +166,37 @@ println(y[1,1,1,1,1,1])
 
 The "tastes" of the Staggered Fermion is defined in the action. 
 
+# Domainwall Fermions
+This package supports standard domainwall fermions. 
+The Dirac operator of the domainwall fermion is defined as 
+
+```julia
+L5 = 4
+x = Initialize_pseudofermion_fields(U[1],"Domainwall",L5=L5)
+println("x ", x.w[1][1,1,1,1,1,1])
+gauss_distribution_fermion!(x)
+
+params = Dict()
+params["Dirac_operator"] = "Domainwall"
+params["eps_CG"] = 1.0e-16
+params["MaxCGstep"] = 3000
+params["verbose_level"] = 3
+params["mass"] = 0.1
+params["L5"] = L5
+D = Dirac_operator(U,x,params)
+
+println("x ", x[1,1,1,1,1,1,1])
+y = similar(x)
+solve_DinvX!(y,D,x)
+println("y ", y[1,1,1,1,1,1,1])
+
+z = similar(x)
+mul!(z,D,y)
+println("z ", z[1,1,1,1,1,1,1])
+
+```
+
+The domainwall fermion is defined in 5D space. The element of x is ```x[ic,ix,iy,iz,it,ialpha,iL]```, where iL is an index on the five dimensional axis. 
 
 # Fermion Action
 
