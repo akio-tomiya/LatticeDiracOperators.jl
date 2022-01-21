@@ -122,6 +122,8 @@ struct Wilson_GeneralDirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where
     verbose_level::Int8
     method_CG::String
     _temporary_gaugefields::Vector{T}
+    verbose_print::Verbose_print
+    _temporary_fermion_forCG::Vector{fermion}
 end
 
 function get_numterms(w::Wilson_GeneralDirac_operator)
@@ -328,25 +330,30 @@ function Wilson_GeneralDirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1}
     method_CG = check_parameters(parameters,"method_CG","bicg")
 
 
+    verbose_print = Verbose_print(verbose_level)
+
+
     for i=1:num
         _temporary_fermi[i] = similar(x)
     end
 
-    if verbose_level == 1 
-        verbose = Verbose_1()
-    elseif verbose_level == 2
-        verbose = Verbose_2()
-    elseif verbose_level == 3
-        verbose = Verbose_3()
-    else
-        error("verbose_level = $verbose_level is not supported")
-    end 
+    numcg = check_parameters(parameters,"numtempvec_CG",7)
+    #numcg = 7
+    _temporary_fermion_forCG= Array{xtype,1}(undef,numcg)
+    for i=1:numcg
+        _temporary_fermion_forCG[i] = similar(x)
+    end
+
+
+
 
     return Wilson_GeneralDirac_operator{Dim,eltype(U),xtype}(U,boundarycondition,_temporary_fermi,
         dirac_terms,
         eps_CG,MaxCGstep,
         verbose_level,method_CG,
-        _temporary_gaugefields
+        _temporary_gaugefields,
+        verbose_print,
+        _temporary_fermion_forCG
         )
 end
 
@@ -406,8 +413,8 @@ function Wx_general!(xout::T,U::Array{G,1},x::T,A::Wilson_GeneralDirac_operator)
 
         coeff = get_coefficient(diracterm)
 
-        #println(coeff)
         add_fermion!(temp2,coeff,temp1)
+        
         #println(xout[1,1,1,1,1,1])
     end
     #error("d")
@@ -477,8 +484,8 @@ function gaugefield_fermion_mul!(xout,positions,directions,isdagvectors,U::Array
                 temps_fermion::Array{<: AbstractFermionfields{NC,Dim},1}) where
                                                 {T<: AbstractGaugefields,Dim,NC}
 
-    temp1 = temps_fermion[1]
-    temp2 = temps_fermion[2]
+    temp1 = temps_fermion[end]
+    temp2 = temps_fermion[end-1]
 
     #glinks = w
     numlinks = length(positions)
