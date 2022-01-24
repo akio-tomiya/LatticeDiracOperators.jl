@@ -282,7 +282,7 @@ function easymode_constructing_diraclines(parameters,Dim)
             error("term $term is not supported")
         end
     end
-    println("dd ",length(dirac_terms))
+    #println("dd ",length(dirac_terms))
     return dirac_terms
 
 end
