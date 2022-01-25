@@ -290,7 +290,7 @@ function bicg(x,A::Adjoint_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbo
     #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+
     #x = A'^-1*b =D5DW(m)^+^-1 D5DW(m=1)^+*b
     mul!(A.parent.D5DW._temporary_fermi[1],A.parent.D5DW_PV',b)
-    bicgstab(x,A.parent.D5DW',A.parent.D5DW._temporary_fermi[1];eps=eps,maxsteps = maxsteps,verbose = verbose) 
+    bicg(x,A.parent.D5DW',A.parent.D5DW._temporary_fermi[1];eps=eps,maxsteps = maxsteps,verbose = verbose) 
 
 end
 
@@ -298,7 +298,7 @@ function bicgstab(x,A::Domainwall_Dirac_operator,b;eps=1e-10,maxsteps = 1000,ver
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #A^-1 = D5DW(m=1)*DsDW(m)^-1
     #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
-    bicg(A.D5DW._temporary_fermi[1],A.D5DW,b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
+    bicgstab(A.D5DW._temporary_fermi[1],A.D5DW,b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
     mul!(x,A.D5DW_PV,A.D5DW._temporary_fermi[1])
 end
 
