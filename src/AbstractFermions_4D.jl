@@ -39,6 +39,11 @@ end
 
 Base.length(x::T) where T <: AbstractFermionfields_4D = x.NC*x.NX*x.NY*x.NZ*x.NT*x.NG
 
+function Base.size(x::AbstractFermionfields_4D{NC})  where NC
+    return (x.NC,x.NX,x.NY,x.NZ,x.NT,x.NG)
+end
+
+
 function Base.iterate(x::T,state = 1) where T <: AbstractFermionfields_4D
     if state > length(x)
         return nothing
@@ -74,6 +79,11 @@ end
 
 function Base.getindex(x::Adjoint_fermionfields{T},i)  where T <: Abstractfermion 
     @inbounds return conj(x.parent[i])
+end
+
+
+function Base.size(x::Adjoint_fermionfields{T})  where T <: Abstractfermion 
+    return size(x.parent)
 end
 
 
@@ -118,6 +128,29 @@ function substitute_fermion!(a::AbstractFermionfields_4D{NC},b::AbstractFermionf
     end
 end
 
+function substitute_fermion!(a::AbstractFermionfields_4D{NC},b::Abstractfermion) where NC 
+    NX = a.NX
+    NY = a.NY
+    NZ = a.NZ
+    NT = a.NT
+    NG = a.NG
+    @inbounds for i6=1:NG
+        for i5=1:NT
+            for i4=1:NZ
+                for i3=1:NY
+                    for i2=1:NX
+                        @simd for i1=1:NC
+                            a[i1,i2,i3,i4,i5,i6]= b[i1,i2,i3,i4,i5,i6]
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_fermion!(a)
+end
+
+
 
 
 
@@ -131,6 +164,10 @@ struct Shifted_fermionfields_4D{NC,T} <: Shifted_fermionfields{NC,4}
     function Shifted_fermionfields_4D(F::AbstractFermionfields_4D{NC},shift) where NC
         return new{NC,typeof(F)}(F,shift,NC)
     end
+end
+
+function Base.size(x::Shifted_fermionfields_4D)  
+    return size(x.parent)
 end
 using InteractiveUtils
 
@@ -606,12 +643,8 @@ function LinearAlgebra.mul!(u::T1,x::AbstractFermionfields_4D{NC},y::AbstractFer
     set_wing_U!(u)
 end
 
-function LinearAlgebra.mul!(u::T1,x::AbstractFermionfields_4D{NC},y::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}}) where {T1 <: AbstractGaugefields,NC}
-    NX = x.NX
-    NY = x.NY
-    NZ = x.NZ
-    NT = x.NT
-    NG = x.NG
+function LinearAlgebra.mul!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}}) where {T1 <: AbstractGaugefields,NC}
+    _,NX,NY,NZ,NT,NG = size(y)
     clear_U!(u)
 
     for ik=1:NG
@@ -631,6 +664,71 @@ function LinearAlgebra.mul!(u::T1,x::AbstractFermionfields_4D{NC},y::Adjoint_fer
     end
     set_wing_U!(u)
 end
+
+function LinearAlgebra.mul!(u::T1,x::Adjoint_fermionfields{<: Shifted_fermionfields_4D{NC,T}},y::Abstractfermion) where {T1 <: AbstractGaugefields,NC,T}
+    _,NX,NY,NZ,NT,NG = size(x)
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+
+function LinearAlgebra.mul!(u::T1,x::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}},y::Abstractfermion) where {T1 <: AbstractGaugefields,NC}
+    _,NX,NY,NZ,NT,NG = size(x)
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+
+
+
+function cross!(u::T1,x::Adjoint_fermionfields{<: Shifted_fermionfields_4D{NC,T}},y::Abstractfermion) where {T1 <: AbstractGaugefields,NC,T}
+    mul!(u,y,x)
+end
+
+function cross!(u::T1,x::AbstractFermionfields_4D{NC},y::Abstractfermion) where {T1 <: AbstractGaugefields,NC}
+    mul!(u,y,x)
+end
+
+function cross!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}}) where {T1 <: AbstractGaugefields,NC}
+    mul!(u,y,x)
+end
+
+function cross!(u::T1,x::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}},y::Abstractfermion) where {T1 <: AbstractGaugefields,NC}
+    mul!(u,y,x)
+end
+
 
 
 

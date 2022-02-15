@@ -115,7 +115,7 @@ function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,fermi_action,η)  # p ->
     end
 end
 
-function test1()
+function test1_4D()
     NX = 4
     NY = 4
     NZ = 4
@@ -158,5 +158,98 @@ function test1()
 
 end
 
+function test1_2D()
+    NX = 4
+    NT = 4
+    Nwing = 1
+    Dim = 2
+    NC = 3
 
-test1()
+    U  =Initialize_Gaugefields(NC,Nwing,NX,NT,condition = "cold")
+
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname("plaquette",Dim=Dim)
+    append!(plaqloop,plaqloop')
+    β = 5.5/2
+    push!(gauge_action,β,plaqloop)
+    
+    show(gauge_action)
+
+    x = Initialize_pseudofermion_fields(U[1],"staggered")
+    params = Dict()
+    params["Dirac_operator"] = "staggered"
+    params["mass"] = 0.1
+    params["eps_CG"] = 1.0e-8
+    params["verbose_level"] = 2
+    D = Dirac_operator(U,x,params)
+
+    Nf = 2
+    for Nf  in [8,4,2]
+        println("Nf = $Nf")
+        parameters_action = Dict()
+        parameters_action["Nf"] = Nf
+        fermi_action = FermiAction(D,parameters_action)
+        gauss_sampling_in_action!(x,U,fermi_action)
+        println("Sfold = ", dot(x,x))
+        y = similar(x)
+
+        MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+    end
+
+end
+
+function test1_2D_NC(NC)
+    NX = 4
+    NT = 4
+    Nwing = 1
+    Dim = 2
+    #NC = 2
+
+    U  =Initialize_Gaugefields(NC,Nwing,NX,NT,condition = "cold")
+
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname("plaquette",Dim=Dim)
+    append!(plaqloop,plaqloop')
+    β = 5.5/2
+    push!(gauge_action,β,plaqloop)
+    
+    show(gauge_action)
+
+    x = Initialize_pseudofermion_fields(U[1],"staggered")
+    params = Dict()
+    params["Dirac_operator"] = "staggered"
+    params["mass"] = 0.1
+    params["eps_CG"] = 1.0e-8
+    params["verbose_level"] = 2
+    D = Dirac_operator(U,x,params)
+
+    Nf = 2
+    for Nf  in [8,4,2]
+        println("Nf = $Nf")
+        parameters_action = Dict()
+        parameters_action["Nf"] = Nf
+        fermi_action = FermiAction(D,parameters_action)
+        gauss_sampling_in_action!(x,U,fermi_action)
+        println("Sfold = ", dot(x,x))
+        y = similar(x)
+
+        MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+    end
+
+end
+
+println("2D HMC ")
+println("NC = 1")
+NC = 1
+test1_2D_NC(NC)
+println("NC = 2")
+NC = 2
+test1_2D_NC(NC)
+println("NC = 3")
+NC = 3
+test1_2D_NC(NC)
+
+println("4D HMC ")
+test1_4D()

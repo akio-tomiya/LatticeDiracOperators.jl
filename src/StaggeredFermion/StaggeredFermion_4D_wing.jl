@@ -25,7 +25,8 @@ struct StaggeredFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
 end
 
 function Base.size(x::StaggeredFermion_4D_wing{NC}) where NC
-    return (x.NV,)
+    return (x.NC,x.NX,x.NY,x.NZ,x.NT,x.NG)
+    #return (x.NV,)
 end
 
 function Base.length(x::StaggeredFermion_4D_wing{NC}) where {NC}

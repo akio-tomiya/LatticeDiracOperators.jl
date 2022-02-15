@@ -5,15 +5,17 @@ using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
     
+    @testset "Staggered HMC" begin
+        include("hmc.jl")
+        @test true
+    end
+
     @testset "Wilson HMC" begin
         include("wilsonhmc.jl")
         @test true
     end
 
-    @testset "Staggered HMC" begin
-        include("hmc.jl")
-        @test true
-    end
+
 
 
     

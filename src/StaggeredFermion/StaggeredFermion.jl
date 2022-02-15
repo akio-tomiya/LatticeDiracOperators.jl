@@ -13,6 +13,7 @@ struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <
 end
 
 include("./StaggeredFermion_4D_wing.jl")
+include("./StaggeredFermion_2D_wing.jl")
 
 function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
     xtype = typeof(x)
@@ -21,7 +22,13 @@ function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
 
     @assert haskey(parameters,"mass") "parameters should have the keyword mass"
     mass = parameters["mass"]
-    boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    if Dim == 4
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    elseif Dim == 2
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,-1])
+    else
+        error("Dim should be 2 or 4!")
+    end
     eps_CG = check_parameters(parameters,"eps",default_eps_CG)
     MaxCGstep = check_parameters(parameters,"MaxCGstep",default_MaxCGstep)
 
@@ -86,6 +93,8 @@ function Initialize_StaggeredFermion(NC,NN...)
     Dim = length(NN)
     if Dim == 4
         fermion = StaggeredFermion_4D_wing(NC,NN...)
+    elseif Dim == 2
+        fermion = StaggeredFermion_2D_wing(NC,NN...)
     else
         error("Dimension $Dim is not supported")
     end

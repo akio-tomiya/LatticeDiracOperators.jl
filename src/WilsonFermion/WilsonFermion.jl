@@ -55,7 +55,10 @@ struct γ5D_Wilson_operator{Dim,T,fermion} <: γ5D_operator
 end
 
 
+include("./WilsonFermion_4D.jl")
+
 include("./WilsonFermion_4D_wing.jl")
+include("./WilsonFermion_4D_wing_Adjoint.jl")
 
 
 
@@ -87,6 +90,7 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
     hopp .= κ
     hopm .= κ
 
+    
     for i=1:num
         _temporary_fermi[i] = similar(x)
     end

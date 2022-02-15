@@ -18,6 +18,19 @@ function Base.adjoint(F::T) where T <: Abstractfermion
 end
 
 
+function Base.setindex!(x::Adjoint_fermionfields{T},v,i)  where T <: Abstractfermion
+    error("type $(typeof(x)) has no setindex method. This type is read only.")
+end
+
+function Base.getindex(x::Adjoint_fermionfields{T},i)  where T <: Abstractfermion 
+    @inbounds return conj(x.parent[i])
+end
+
+
+function Base.size(x::Adjoint_fermionfields{T})  where T <: Abstractfermion 
+    return size(x.parent)
+end
+
 
 
 
@@ -28,6 +41,7 @@ const default_boundaryconditions = (nothing,[1,-1],nothing,[1,1,1,-1])
 
 include("./AbstractFermions_4D.jl")
 include("./AbstractFermions_5D.jl")
+include("./AbstractFermions_2D.jl")
 
 
 function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2) where {NC,Dim}
@@ -59,6 +73,12 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
+        elseif Dim == 2
+            if Dirac_operator == "staggered"
+                x = Initialize_StaggeredFermion(u)
+            else
+                error("Dirac_operator = $Dirac_operator is not supported")
+            end
         else
             error("Dim = $Dim is not supported")
         end
@@ -81,6 +101,12 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},paramete
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
+        elseif Dim == 2
+                if Dirac_operator == "staggered"
+                    x = Initialize_StaggeredFermion(u)
+                else
+                    error("Dirac_operator = $Dirac_operator is not supported")
+                end
         else
             error("Dim = $Dim is not supported")
         end
@@ -141,5 +167,9 @@ function LinearAlgebra.dot(a::T1,b::T2) where {T1 <: Abstractfermion, T2 <: Abst
 end
 
 function get_origin(a::T1) where T1 <: AbstractFermionfields
-    error(" get_origin is not implemented in type $(typeof(a)) ")
+    error("get_origin is not implemented in type $(typeof(a)) ")
+end
+
+function initialize_Adjoint_fermion(x::T1) where T1 <: AbstractFermionfields
+    error("initialize_Adjoint_fermion is not implemented in type $(typeof(x)) ")
 end

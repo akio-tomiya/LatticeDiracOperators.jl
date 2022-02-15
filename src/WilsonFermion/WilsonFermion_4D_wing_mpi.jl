@@ -6,7 +6,7 @@ import Gaugefields.AbstractGaugefields_module:getvalue
 """
 Struct for WilsonFermion
 """
-struct WilsonFermion_4D_mpi{NC,NDW} <: AbstractFermionfields_4D{NC}
+struct WilsonFermion_4D_mpi{NC,NDW} <: WilsonFermion_4D{NC} #AbstractFermionfields_4D{NC}
     f::Array{ComplexF64,6}
     NC::Int64
     NX::Int64

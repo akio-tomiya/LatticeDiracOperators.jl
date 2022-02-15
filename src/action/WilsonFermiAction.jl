@@ -3,7 +3,10 @@ import Gaugefields:Traceless_antihermitian_add!
 struct Wilsonclover_data 
 end
 
-struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <: FermiAction{Dim,Dirac,fermion,gauge}
+abstract type Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,fermion,gauge}
+end
+
+struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <: Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} #FermiAction{Dim,Dirac,fermion,gauge}
     hascovnet::Bool
     covneuralnet::Union{Nothing,CovNeuralnet{Dim}}
     diracoperator::Dirac
@@ -47,7 +50,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <: FermiAction{D
     end
 end
 
-function evaluate_FermiAction(fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm},U,ϕ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge,hascloverterm} 
+function evaluate_FermiAction(fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},U,ϕ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge,hascloverterm} 
     W = fermi_action.diracoperator(U)
     η = fermi_action._temporary_fermionfields[1]
     solve_DinvX!(η,W',ϕ)
@@ -55,7 +58,7 @@ function evaluate_FermiAction(fermi_action::WilsonFermiAction{Dim,Dirac,fermion,
     return real(Sf)
 end
 
-function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields) where  {Dim,Dirac,fermion,gauge,hascloverterm} 
+function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} ,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields) where  {Dim,Dirac,fermion,gauge,hascloverterm} 
     #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
@@ -203,14 +206,14 @@ function calc_p_UdSfdU_fromX!(p,Y,fermi_action::WilsonFermiAction{Dim,Dirac,ferm
 end
 
 
-function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ) where {Dim,Dirac,fermion,gauge,hascloverterm} 
+function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} ) where {Dim,Dirac,fermion,gauge,hascloverterm} 
     #gauss_distribution_fermion!(η)
     gauss_distribution_fermion!(η,rand)
 end
 
 using InteractiveUtils
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,ξ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge,hascloverterm} 
+function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} ,ξ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge,hascloverterm} 
     W = fermi_action.diracoperator(U)
     mul!(ϕ,W',ξ)
     set_wing_fermion!(ϕ)

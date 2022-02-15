@@ -90,7 +90,7 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,nn,dSdU,fermi_ac
     println("Sfnew = $Sfnew")
     println("Sfnew_eff = $Sfnew_eff")
     println("Sfnew -Sfnew_eff = ",Sfnew- Sfnew_eff)
-    eta = 1e-4
+    eta = -1e-4
     for i=1:length(dSdp)
         println(i,"-th layer")
         println("dSdp[i] ",dSdp[i])
@@ -98,7 +98,7 @@ function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,nn,dSdU,fermi_ac
         diff = dSdp[i]*(Sfnew- Sfnew_eff)
         newρ = nn_eff[i].ρs .- eta*diff
         println("new: ", newρ)
-        set_parameters(nn_eff,i,newρ)
+        #set_parameters(nn_eff,i,newρ)
     end
     Snew = calc_action(gauge_action,U,p) + Sfnew
     
@@ -174,10 +174,10 @@ function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,dSdU,nn,fermi_action,η)
 end
 
 function test1()
-    NX = 4
-    NY = 4
-    NZ = 4
-    NT = 4
+    NX = 3
+    NY = 3
+    NZ = 3
+    NT = 3
     Nwing = 1
     Dim = 4
     NC = 3
@@ -194,7 +194,7 @@ function test1()
     
     show(gauge_action)
 
-    L5 = 8
+    L5 = 4
     x = Initialize_pseudofermion_fields(U[1],"Domainwall",L5 = L5)
 
 
@@ -216,13 +216,16 @@ function test1()
     st = STOUT_Layer(layername,ρ,L)
     push!(nn,st)
 
-    #nn_eff = deepcopy(nn)
+    nn_eff = deepcopy(nn)
+
+    #=
     nn_eff = CovNeuralnet()
     #set_parameters(nn_eff,1,[0.1])
     st = STOUT_Layer(["plaquette","rectangular"],[0.1,0.001],L)
     push!(nn_eff,st)
     st2 = STOUT_Layer(["plaquette","rectangular"],[0.1,0.001],L)
     push!(nn_eff,st2)
+    =#
     show(nn_eff)
 
 
