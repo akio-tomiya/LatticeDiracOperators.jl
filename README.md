@@ -1,8 +1,8 @@
 # LatticeDiracOperators
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://cometscome.github.io/LatticeDiracOperators.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://cometscome.github.io/LatticeDiracOperators.jl/dev)
-[![Build Status](https://github.com/cometscome/LatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/cometscome/LatticeDiracOperators.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/dev)
+[![Build Status](https://github.com/akio-tomiyaLatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 
 # Abstract
 
