@@ -73,19 +73,6 @@ function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  whe
     error("type $(typeof(F)) has no setindex method. This type is read only.")
 end
 
-function Base.setindex!(x::Adjoint_fermionfields{T},v,i)  where T <: Abstractfermion
-    error("type $(typeof(x)) has no setindex method. This type is read only.")
-end
-
-function Base.getindex(x::Adjoint_fermionfields{T},i)  where T <: Abstractfermion 
-    @inbounds return conj(x.parent[i])
-end
-
-
-function Base.size(x::Adjoint_fermionfields{T})  where T <: Abstractfermion 
-    return size(x.parent)
-end
-
 
 function clear_fermion!(a::Vector{<: AbstractFermionfields_4D{NC}}) where NC 
     for μ=1:4

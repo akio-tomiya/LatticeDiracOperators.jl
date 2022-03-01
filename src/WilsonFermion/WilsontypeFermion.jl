@@ -89,7 +89,7 @@ struct General_Dirac_term{Dim}
             linkinfo_derivatives_right[μ] = Vector{Linkinfo{Dim}}(undef,numderivatives)
             linkinfo_derivatives_leftdag[μ] = Vector{Linkinfo{Dim}}(undef,numderivatives)
 
-            println("----link")
+            println("$μ ----link")
             show(line_for_gaugefields)
             println("--- derivatives")
             show(derivatives[μ])
@@ -98,7 +98,7 @@ struct General_Dirac_term{Dim}
             
             for i=1:numderivatives
                 rightlinks = get_rightlinks(derivatives[μ][i])
-                #shiftedposition = -collect(derivatives[μ][i].position)
+                #shiftedposition = -2*collect(derivatives[μ][i].position)
                 #rightlinks = shift_wilsonloop(rightlinks,Tuple(shiftedposition))
                 leftlinks = get_leftlinks(derivatives[μ][i])
                 #leftlinks = shift_wilsonloop(leftlinks,Tuple(shiftedposition))
@@ -425,8 +425,9 @@ function onelink_diracterm(μ,κ,Dim)
 
 end
 
-function cloverlink_diracterm(μ,ν,c,Dim)
+function cloverlink_diracterm_debug(μ,ν,cSW,Dim)
     dirac_terms = General_Dirac_term{Dim}[]
+    c = -cSW/(16)
 
     startingpoint = zeros(Int64,Dim)
     endingpoint = zeros(Int64,Dim)
@@ -434,7 +435,47 @@ function cloverlink_diracterm(μ,ν,c,Dim)
     γμ = γmatrices[:,:,μ]
     γν = γmatrices[:,:,ν]
 
-    σμν =  (γμ*γν .- γν*γμ )*(im/2)  
+    σμν =  (γμ*γν .- γν*γμ )*(1/2)  
+
+    loop_righttop = Wilsonline([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+    loop_lefttop = Wilsonline([(ν,1),(μ,-1),(ν,-1),(μ,1)])
+    loop_rightbottom = Wilsonline([(ν,-1),(μ,1),(ν,1),(μ,-1)])
+    loop_leftbottom= Wilsonline([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+
+    #loopterm = loop_righttop #correct
+    #loopterm = loop_lefttop #not correct
+    #loopterm = loop_rightbottom #not correct
+    loopterm = loop_leftbottom #not correct
+    #loopterm = Wilsonline([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+
+    dirac_term = General_Dirac_term(c,σμν,loopterm,
+                    Tuple(startingpoint),
+                    Tuple(endingpoint)) 
+
+    push!(dirac_terms,dirac_term)
+
+    dirac_term = General_Dirac_term(-c,σμν,loopterm',
+    Tuple(startingpoint),
+    Tuple(endingpoint)) 
+
+    push!(dirac_terms,dirac_term)
+
+
+    return dirac_terms
+
+end
+
+function cloverlink_diracterm(μ,ν,cSW,Dim)
+    dirac_terms = General_Dirac_term{Dim}[]
+    c = -cSW/(16)
+
+    startingpoint = zeros(Int64,Dim)
+    endingpoint = zeros(Int64,Dim)
+
+    γμ = γmatrices[:,:,μ]
+    γν = γmatrices[:,:,ν]
+
+    σμν =  (γμ*γν .- γν*γμ )*(1/2)  
 
     loop_righttop = Wilsonline([(μ,1),(ν,1),(μ,-1),(ν,-1)])
     loop_lefttop = Wilsonline([(ν,1),(μ,-1),(ν,-1),(μ,1)])
@@ -529,7 +570,7 @@ function easymode_constructing_diraclines(parameters,Dim)
             c = check_important_parameters(parameters,"cSW")
             μ=1
             ν=2
-            diracterms = cloverlink_diracterm(μ,ν,c,Dim)
+            diracterms = cloverlink_diracterm_debug(μ,ν,c,Dim)
             append!(dirac_terms,diracterms)
             #println("dd ",length(dirac_terms))
         else

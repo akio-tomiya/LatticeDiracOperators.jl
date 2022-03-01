@@ -41,7 +41,9 @@ function calc_dSfdU!(dSfdU::Vector{<: AbstractGaugefields},fermi_action::Wilson_
     #X = (D^dag D)^(-1) ϕ 
     #
     #println("Xd ",X[1,1,1,1,1,1])
+    
     solve_DinvX!(X,WdagW,ϕ)
+    #set_wing_fermion!(X)
     #println("X ",X[1,1,1,1,1,1])
     clear_U!(dSfdU)
 
@@ -56,14 +58,15 @@ end
 function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action::Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge} ,U,X;coeff = 1) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
     mul!(Y,W,X)
-    #sset_wing_fermion!(Y)
+    #set_wing_fermion!(Y)
 
     temp0_f = fermi_action._temporary_fermionfields[3]
     temp1_f = fermi_action._temporary_fermionfields[4]
     temp0_g = fermi_action._temporary_gaugefields[end]
     #temp1_g = fermi_action._temporary_gaugefields[2]
 
-
+    #set_wing_U!(U)
+    
     numterms = get_numterms(W)
 
     
@@ -166,8 +169,8 @@ function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action:
 
             for inum=1:numderivatives
                 dFdμ_i = derivatives[inum]
-                dFdμ_i_position_left = collect(dFdμ_i.position) 
-                #dFdμ_i_position_left = -collect(dFdμ_i.position) 
+                #dFdμ_i_position_left = collect(dFdμ_i.position) 
+                dFdμ_i_position_left = -collect(dFdμ_i.position) 
                 dFdμ_i_position_right = dFdμ_i_position_left .+ position 
 
                 #println(Tuple(dFdμ_i_position_left))
@@ -179,12 +182,16 @@ function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action:
                 #if coeff_i > 1e-15
                 gaugefield_fermion_mul!(temp1_f,linkinfo_derivatives_right[inum],U,Xshifted,fermi_action._temporary_fermionfields)
                 #end
+                #set_wing_fermion!(temp1_f)
                 mul!(temp1_f,S)
+                #set_wing_fermion!(temp1_f)
 
                 #if coeff_i > 1e-15
                 gaugefield_fermion_mul!(temp0_f,linkinfo_derivatives_leftdag[inum],U,Yshifted,fermi_action._temporary_fermionfields)
                 #end
+                #set_wing_fermion!(temp0_f)
                 cross!(temp0_g,temp0_f',temp1_f) 
+                #set_wing_U!(temp0_g)
                 #println("1, ",coeff*coeff_i*temp0_g[:,:,1,1,1,1])
                 #mul!(temp0_g,temp1_f,temp0_f') 
 
@@ -192,6 +199,7 @@ function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action:
                 add_U!(dSfdU[μ],-coeff*coeff_i,temp0_g)
                 #end
                 #println("1, μ = $μ ", dSfdU[μ][1,1,1,1,1,1])
+                #set_wing_U!(dSfdU[μ])
                 
 
                 #if coeff_i > 1e-15
@@ -200,10 +208,15 @@ function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action:
                 Yshifted = shift_fermion(Y,Tuple(dFdμ_i_position_right))
 
                 gaugefield_fermion_mul!(temp1_f,linkinfo_derivatives_right[inum],U,Yshifted,fermi_action._temporary_fermionfields)
+                #set_wing_fermion!(temp1_f)
                 mul!(temp1_f,Sdag)
+                #set_wing_fermion!(temp1_f)
+
 
                 gaugefield_fermion_mul!(temp0_f,linkinfo_derivatives_leftdag[inum],U,Xshifted,fermi_action._temporary_fermionfields)
+                #set_wing_fermion!(temp0_f)
                 cross!(temp0_g,temp0_f',temp1_f) 
+                #set_wing_U!(temp0_g)
                 
                 #println("1, ",coeff*coeff_i*temp0_g[:,:,1,1,1,1])
                 #mul!(temp0_g,temp1_f,temp0_f') 
@@ -211,6 +224,8 @@ function calc_dSfdU_fromX!(dSfdU::Vector{<: AbstractGaugefields},Y,fermi_action:
                 add_U!(dSfdU[μ],-coeff*coeff_i,temp0_g)
                 #println("2, μ = $μ ", dSfdU[μ][1,1,0,1,1,1])
                 #end
+
+                #set_wing_U!(dSfdU[μ])
 
             end
             
