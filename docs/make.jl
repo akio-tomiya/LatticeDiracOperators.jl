@@ -21,5 +21,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/akio-tomiya/LatticeDiracOperators.jl",
-    devbranch="main",
+    devbranch="master",
 )
