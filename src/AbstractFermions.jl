@@ -69,6 +69,7 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
             elseif Dirac_operator == "Wilson"
                 x = Initialize_WilsonFermion(u)
             elseif Dirac_operator == "Domainwall"
+                @warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u,L5)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")

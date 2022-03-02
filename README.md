@@ -1,8 +1,8 @@
 # LatticeDiracOperators
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/stable)
+
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/dev)
-[![Build Status](https://github.com/akio-tomiyaLatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![CI](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml)
 
 # Abstract
 
@@ -16,7 +16,7 @@ This package will be used in [LatticeQCD.jl](https://github.com/akio-tomiya/Latt
 # What this package can do:
 - Constructing actions and its derivative for Staggered Fermion with 1-8 tastes (with the use of the rational HMC technique)
 - Constructing actions and its derivative for Wilson Fermion
-- Constructing actions and its derivative for Standard Domainwall Fermion
+- (EXPERIMENTAL) Constructing actions and its derivative for Standard Domainwall Fermion 
 - Hybrid Monte Carlo method with fermions.
 
 With the use of the Gaugefields.jl, we can also do the HMC with STOUT smearing. 
@@ -166,7 +166,7 @@ println(y[1,1,1,1,1,1])
 
 The "tastes" of the Staggered Fermion is defined in the action. 
 
-# Domainwall Fermions
+# (EXPERIMENTAL) Domainwall Fermions
 This package supports standard domainwall fermions. 
 The Dirac operator of the domainwall fermion is defined as 
 
@@ -277,7 +277,7 @@ UdSfdUμ = calc_UdSfdU(fermi_action,U,x)
 
 This package uses the RHMC techniques. 
 
-## Domainwall Fermions
+## (EXPERIMENTAL) Domainwall Fermions
 In the case of the domainwall fermion, the action is defined as 
 
 ```julia

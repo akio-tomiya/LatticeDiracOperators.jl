@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>How to use · LatticeDiracOperators.jl</title><link rel="canonical" href="https://github.com/akio-tomiya/LatticeDiracOperators.jl/howtouse.html"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">LatticeDiracOperators.jl</span></div><form class="docs-search" action="search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="index.html">Home</a></li><li class="is-active"><a class="tocitem" href="howtouse.html">How to use</a><ul class="internal"><li><a class="tocitem" href="#Definition-of-the-pseudo-fermion-fields"><span>Definition of the pseudo-fermion fields</span></a></li><li><a class="tocitem" href="#Other-operators"><span>Other operators</span></a></li><li><a class="tocitem" href="#Other-Fermions"><span>Other Fermions</span></a></li><li><a class="tocitem" href="#Fermion-Action"><span>Fermion Action</span></a></li><li><a class="tocitem" href="#Hybrid-Monte-Carlo-with-fermions"><span>Hybrid Monte Carlo with fermions</span></a></li><li class="toplevel"><a class="tocitem" href="#HMC-with-fermions-with-STOUT-smearing"><span>HMC with fermions with STOUT smearing</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="howtouse.html">How to use</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="howtouse.html">How to use</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/akio-tomiya/LatticeDiracOperators.jl/blob/master/docs/src/howtouse.md#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="How-to-use"><a class="docs-heading-anchor" href="#How-to-use">How to use</a><a id="How-to-use-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-use" title="Permalink"></a></h1><h2 id="Definition-of-the-pseudo-fermion-fields"><a class="docs-heading-anchor" href="#Definition-of-the-pseudo-fermion-fields">Definition of the pseudo-fermion fields</a><a id="Definition-of-the-pseudo-fermion-fields-1"></a><a class="docs-heading-anchor-permalink" href="#Definition-of-the-pseudo-fermion-fields" title="Permalink"></a></h2><p>The pseudo-fermin field is defined as </p><pre><code class="language-julia">using Gaugefields
+using LatticeDiracOperators
+
+NX = 4
+NY = 4
+NZ = 4
+NT = 4
+Nwing = 1
+Dim = 4
+NC = 3
+
+U = Initialize_4DGaugefields(NC,Nwing,NX,NY,NZ,NT,condition = &quot;cold&quot;)
+x = Initialize_pseudofermion_fields(U[1],&quot;Wilson&quot;)</code></pre><p>Now, x is a pseudo fermion fields for Wilson Dirac operator.  The element of x is <code>x[ic,ix,iy,iz,it,ialpha]</code>. ic is an index of the color. ialpha is the internal degree of the gamma matrix. </p><p>Then, the Wilson Dirac operator can be defined as </p><pre><code class="language-julia">params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;Wilson&quot;
+params[&quot;κ&quot;] = 0.141139
+params[&quot;eps_CG&quot;] = 1.0e-8
+params[&quot;verbose_level&quot;] = 2
+
+D = Dirac_operator(U,x,params)</code></pre><p>If you want to get the Gaussian distributed pseudo-fermions, just do</p><pre><code class="language-julia">gauss_distribution_fermion!(x)</code></pre><p>Then, you can apply the Dirac operator to the pseudo-fermion fields. </p><pre><code class="language-julia">using LinearAlgebra
+y = similar(x)
+mul!(y,D,x)</code></pre><p>And you can solve the equation <span>$D x = b$</span> like</p><pre><code class="language-julia">solve_DinvX!(y,D,x)
+println(y[1,1,1,1,1,1])</code></pre><p>If you want to see the convergence of the CG method, you can change the &quot;verbose_level&quot; in the Dirac operator. </p><pre><code class="language-julia">params[&quot;verbose_level&quot;] = 3
+D = Dirac_operator(U,x,params)
+gauss_distribution_fermion!(x)
+solve_DinvX!(y,D,x)
+println(y[1,1,1,1,1,1])</code></pre><p>The output is like </p><pre><code class="language-none">bicg method
+1-th eps: 1742.5253056262081
+2-th eps: 758.2899742222573
+3-th eps: 378.7020470573924
+4-th eps: 210.17029515182503
+5-th eps: 118.00493128655506
+6-th eps: 63.31719669150997
+7-th eps: 36.18603541453448
+8-th eps: 21.593691953496077
+9-th eps: 16.02895509383768
+10-th eps: 12.920647360667004
+11-th eps: 9.532250164198402
+12-th eps: 5.708202470516758
+13-th eps: 3.1711913019834337
+14-th eps: 0.9672090407947617
+15-th eps: 0.14579004932559966
+16-th eps: 0.02467506197970277
+17-th eps: 0.005588563782732157
+18-th eps: 0.002285284357387675
+19-th eps: 5.147142014626153e-5
+20-th eps: 3.5632092739322066e-10
+Converged at 20-th step. eps: 3.5632092739322066e-10</code></pre><h2 id="Other-operators"><a class="docs-heading-anchor" href="#Other-operators">Other operators</a><a id="Other-operators-1"></a><a class="docs-heading-anchor-permalink" href="#Other-operators" title="Permalink"></a></h2><p>You can use the adjoint of the Dirac operator </p><pre><code class="language-julia">gauss_distribution_fermion!(x)
+solve_DinvX!(y,D&#39;,x)
+println(y[1,1,1,1,1,1])</code></pre><p>You can define the <code>D^{\dagger} D</code> operator. </p><pre><code class="language-julia">DdagD = DdagD_operator(U,x,params)
+gauss_distribution_fermion!(x)
+solve_DinvX!(y,DdagD,x) 
+println(y[1,1,1,1,1,1])</code></pre><h2 id="Other-Fermions"><a class="docs-heading-anchor" href="#Other-Fermions">Other Fermions</a><a id="Other-Fermions-1"></a><a class="docs-heading-anchor-permalink" href="#Other-Fermions" title="Permalink"></a></h2><h3 id="Staggared-Fermions"><a class="docs-heading-anchor" href="#Staggared-Fermions">Staggared Fermions</a><a id="Staggared-Fermions-1"></a><a class="docs-heading-anchor-permalink" href="#Staggared-Fermions" title="Permalink"></a></h3><p>The Dirac operator of the staggered fermions is defined as </p><pre><code class="language-julia">x = Initialize_pseudofermion_fields(U[1],&quot;staggered&quot;)
+gauss_distribution_fermion!(x)
+params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;staggered&quot;
+params[&quot;mass&quot;] = 0.1
+params[&quot;eps_CG&quot;] = 1.0e-8
+params[&quot;verbose_level&quot;] = 2
+D = Dirac_operator(U,x,params)
+
+y = similar(x)
+mul!(y,D,x)
+println(y[1,1,1,1,1,1])
+
+solve_DinvX!(y,D,x)
+println(y[1,1,1,1,1,1])</code></pre><p>The &quot;tastes&quot; of the Staggered Fermion is defined in the action. </p><h3 id="Domainwall-Fermions"><a class="docs-heading-anchor" href="#Domainwall-Fermions">Domainwall Fermions</a><a id="Domainwall-Fermions-1"></a><a class="docs-heading-anchor-permalink" href="#Domainwall-Fermions" title="Permalink"></a></h3><p>This package supports standard domainwall fermions.  The Dirac operator of the domainwall fermion is defined as </p><pre><code class="language-julia">L5 = 4
+x = Initialize_pseudofermion_fields(U[1],&quot;Domainwall&quot;,L5=L5)
+println(&quot;x &quot;, x.w[1][1,1,1,1,1,1])
+gauss_distribution_fermion!(x)
+
+params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;Domainwall&quot;
+params[&quot;eps_CG&quot;] = 1.0e-16
+params[&quot;MaxCGstep&quot;] = 3000
+params[&quot;verbose_level&quot;] = 3
+params[&quot;mass&quot;] = 0.1
+params[&quot;L5&quot;] = L5
+D = Dirac_operator(U,x,params)
+
+println(&quot;x &quot;, x[1,1,1,1,1,1,1])
+y = similar(x)
+solve_DinvX!(y,D,x)
+println(&quot;y &quot;, y[1,1,1,1,1,1,1])
+
+z = similar(x)
+mul!(z,D,y)
+println(&quot;z &quot;, z[1,1,1,1,1,1,1])
+</code></pre><p>The domainwall fermion is defined in 5D space. The element of x is <code>x[ic,ix,iy,iz,it,ialpha,iL]</code>, where iL is an index on the five dimensional axis. </p><h2 id="Fermion-Action"><a class="docs-heading-anchor" href="#Fermion-Action">Fermion Action</a><a id="Fermion-Action-1"></a><a class="docs-heading-anchor-permalink" href="#Fermion-Action" title="Permalink"></a></h2><h3 id="Wilson-Fermion"><a class="docs-heading-anchor" href="#Wilson-Fermion">Wilson Fermion</a><a id="Wilson-Fermion-1"></a><a class="docs-heading-anchor-permalink" href="#Wilson-Fermion" title="Permalink"></a></h3><p>The action for pseudo-fermion is defined as </p><pre><code class="language-julia">
+NX = 4
+NY = 4
+NZ = 4
+NT = 4
+Nwing = 1
+Dim = 4
+NC = 3
+
+U = Initialize_4DGaugefields(NC,Nwing,NX,NY,NZ,NT,condition = &quot;cold&quot;)
+x = Initialize_pseudofermion_fields(U[1],&quot;Wilson&quot;)
+gauss_distribution_fermion!(x)
+
+params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;Wilson&quot;
+params[&quot;κ&quot;] = 0.141139
+params[&quot;eps_CG&quot;] = 1.0e-8
+params[&quot;verbose_level&quot;] = 2
+
+D = Dirac_operator(U,x,params)
+
+parameters_action = Dict()
+fermi_action = FermiAction(D,parameters_action)
+
+</code></pre><p>The fermion action with given pseudo-fermion fields is evaluated as </p><pre><code class="language-julia">Sfnew = evaluate_FermiAction(fermi_action,U,x)
+println(Sfnew)</code></pre><p>The derivative of the fermion action dSf/dU can be calculated as </p><pre><code class="language-julia">UdSfdUμ = calc_UdSfdU(fermi_action,U,x)</code></pre><p>The function calc<em>UdSfdU calculates the <code>U dSf/dU</code>, You can also use ``` calc</em>UdSfdU!(UdSfdUμ,fermi_action,U,x) ```</p><h3 id="Staggered-Fermion"><a class="docs-heading-anchor" href="#Staggered-Fermion">Staggered Fermion</a><a id="Staggered-Fermion-1"></a><a class="docs-heading-anchor-permalink" href="#Staggered-Fermion" title="Permalink"></a></h3><p>In the case of the Staggered fermion, we can choose &quot;taste&quot;.  The action is defined as </p><pre><code class="language-julia">x = Initialize_pseudofermion_fields(U[1],&quot;staggered&quot;)
+gauss_distribution_fermion!(x)
+params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;staggered&quot;
+params[&quot;mass&quot;] = 0.1
+params[&quot;eps_CG&quot;] = 1.0e-8
+params[&quot;verbose_level&quot;] = 2
+D = Dirac_operator(U,x,params)
+
+Nf = 2
+
+println(&quot;Nf = $Nf&quot;)
+parameters_action = Dict()
+parameters_action[&quot;Nf&quot;] = Nf
+fermi_action = FermiAction(D,parameters_action)
+
+Sfnew = evaluate_FermiAction(fermi_action,U,x)
+println(Sfnew)
+
+UdSfdUμ = calc_UdSfdU(fermi_action,U,x)</code></pre><p>This package uses the RHMC techniques. </p><h3 id="Domainwall-Fermions-2"><a class="docs-heading-anchor" href="#Domainwall-Fermions-2">Domainwall Fermions</a><a class="docs-heading-anchor-permalink" href="#Domainwall-Fermions-2" title="Permalink"></a></h3><p>In the case of the domainwall fermion, the action is defined as </p><pre><code class="language-julia"> L5 = 4
+x = Initialize_pseudofermion_fields(U[1],&quot;Domainwall&quot;,L5 = L5)
+gauss_distribution_fermion!(x)
+
+params = Dict()
+params[&quot;Dirac_operator&quot;] = &quot;Domainwall&quot;
+params[&quot;mass&quot;] = 0.1
+params[&quot;L5&quot;] = L5
+params[&quot;eps_CG&quot;] = 1.0e-19
+params[&quot;verbose_level&quot;] = 2
+params[&quot;method_CG&quot;] = &quot;bicg&quot;
+D = Dirac_operator(U,x,params)
+
+parameters_action = Dict()
+fermi_action = FermiAction(D,parameters_action)
+
+Sfnew = evaluate_FermiAction(fermi_action,U,x)
+println(Sfnew)
+
+UdSfdUμ = calc_UdSfdU(fermi_action,U,x)</code></pre><h2 id="Hybrid-Monte-Carlo-with-fermions"><a class="docs-heading-anchor" href="#Hybrid-Monte-Carlo-with-fermions">Hybrid Monte Carlo with fermions</a><a id="Hybrid-Monte-Carlo-with-fermions-1"></a><a class="docs-heading-anchor-permalink" href="#Hybrid-Monte-Carlo-with-fermions" title="Permalink"></a></h2><h3 id="Wilson-Fermion-2"><a class="docs-heading-anchor" href="#Wilson-Fermion-2">Wilson Fermion</a><a class="docs-heading-anchor-permalink" href="#Wilson-Fermion-2" title="Permalink"></a></h3><p>We show the HMC code with this package. </p><pre><code class="language-julia">using Gaugefields
+using LinearAlgebra
+using InteractiveUtils
+using Random
+
+function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
+    p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
+    Uold = similar(U)
+    substitute_U!(Uold,U)
+    MDsteps = 10
+    temp1 = similar(U[1])
+    temp2 = similar(U[1])
+    comb = 6
+    factor = 1/(comb*U[1].NV*U[1].NC)
+    numaccepted = 0
+    Random.seed!(123)
+
+    numtrj = 10
+    for itrj = 1:numtrj
+        @time accepted = MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
+        numaccepted += ifelse(accepted,1,0)
+
+        plaq_t = calculate_Plaquette(U,temp1,temp2)*factor
+        println(&quot;$itrj plaq_t = $plaq_t&quot;)
+        println(&quot;acceptance ratio &quot;,numaccepted/itrj)
+    end
+end
+
+function calc_action(gauge_action,U,p)
+    NC = U[1].NC
+    Sg = -evaluate_GaugeAction(gauge_action,U)/NC #evaluate_GaugeAction(gauge_action,U) = tr(evaluate_GaugeAction_untraced(gauge_action,U))
+    Sp = p*p/2
+    S = Sp + Sg
+    return real(S)
+end
+
+
+function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
+    Δτ = 1/MDsteps
+    NC,_,NN... = size(U[1])
+    
+    gauss_distribution!(p)
+    
+    substitute_U!(Uold,U)
+    gauss_sampling_in_action!(ξ,U,fermi_action)
+    sample_pseudofermions!(η,U,fermi_action,ξ)
+    Sfold = real(dot(ξ,ξ))
+    println(&quot;Sfold = $Sfold&quot;)
+
+    Sold = calc_action(gauge_action,U,p) + Sfold
+    println(&quot;Sold = &quot;,Sold)
+
+    for itrj=1:MDsteps
+        U_update!(U,p,0.5,Δτ,Dim,gauge_action)
+
+        P_update!(U,p,1.0,Δτ,Dim,gauge_action)
+        P_update_fermion!(U,p,1.0,Δτ,Dim,gauge_action,fermi_action,η)
+
+        U_update!(U,p,0.5,Δτ,Dim,gauge_action)
+    end
+    Sfnew = evaluate_FermiAction(fermi_action,U,η)
+    println(&quot;Sfnew = $Sfnew&quot;)
+    Snew = calc_action(gauge_action,U,p) + Sfnew
+    
+    println(&quot;Sold = $Sold, Snew = $Snew&quot;)
+    println(&quot;Snew - Sold = $(Snew-Sold)&quot;)
+
+    accept = exp(Sold - Snew) &gt;= rand()
+
+    #ratio = min(1,exp(Snew-Sold))
+    if accept != true #rand() &gt; ratio
+        substitute_U!(U,Uold)
+        return false
+    else
+        return true
+    end
+end
+
+function U_update!(U,p,ϵ,Δτ,Dim,gauge_action)
+    temps = get_temporary_gaugefields(gauge_action)
+    temp1 = temps[1]
+    temp2 = temps[2]
+    expU = temps[3]
+    W = temps[4]
+
+    for μ=1:Dim
+        exptU!(expU,ϵ*Δτ,p[μ],[temp1,temp2])
+        mul!(W,expU,U[μ])
+        substitute_U!(U[μ],W)
+        
+    end
+end
+
+function P_update!(U,p,ϵ,Δτ,Dim,gauge_action) # p -&gt; p +factor*U*dSdUμ
+    NC = U[1].NC
+    temps = get_temporary_gaugefields(gauge_action)
+    dSdUμ = temps[end]
+    factor =  -ϵ*Δτ/(NC)
+
+    for μ=1:Dim
+        calc_dSdUμ!(dSdUμ,gauge_action,μ,U)
+        mul!(temps[1],U[μ],dSdUμ) # U*dSdUμ
+        Traceless_antihermitian_add!(p[μ],factor,temps[1])
+    end
+end
+
+function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,fermi_action,η)  # p -&gt; p +factor*U*dSdUμ
+    #NC = U[1].NC
+    temps = get_temporary_gaugefields(gauge_action)
+    UdSfdUμ = temps[1:Dim]
+    factor =  -ϵ*Δτ
+
+    calc_UdSfdU!(UdSfdUμ,fermi_action,U,η)
+
+    for μ=1:Dim
+        Traceless_antihermitian_add!(p[μ],factor,UdSfdUμ[μ])
+        #println(&quot; p[μ] = &quot;, p[μ][1,1,1,1,1])
+    end
+end
+
+function test1()
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
+    Nwing = 1
+    Dim = 4
+    NC = 3
+
+    U = Initialize_4DGaugefields(NC,Nwing,NX,NY,NZ,NT,condition = &quot;cold&quot;)
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname(&quot;plaquette&quot;)
+    append!(plaqloop,plaqloop&#39;)
+    β = 5.5/2
+    push!(gauge_action,β,plaqloop)
+    
+    show(gauge_action)
+
+    x = Initialize_pseudofermion_fields(U[1],&quot;Wilson&quot;)
+
+
+    params = Dict()
+    params[&quot;Dirac_operator&quot;] = &quot;Wilson&quot;
+    params[&quot;κ&quot;] = 0.141139
+    params[&quot;eps_CG&quot;] = 1.0e-8
+    params[&quot;verbose_level&quot;] = 2
+    D = Dirac_operator(U,x,params)
+
+
+    parameters_action = Dict()
+    fermi_action = FermiAction(D,parameters_action)
+
+    y = similar(x)
+
+    
+    MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+
+end
+
+
+test1()</code></pre><h3 id="Staggered-Fermion-2"><a class="docs-heading-anchor" href="#Staggered-Fermion-2">Staggered Fermion</a><a class="docs-heading-anchor-permalink" href="#Staggered-Fermion-2" title="Permalink"></a></h3><p>if you want to use the Staggered fermions in HMC, the code is like: </p><pre><code class="language-julia">function test2()
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
+    Nwing = 1
+    Dim = 4
+    NC = 3
+
+    U = Initialize_4DGaugefields(NC,Nwing,NX,NY,NZ,NT,condition = &quot;cold&quot;)
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname(&quot;plaquette&quot;)
+    append!(plaqloop,plaqloop&#39;)
+    β = 5.5/2
+    push!(gauge_action,β,plaqloop)
+    
+    show(gauge_action)
+
+    x = Initialize_pseudofermion_fields(U[1],&quot;staggered&quot;)
+    gauss_distribution_fermion!(x)
+    params = Dict()
+    params[&quot;Dirac_operator&quot;] = &quot;staggered&quot;
+    params[&quot;mass&quot;] = 0.1
+    params[&quot;eps_CG&quot;] = 1.0e-8
+    params[&quot;verbose_level&quot;] = 2
+    D = Dirac_operator(U,x,params)
+    
+    Nf = 2
+    
+    println(&quot;Nf = $Nf&quot;)
+    parameters_action = Dict()
+    parameters_action[&quot;Nf&quot;] = Nf
+    fermi_action = FermiAction(D,parameters_action)
+
+    y = similar(x)
+
+    
+    MDtest!(gauge_action,U,Dim,fermi_action,x,y)
+
+end
+</code></pre><h1 id="HMC-with-fermions-with-STOUT-smearing"><a class="docs-heading-anchor" href="#HMC-with-fermions-with-STOUT-smearing">HMC with fermions with STOUT smearing</a><a id="HMC-with-fermions-with-STOUT-smearing-1"></a><a class="docs-heading-anchor-permalink" href="#HMC-with-fermions-with-STOUT-smearing" title="Permalink"></a></h1><p>We show the code of HMC with Wilson fermions with STOUT smearing. </p><pre><code class="language-julia">using Gaugefields
+using LinearAlgebra
+using LatticeDiracOperators
+
+function MDtest!(gauge_action,U,Dim,nn,fermi_action,η,ξ)
+    p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
+    Uold = similar(U)
+    dSdU = similar(U)
+    
+    substitute_U!(Uold,U)
+    MDsteps = 10
+    temp1 = similar(U[1])
+    temp2 = similar(U[1])
+    comb = 6
+    factor = 1/(comb*U[1].NV*U[1].NC)
+    numaccepted = 0
+    
+
+    numtrj = 100
+    for itrj = 1:numtrj
+        accepted = MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,nn,dSdU,fermi_action,η,ξ)
+        numaccepted += ifelse(accepted,1,0)
+
+        plaq_t = calculate_Plaquette(U,temp1,temp2)*factor
+        println(&quot;$itrj plaq_t = $plaq_t&quot;)
+        println(&quot;acceptance ratio &quot;,numaccepted/itrj)
+    end
+end
+
+function calc_action(gauge_action,U,p)
+    NC = U[1].NC
+    Sg = -evaluate_GaugeAction(gauge_action,U)/NC #evaluate_GaugeAction(gauge_action,U) = tr(evaluate_GaugeAction_untraced(gauge_action,U))
+    Sp = p*p/2
+    S = Sp + Sg
+    return real(S)
+end
+
+
+function MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,nn,dSdU,fermi_action,η,ξ)
+    
+
+    Δτ = 1/MDsteps
+    gauss_distribution!(p)
+
+    Uout,Uout_multi,_ = calc_smearedU(U,nn)
+    #Sold = calc_action(gauge_action,Uout,p)
+
+    substitute_U!(Uold,U)
+
+    gauss_sampling_in_action!(ξ,Uout,fermi_action)
+    sample_pseudofermions!(η,Uout,fermi_action,ξ)
+    Sfold = real(dot(ξ,ξ))
+    println(&quot;Sfold = $Sfold&quot;)
+
+    Sold = calc_action(gauge_action,U,p) + Sfold
+    println(&quot;Sold = &quot;,Sold)
+
+
+    for itrj=1:MDsteps
+        U_update!(U,p,0.5,Δτ,Dim,gauge_action)
+
+        P_update!(U,p,1.0,Δτ,Dim,gauge_action)
+        P_update_fermion!(U,p,1.0,Δτ,Dim,gauge_action,dSdU,nn,fermi_action,η)
+
+        U_update!(U,p,0.5,Δτ,Dim,gauge_action)
+    end
+
+    Uout,Uout_multi,_ = calc_smearedU(U,nn)
+    #Snew = calc_action(gauge_action,Uout,p)
+
+    Sfnew = evaluate_FermiAction(fermi_action,Uout,η)
+    println(&quot;Sfnew = $Sfnew&quot;)
+    Snew = calc_action(gauge_action,U,p) + Sfnew
+    
+
+    println(&quot;Sold = $Sold, Snew = $Snew&quot;)
+    println(&quot;Snew - Sold = $(Snew-Sold)&quot;)
+    ratio = min(1,exp(Snew-Sold))
+    if rand() &gt; ratio
+        substitute_U!(U,Uold)
+        return false
+    else
+        return true
+    end
+end
+
+function U_update!(U,p,ϵ,Δτ,Dim,gauge_action)
+    temps = get_temporary_gaugefields(gauge_action)
+    temp1 = temps[1]
+    temp2 = temps[2]
+    expU = temps[3]
+    W = temps[4]
+
+    for μ=1:Dim
+        exptU!(expU,ϵ*Δτ,p[μ],[temp1,temp2])
+        mul!(W,expU,U[μ])
+        substitute_U!(U[μ],W)
+        
+    end
+end
+
+function P_update!(U,p,ϵ,Δτ,Dim,gauge_action) # p -&gt; p +factor*U*dSdUμ
+    NC = U[1].NC
+    temps = get_temporary_gaugefields(gauge_action)
+    dSdUμ = temps[end]
+    factor =  -ϵ*Δτ/(NC)
+
+    for μ=1:Dim
+        calc_dSdUμ!(dSdUμ,gauge_action,μ,U)
+        mul!(temps[1],U[μ],dSdUμ) # U*dSdUμ
+        Traceless_antihermitian_add!(p[μ],factor,temps[1])
+    end
+end
+
+
+function P_update_fermion!(U,p,ϵ,Δτ,Dim,gauge_action,dSdU,nn,fermi_action,η)  # p -&gt; p +factor*U*dSdUμ
+    #NC = U[1].NC
+    temps = get_temporary_gaugefields(gauge_action)
+    UdSfdUμ = temps[1:Dim]
+    factor =  -ϵ*Δτ
+
+    Uout,Uout_multi,_ = calc_smearedU(U,nn)
+
+    for μ=1:Dim
+        calc_UdSfdU!(UdSfdUμ,fermi_action,Uout,η)
+        mul!(dSdU[μ],Uout[μ]&#39;,UdSfdUμ[μ])
+    end
+
+    dSdUbare = back_prop(dSdU,nn,Uout_multi,U) 
+    
+
+    for μ=1:Dim
+        mul!(temps[1],U[μ],dSdUbare[μ]) # U*dSdUμ
+        Traceless_antihermitian_add!(p[μ],factor,temps[1])
+        #println(&quot; p[μ] = &quot;, p[μ][1,1,1,1,1])
+    end
+end
+
+function test1()
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
+    Nwing = 1
+    Dim = 4
+    NC = 3
+
+    U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = &quot;hot&quot;)
+
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname(&quot;plaquette&quot;)
+    append!(plaqloop,plaqloop&#39;)
+    β = 5.7/2
+    push!(gauge_action,β,plaqloop)
+
+    show(gauge_action)
+
+    L = [NX,NY,NZ,NT]
+    nn = CovNeuralnet()
+    ρ = [0.1]
+    layername = [&quot;plaquette&quot;]
+    st = STOUT_Layer(layername,ρ,L)
+    push!(nn,st)
+    #push!(nn,st)
+
+    x = Initialize_pseudofermion_fields(U[1],&quot;Wilson&quot;)
+
+
+    params = Dict()
+    params[&quot;Dirac_operator&quot;] = &quot;Wilson&quot;
+    params[&quot;κ&quot;] = 0.141139
+    params[&quot;eps_CG&quot;] = 1.0e-8
+    params[&quot;verbose_level&quot;] = 2
+    D = Dirac_operator(U,x,params)
+
+
+    parameters_action = Dict()
+    fermi_action = FermiAction(D,parameters_action)
+
+    y = similar(x)
+    
+
+    MDtest!(gauge_action,U,Dim,nn,fermi_action,x,y)
+
+end
+
+
+test1()</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="index.html">« Home</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 1 March 2022 12:08">Tuesday 1 March 2022</span>. Using Julia version 1.6.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
