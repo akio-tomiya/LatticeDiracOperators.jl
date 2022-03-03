@@ -18,7 +18,11 @@ end
 function D5DW_Domainwall_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters,mass) where  {NC,Dim}
     @assert haskey(parameters,"L5") "parameters should have the keyword L5"
     L5 = parameters["L5"]
-    @assert L5 == x.L5 "L5 in Dirac operator and fermion fields should be same. Now L5 = $L5 and x.L5 = $(x.L5)"
+    if L5 != x.L5
+        @warn "L5 in Dirac operator and fermion fields is not same. Now L5 = $L5 and x.L5 = $(x.L5)"
+        #@assert L5 == x.L5 "L5 in Dirac operator and fermion fields should be same. Now L5 = $L5 and x.L5 = $(x.L5)"
+    end
+    
     if Dim == 4
         boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
     elseif Dim == 2

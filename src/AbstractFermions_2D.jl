@@ -335,6 +335,7 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_2D{3},A::T,x::T3) where {T<
                         x1 = x[1,ix, it,ialpha]
                         x2 = x[2,ix, it,ialpha]
                         x3 = x[3,ix, it,ialpha]
+
                     
                         y[1,ix, it,ialpha] = A[1,1,ix, it]*x1 + 
                                                     A[1,2,ix, it]*x2+ 

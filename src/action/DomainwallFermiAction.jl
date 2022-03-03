@@ -56,7 +56,6 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Domai
 
 
     mul!(temps_dw,D5_PV',ϕ)
-
     
     solve_DinvX!(X,Q,temps_dw)
     #set_wing_fermion!(X)
@@ -65,6 +64,7 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Domai
     clear_U!(UdSfdU)
 
     calc_UdSfdU_fromX!(UdSfdU,Y,ϕ,fermi_action,U,X) 
+
     #println("----aa--")
     set_wing_U!(UdSfdU)
 end
@@ -72,7 +72,7 @@ end
 function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,ϕ,
         fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge } ,U,X;coeff = 1) where {Dim,Dirac,fermion,gauge }
     W = fermi_action.diracoperator.D5DW(U)
-    temps_dw = fermi_action._temporary_fermionfields[1]
+    temps_dw = fermi_action._temporary_fermionfields[2]
     mul!(temps_dw,W,X)
     clear_fermion!(Y)
     add_fermion!(Y,-1,ϕ,1,temps_dw)
@@ -82,6 +82,77 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,ϕ,
     
     κ = 1/2
     Dwilson = W.wilsonoperator
+
+    #=
+    for i5=1:X.L5
+
+        Ys = Y.w[i5]
+        Xs = X.w[i5]
+
+
+        temp0_f = fermi_action._temporary_fermionfields[3].w[i5] #F_field
+        temp1_f = fermi_action._temporary_fermionfields[4].w[i5] #F_field
+        #temp0_f = fermi_action._temporary_fermionfields[3]
+        #temp1_f = fermi_action._temporary_fermionfields[4]
+        temp0_g = fermi_action._temporary_gaugefields[1]
+
+
+        for μ=1:Dim
+            #!  Construct U(x,mu)*P1
+    
+            # U_{k,μ} X_{k+μ}
+            Xplus = shift_fermion(Xs,μ)
+    
+            #@time mul!(temp0_f,U[μ],X)
+
+            println(Xplus)
+    
+            mul!(temp0_f,U[μ],Xplus)
+
+            println(temp0_f)
+            println(typeof(temp0_f))
+            error("err")
+            
+            
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp1_f,view(Dwilson.rminusγ,:,:,μ),temp0_f)
+            
+            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp0_f,κ,temp1_f)
+    
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            mul!(temp0_g,temp0_f,Ys') 
+    
+            add_U!(UdSfdU[μ],-coeff,temp0_g)
+    
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            Yplus = shift_fermion(Ys,μ)
+            mul!(temp0_f,Yplus',U[μ]')
+
+            
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp1_f,temp0_f,view(Dwilson.rplusγ,:,:,μ))
+    
+            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_f,κ,temp1_f)
+            
+   
+            #println(Dwilson.hopm[μ],"\t",Dwilson.hopm[μ]*κ)
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_g,Xs,temp0_f) 
+    
+            add_U!(UdSfdU[μ],coeff,temp0_g)
+    
+    
+        end
+
+    end
+
+    =#
+
+
+        
     for i5=1:X.L5
 
         temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
@@ -121,11 +192,14 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,ϕ,
             mul!(temp0_f,κ,temp1_f)
 
             # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp0_g,Xs,temp0_f) 
-
+            mul!(temp0_g,Xs,temp0_f)
+            
             add_U!(UdSfdU[μ],coeff,temp0_g)
         end
-    end
+
+       
+    end 
+     
 
 end
 
