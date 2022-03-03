@@ -77,6 +77,8 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
         elseif Dim == 2
             if Dirac_operator == "staggered"
                 x = Initialize_StaggeredFermion(u)
+            elseif Dirac_operator == "Wilson"
+                x = Initialize_WilsonFermion(u)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end

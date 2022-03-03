@@ -3,177 +3,23 @@ abstract type WilsonFermion_4D{NC} <: AbstractFermionfields_4D{NC}
 end
 
 function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    #temp = temps[4]
-    #temp1 = temps[1]cc
-    #temp2 = temps[2]
-
-    clear_fermion!(temp)
-    #set_wing_fermion!(x)
-    for ν=1:4
-        
-        xplus = shift_fermion(x,ν)
-        #println(xplus)
-        
-
-        mul!(temp1,U[ν],xplus)
-       
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1,view(A.rminusγ,:,:,ν))
-
-        
-
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-
-
-        mul!(temp2,Uminus',xminus)
-     
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rplusγ,:,:,ν))
-
-        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,1,x,-1,temp)
-
-    set_wing_fermion!(xout,A.boundarycondition)
-
-    #display(xout)
-    #    exit()
+    Wx!(xout,U,x,A,4) 
     return
 end
 
 function Dx!(xout::T1,U::Array{G,1},x::T2,A) where  {T1 <: WilsonFermion_4D,T2 <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    clear_fermion!(temp)
-    #clear!(temp1)
-    #clear!(temp2)
-    set_wing_fermion!(x)
-    for ν=1:4
-        xplus = shift_fermion(x,ν)
-        mul!(temp1,U[ν],xplus)
-        #... Dirac multiplication
-        mul!(temp1,view(A.rminusγ,:,:,ν),temp1)
-        
-        #
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-        mul!(temp2,Uminus',xminus)
-
-        mul!(temp2,view(A.rplusγ,:,:,ν),temp2)
-        add_fermion!(temp,0.5,temp1,0.5,temp2)
-        
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
-
-    #display(xout)
-    #    exit()
+    Dx!(xout,U,x,A,4)
     return
 end
 
 function Ddagx!(xout::T1,U::Array{G,1},x::T2,A) where  {T1 <: WilsonFermion_4D,T2 <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    clear_fermion!(temp)
-    #clear!(temp1)
-    #clear!(temp2)
-    set_wing_fermion!(x)
-    for ν=1:4
-        xplus = shift_fermion(x,ν)
-        mul!(temp1,U[ν],xplus)
-        #... Dirac multiplication
-        mul!(temp1,view(A.rplusγ,:,:,ν),temp1)
-        
-        #
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-        mul!(temp2,Uminus',xminus)
-
-        mul!(temp2,view(A.rminusγ,:,:,ν),temp2)
-        add_fermion!(temp,0.5,temp1,0.5,temp2)
-        
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
-
-    #display(xout)
-    #    exit()
+    Ddagx!(xout,U,x,A,4)
     return
 end
 
 
 function Tx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D,G <: AbstractGaugefields} # Tx, W = (1 - T)x
-    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    #temp = temps[4]
-    #temp1 = temps[1]
-    #temp2 = temps[2]
-
-    clear_fermion!(temp)
-    #set_wing_fermion!(x)
-    for ν=1:4
-        
-        xplus = shift_fermion(x,ν)
-        #println(xplus)
-        
-
-        mul!(temp1,U[ν],xplus)
-       
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1,view(A.rminusγ,:,:,ν))
-
-        
-
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-
-
-        mul!(temp2,Uminus',xminus)
-     
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rplusγ,:,:,ν))
-
-        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,0,x,1,temp)
-
-    set_wing_fermion!(xout,A.boundarycondition)
-
-    #display(xout)
-    #    exit()
+    Tx!(xout,U,x,A,4) 
     return
 end
 
@@ -182,49 +28,9 @@ end
 function Wdagx!(xout::T,U::Array{G,1},
     x::T,A) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
     #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4] #temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    clear_fermion!(temp)
-    #set_wing_fermion!(x)
-    for ν=1:4
-        xplus = shift_fermion(x,ν)
-        mul!(temp1,U[ν],xplus)
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-        #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
-        mul!(temp1,view(A.rplusγ,:,:,ν))
-        
-        
-        #
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-
-        mul!(temp2,Uminus',xminus)
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rminusγ,:,:,ν))
-
-
-        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-        
-        
-        
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,1,x,-1,temp)
-    set_wing_fermion!(xout,A.boundarycondition)
-
-    #display(xout)
-    #    exit()
+    Wdagx!(xout,U,x,A,4)
     return
 end
-
-
 
 
 

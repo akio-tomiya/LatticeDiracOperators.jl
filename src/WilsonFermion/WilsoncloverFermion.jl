@@ -1,4 +1,32 @@
+
 struct WilsonClover
+    cSW::Float64
+    σ::Array{Array{ComplexF64,2},2}
+
+    function WilsonClover(cSW)
+        σ = make_σμν()
+        return new(cSW,σ)
+    end
+end
+
+function make_σμν()
+    σ = Array{Array{ComplexF64,2},2}(undef,4,4)
+    for μ=1:4
+        γμ = γ_all[:,:,μ]
+        for ν=1:4
+            γν = γ_all[:,:,ν]
+            σ[μ,ν] =  (γμ*γν .- γν*γμ )*(1/2)  
+        end
+    end
+    return σ
+end
+
+function Wclover!(y,U,x,A) #clover operator
+    
+end
+
+
+struct WilsonClover_misc
     clover_coefficient::Float64
     internal_flags::Array{Bool,1}
     inn_table::Array{Int64,3}

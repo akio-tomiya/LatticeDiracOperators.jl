@@ -210,6 +210,8 @@ function shift_fermion(F::AbstractFermionfields_2D{NC},ν::T) where {T <: Intege
             shift = (-1,0)
     elseif ν == -2
             shift = (0,-1)
+    else
+        error("ν = $ν")
     end
 
     return Shifted_fermionfields_2D(F,shift)
@@ -941,7 +943,7 @@ function gauss_distribution_fermion!(x::AbstractFermionfields_2D{NC},randomfunc,
     #NY = x.NY
     ##NZ = x.NZ
     NT = x.NT
-    n6 = size(x.f)[6]
+    n6 = size(x.f)[end]
     #σ = sqrt(1/2)
 
     for mu = 1:n6

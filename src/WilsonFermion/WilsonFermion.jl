@@ -1,4 +1,5 @@
 include("./WilsoncloverFermion.jl")
+
 using Requires
 
 struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
@@ -60,6 +61,9 @@ include("./WilsonFermion_4D.jl")
 include("./WilsonFermion_4D_wing.jl")
 include("./WilsonFermion_4D_wing_Adjoint.jl")
 
+include("./WilsonFermion_2D.jl")
+include("./WilsonFermion_2D_wing.jl")
+
 
 
 function __init__()
@@ -80,7 +84,15 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
 
     @assert haskey(parameters,"κ") "parameters should have the keyword κ"
     κ = parameters["κ"]
-    boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    if Dim == 4
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    elseif Dim == 2
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,-1])
+    else
+        error("Dim should be 2 or 4!")
+    end
+
+    #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
     r = check_parameters(parameters,"r",1.0)
 
@@ -119,7 +131,9 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
 
     hasclover = check_parameters(parameters,"hasclover",false)
     if hasclover
-        error("notsupported")
+        cSW = r = check_parameters(parameters,"cSW",1.0)
+        cloverterm = WilsonClover(cSW)
+        #error("notsupported")
     else
         cloverterm = nothing
     end
@@ -191,6 +205,8 @@ function Initialize_WilsonFermion(NC,NN...)
     if Dim == 4
         fermion = WilsonFermion_4D_wing{NC}(NN...)
         #fermion = WilsonFermion_4D_wing(NC,NN...)
+    elseif Dim == 2
+        fermion = WilsonFermion_2D_wing{NC}(NN...)
     else
         error("Dimension $Dim is not supported")
     end
@@ -203,6 +219,10 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields
     
     #@time Wx!(y,A.U,x,A,A._temporary_fermi) 
     Wx!(y,A.U,x,A) 
+    if A.cloverterm != nothing
+        Wclover!(y,A.U,x,A)
+        error("not implemented!")
+    end
     #error("w")
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
@@ -313,4 +333,233 @@ function mk_gamma(r)
 
 end
 
+gtmp1,gtmp2,gtmp3 = mk_gamma(1)
+const γ_all = gtmp1 
+const γ5 = γ_all[:,:,5]
+
+const rplusγ1 = gtmp2
+const rminusγ1 = gtmp3
+
+
 include("./WilsontypeFermion.jl")
+
+function Wx!(xout::T,U::Array{G,1},x::T,A,Dim)  where  {T,G <: AbstractGaugefields}
+    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    #temp = temps[4]
+    #temp1 = temps[1]cc
+    #temp2 = temps[2]
+
+    clear_fermion!(temp)
+    #set_wing_fermion!(x)
+    for ν=1:Dim
+        
+        xplus = shift_fermion(x,ν)
+        #println(xplus)
+        
+
+        mul!(temp1,U[ν],xplus)
+       
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+
+        mul!(temp1,view(A.rminusγ,:,:,ν))
+
+        
+
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+
+
+        mul!(temp2,Uminus',xminus)
+     
+        #
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+        mul!(temp2,view(A.rplusγ,:,:,ν))
+
+        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
+
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1,x,-1,temp)
+
+    set_wing_fermion!(xout,A.boundarycondition)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+
+function Dx!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    #clear!(temp1)
+    #clear!(temp2)
+    set_wing_fermion!(x)
+    for ν=1:Dim
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rminusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rplusγ,:,:,ν),temp2)
+        add_fermion!(temp,0.5,temp1,0.5,temp2)
+        
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function Ddagx!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    #clear!(temp1)
+    #clear!(temp2)
+    set_wing_fermion!(x)
+    for ν=1:Dim
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rplusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rminusγ,:,:,ν),temp2)
+        add_fermion!(temp,0.5,temp1,0.5,temp2)
+        
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1/(2*A.κ),x,-1,temp)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function Tx!(xout::T,U::Array{G,1},x::T,A,Dim)  where  {T,G <: AbstractGaugefields} # Tx, W = (1 - T)x
+    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    #temp = temps[4]
+    #temp1 = temps[1]
+    #temp2 = temps[2]
+
+    clear_fermion!(temp)
+    #set_wing_fermion!(x)
+    for ν=1:Dim
+        
+        xplus = shift_fermion(x,ν)
+        #println(xplus)
+        
+
+        mul!(temp1,U[ν],xplus)
+       
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+
+        mul!(temp1,view(A.rminusγ,:,:,ν))
+
+        
+
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+
+
+        mul!(temp2,Uminus',xminus)
+     
+        #
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+        mul!(temp2,view(A.rplusγ,:,:,ν))
+
+        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
+
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,0,x,1,temp)
+
+    set_wing_fermion!(xout,A.boundarycondition)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function Wdagx!(xout::T,U::Array{G,1},
+    x::T,A,Dim) where  {T,G <: AbstractGaugefields}
+    #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4] #temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    #set_wing_fermion!(x)
+    for ν=1:Dim
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+        #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+        mul!(temp1,view(A.rplusγ,:,:,ν))
+        
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+
+        mul!(temp2,Uminus',xminus)
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
+        mul!(temp2,view(A.rminusγ,:,:,ν))
+
+
+        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
+        
+        
+        
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout,1,x,-1,temp)
+    set_wing_fermion!(xout,A.boundarycondition)
+
+    #display(xout)
+    #    exit()
+    return
+end
+

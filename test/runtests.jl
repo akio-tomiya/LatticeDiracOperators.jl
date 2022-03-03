@@ -4,21 +4,19 @@ using Test
 using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
-    
-    @testset "Staggered HMC" begin
-        include("hmc.jl")
-        @test true
-    end
-
     @testset "Wilson HMC" begin
+        println("Wilson HMC")
         include("wilsonhmc.jl")
         @test true
     end
 
 
+    @testset "Staggered HMC" begin
+        println("Staggered HMC")
+        include("hmc.jl")
+        @test true
+    end
 
-
-    
 
     @testset "Basic operations" begin
         include("basic.jl")
