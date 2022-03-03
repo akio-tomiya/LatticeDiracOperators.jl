@@ -18,7 +18,7 @@ struct WilsonFermion_2D_wing{NC,NDW} <: WilsonFermion_2D{NC} #AbstractFermionfie
 
 
     function WilsonFermion_2D_wing(NC::T,NX::T,NT::T) where T<: Integer
-        NG = 4
+        NG = 2
         NDW = 1
         #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
         f = zeros(ComplexF64,NC,NX+2NDW,NT+2NDW,NG)
@@ -27,7 +27,7 @@ struct WilsonFermion_2D_wing{NC,NDW} <: WilsonFermion_2D{NC} #AbstractFermionfie
     end
 
     function WilsonFermion_2D_wing{NC}(NX::T,NT::T) where {T<: Integer,NC}
-        NG = 4
+        NG = 2
         NDW = 1
         #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
         f = zeros(ComplexF64,NC,NX+2NDW,NT+2NDW,NG)
@@ -68,9 +68,10 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition) w
     #NZ = a.NZ
     #NY = a.NY
     NX = a.NX
+    NG = a.NG
 
     #!  X-direction
-    for ialpha=1:4
+    for ialpha=1:NG
         for it=1:NT
             #for iz = 1:NZ
                 #for iy=1:NY
@@ -82,7 +83,7 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition) w
         end
     end
 
-    for ialpha=1:4
+    for ialpha=1:NG
         for it=1:NT
             #for iz=1:NZ
                 #for iy=1:NY
@@ -97,7 +98,7 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition) w
 
 
     
-    for ialpha=1:4
+    for ialpha=1:NG
 
         #T-direction
         #for iz=1:NZ
@@ -120,9 +121,10 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition,is
     #NZ = a.NZ
     #NY = a.NY
     NX = a.NX
+    NG = a.NG
 
     #!  X-direction
-    @inbounds for ialpha=1:4
+    @inbounds for ialpha=1:NG
         for it=1:NT
             #for iz = 1:NZ
                 #for iy=1:NY
@@ -138,7 +140,7 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition,is
         end
     end
 
-    @inbounds for ialpha=1:4
+    @inbounds for ialpha=1:NG
         for it=1:NT
             #for iz=1:NZ
                 #for iy=1:NY
@@ -157,7 +159,7 @@ function set_wing_fermion!(a::WilsonFermion_2D_wing{NC,NDW},boundarycondition,is
 
 
     
-    @inbounds for ialpha=1:4
+    @inbounds for ialpha=1:NG
 
         #T-direction
         #for iz=1:NZ
@@ -335,13 +337,13 @@ function LinearAlgebra.mul!(x::WilsonFermion_2D_wing{NC,NDW},A::TA) where {TA <:
                     @simd for ix=1:NX
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            x[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
-                            x[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            x[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            x[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
+                            x[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2#+A[1,3]*e3+A[1,4]*e4
+                            x[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2#+A[2,3]*e3+A[2,4]*e4
+                            #x[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2#+A[3,3]*e3+A[3,4]*e4
+                            #sx[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2#+A[4,3]*e3+A[4,4]*e4
 
                     end
                 #end
@@ -370,13 +372,13 @@ function LinearAlgebra.mul!(x::WilsonFermion_2D_wing{NC,NDW},A::TA,iseven::Bool)
                         if evenodd == iseven
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            x[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
-                            x[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            x[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            x[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
+                            x[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2#+A[1,3]*e3+A[1,4]*e4
+                            x[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2#+A[2,3]*e3+A[2,4]*e4
+                            #x[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
+                            #x[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
                         end
                     end
                 #end
@@ -405,13 +407,13 @@ function LinearAlgebra.mul!(xout::WilsonFermion_2D_wing{NC,NDW},A::TA,x::Abstrac
                     @simd for ix=1:NX
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            xout[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
-                            xout[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            xout[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            xout[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
+                            xout[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2#+A[1,3]*e3+A[1,4]*e4
+                            xout[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2#+A[2,3]*e3+A[2,4]*e4
+                            #xout[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
+                            #xout[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
 
                     end
                 #end
@@ -442,13 +444,13 @@ function LinearAlgebra.mul!(xout::WilsonFermion_2D_wing{NC,NDW},A::TA,x::WilsonF
                         if evenodd == iseven
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            xout[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
-                            xout[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            xout[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            xout[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
+                            xout[ic,ix, it,1] = A[1,1]*e1+A[1,2]*e2#+A[1,3]*e3+A[1,4]*e4
+                            xout[ic,ix, it,2] = A[2,1]*e1+A[2,2]*e2#+A[2,3]*e3+A[2,4]*e4
+                            #xout[ic,ix, it,3] = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
+                            #xout[ic,ix, it,4] = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
                         end
 
                     end
@@ -476,13 +478,13 @@ function LinearAlgebra.mul!(xout::WilsonFermion_2D_wing{NC,NDW},x::WilsonFermion
                     @simd for ix=1:NX
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2+A[3,1]*e3+A[4,1]*e4
-                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2+A[3,2]*e3+A[4,2]*e4
-                            xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
-                            xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
+                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2#+A[3,1]*e3+A[4,1]*e4
+                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2#+A[3,2]*e3+A[4,2]*e4
+                            #xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
+                            #xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
 
                     end
                 #end
@@ -509,13 +511,13 @@ function LinearAlgebra.mul!(xout::WilsonFermion_2D_wing{NC,NDW},x::AbstractFermi
                     @simd for ix=1:NX
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2+A[3,1]*e3+A[4,1]*e4
-                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2+A[3,2]*e3+A[4,2]*e4
-                            xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
-                            xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
+                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2#+A[3,1]*e3+A[4,1]*e4
+                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2#+A[3,2]*e3+A[4,2]*e4
+                            #xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
+                            #xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
 
                     end
                 #end
@@ -544,13 +546,13 @@ function LinearAlgebra.mul!(xout::WilsonFermion_2D_wing{NC,NDW},x::WilsonFermion
                         if evenodd == iseven
                             e1 = x[ic,ix, it,1]
                             e2 = x[ic,ix, it,2]
-                            e3 = x[ic,ix, it,3]
-                            e4 = x[ic,ix, it,4]
+                            #e3 = x[ic,ix, it,3]
+                            #e4 = x[ic,ix, it,4]
 
-                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2+A[3,1]*e3+A[4,1]*e4
-                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2+A[3,2]*e3+A[4,2]*e4
-                            xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
-                            xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
+                            xout[ic,ix, it,1] = A[1,1]*e1+A[2,1]*e2#+A[3,1]*e3+A[4,1]*e4
+                            xout[ic,ix, it,2] = A[1,2]*e1+A[2,2]*e2#+A[3,2]*e3+A[4,2]*e4
+                            #xout[ic,ix, it,3] = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
+                            #xout[ic,ix, it,4] = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
                         end
                     end
                 #end
@@ -619,12 +621,10 @@ end
 
 """
 c--------------------------------------------------------------------------c
-c     y = gamma_5 * x
+c     y = sigma_3 * x
 c     here
-c                  ( -1       )
-c        GAMMA5 =  (   -1     )
-c                  (     +1   )
-c                  (       +1 )
+c                  ( 1       )
+c        SIGMA3 =  (   +1     )
 c--------------------------------------------------------------------------c
     """
     function mul_γ5x!(y::WilsonFermion_2D_wing{NC},x::WilsonFermion_2D_wing{NC}) where NC
@@ -639,7 +639,7 @@ c--------------------------------------------------------------------------c
                         for i2=1:n2
                             #ix = i2+NDW
                             @simd for ic=1:NC
-                                y.f[i1,i2, i5,i6]=x.f[i1,i2, i5,i6]*ifelse(i6 <= 2,-1,1)
+                                y.f[i1,i2, i5,i6]=x.f[i1,i2, i5,i6]*ifelse(i6 == 2,-1,1)
                             end
                         end
                     #end
@@ -663,7 +663,7 @@ c--------------------------------------------------------------------------c
                         for i2=1:n2
                             #ix = i2+NDW
                             @simd for ic=1:NC
-                                x.f[i1,i2, i5,i6]=x.f[i1,i2, i5,i6]*ifelse(i6 <= 2,-1,1)
+                                x.f[i1,i2, i5,i6]=x.f[i1,i2, i5,i6]*ifelse(i6 == 2,-1,1)
                             end
                         end
                     #end
@@ -673,6 +673,7 @@ c--------------------------------------------------------------------------c
 
     end
 
+    #
 
     function mul_1plusγ5x!(y::WilsonFermion_2D_wing{NC},x::WilsonFermion_2D_wing{NC})  where NC#(1+gamma_5)/2
         NX = x.NX
@@ -685,10 +686,10 @@ c--------------------------------------------------------------------------c
                 #for iz=1:NZ
                     #for iy=1:NY
                         @simd for ix=1:NX
-                            y[ic,ix, it,1] = 0#-1*x[ic,ix, it,1]
+                            y[ic,ix, it,1] = x[ic,ix, it,1]
                             y[ic,ix, it,2] = 0#-1*x[ic,ix, it,2]
-                            y[ic,ix, it,3] = x[ic,ix, it,3]
-                            y[ic,ix, it,4] = x[ic,ix, it,4]
+                            #y[ic,ix, it,3] = x[ic,ix, it,3]
+                            #y[ic,ix, it,4] = x[ic,ix, it,4]
                         end
                     #end
                 #end
@@ -707,8 +708,8 @@ c--------------------------------------------------------------------------c
                 #for iz=1:NZ
                     #for iy=1:NY
                         @simd for ix=1:NX
-                            y[ic,ix, it,3] += factor*x[ic,ix, it,3]
-                            y[ic,ix, it,4] += factor*x[ic,ix, it,4]
+                            y[ic,ix, it,1] += factor*x[ic,ix, it,1]
+                            #y[ic,ix, it,4] += factor*x[ic,ix, it,4]
                         end
                     #end
                 #end
@@ -727,10 +728,10 @@ c--------------------------------------------------------------------------c
                 #for iz=1:NZ
                     #for iy=1:NY
                         @simd for ix=1:NX
-                            y[ic,ix, it,1] = x[ic,ix, it,1]
+                            y[ic,ix, it,1] = 0#x[ic,ix, it,1]
                             y[ic,ix, it,2] = x[ic,ix, it,2]
-                            y[ic,ix, it,3] = 0#x[ic,ix, it,3]
-                            y[ic,ix, it,4] = 0#x[ic,ix, it,4]
+                            #y[ic,ix, it,3] = 0#x[ic,ix, it,3]
+                            #y[ic,ix, it,4] = 0#x[ic,ix, it,4]
                         end
                     #end
                 #end
@@ -749,7 +750,7 @@ c--------------------------------------------------------------------------c
                 #for iz=1:NZ
                     #for iy=1:NY
                         @simd for ix=1:NX
-                            y[ic,ix, it,1] += factor*x[ic,ix, it,1]
+                            #y[ic,ix, it,1] += factor*x[ic,ix, it,1]
                             y[ic,ix, it,2] += factor*x[ic,ix, it,2]
                         end
                     #end

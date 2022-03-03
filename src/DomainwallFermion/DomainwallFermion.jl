@@ -267,6 +267,7 @@ end
 
 
 include("./DomainwallFermion_5d_wing.jl")
+include("./DomainwallFermion_3d_wing.jl")
 
 function Initialize_DomainwallFermion(u::AbstractGaugefields{NC,Dim},L5) where {NC,Dim}
     _,_,NN... = size(u)

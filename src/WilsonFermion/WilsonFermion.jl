@@ -96,11 +96,20 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
 
     r = check_parameters(parameters,"r",1.0)
 
-    γ,rplusγ,rminusγ = mk_gamma(r)
-    hopp = zeros(ComplexF64,4)
-    hopm = zeros(ComplexF64,4)
-    hopp .= κ
-    hopm .= κ
+    if Dim==4
+        γ,rplusγ,rminusγ = mk_gamma(r)
+        hopp = zeros(ComplexF64,4)
+        hopm = zeros(ComplexF64,4)
+        hopp .= κ
+        hopm .= κ
+    elseif Dim == 2
+        γ,rplusγ,rminusγ = mk_sigma(r)
+        hopp = zeros(ComplexF64,2)
+        hopm = zeros(ComplexF64,2)
+        hopp .= κ
+        hopm .= κ
+    end
+
 
     
     for i=1:num
@@ -330,6 +339,48 @@ function mk_gamma(r)
 
     return gamma,rpg,rmg
 
+
+end
+
+function mk_sigma(r)
+    g0 = zeros(ComplexF64,2,2)
+    g1 = zero(g0)
+    g2 = zero(g1)
+    g3 = zero(g1)
+
+    gamma = zeros(ComplexF64,2,2,3)
+    rpg = zero(gamma)
+    rmg = zero(gamma)
+
+
+    g0[1,1]=1.0; g0[1,2]=0.0 
+    g0[2,1]=0.0; g0[2,2]=1.0
+
+    g1[1,1]=0.0; g1[1,2]=1.0
+    g1[2,1]=1.0; g1[2,2]=0.0
+
+
+    g2[1,1]=0.0; g2[1,2]=-im
+    g2[2,1]=+im; g2[2,2]=0.0
+
+    g3[1,1]=1.0; g3[1,2]=0.0
+    g3[2,1]=0.0; g3[2,2]=-1.0
+
+
+    gamma[:,:,1] = g1[:,:]
+    gamma[:,:,2] = g2[:,:]
+    gamma[:,:,3] = g3[:,:]
+
+    for mu=1:2
+        for j=1:2
+            for i=1:2
+                rpg[i,j,mu] = r*g0[i,j] + gamma[i,j,mu]
+                rmg[i,j,mu] = r*g0[i,j] - gamma[i,j,mu]
+            end
+        end
+    end 
+
+    return gamma,rpg,rmg
 
 end
 

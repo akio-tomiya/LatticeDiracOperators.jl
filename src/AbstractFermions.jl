@@ -42,6 +42,7 @@ const default_boundaryconditions = (nothing,[1,-1],nothing,[1,1,1,-1])
 include("./AbstractFermions_4D.jl")
 include("./AbstractFermions_5D.jl")
 include("./AbstractFermions_2D.jl")
+include("./AbstractFermions_3D.jl")
 
 
 function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2) where {NC,Dim}
