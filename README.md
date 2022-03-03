@@ -522,8 +522,8 @@ end
 
 ```
 
-# HMC with fermions with STOUT smearing
-We show the code of HMC with Wilson fermions with STOUT smearing. 
+# HMC with fermions with stout smearing
+We show the code of HMC with Wilson fermions with stout smearing. 
 
 ```julia
 using Gaugefields
