@@ -624,7 +624,7 @@ c--------------------------------------------------------------------------c
 c     y = sigma_3 * x
 c     here
 c                  ( 1       )
-c        SIGMA3 =  (   +1     )
+c        SIGMA3 =  (   -1     )
 c--------------------------------------------------------------------------c
     """
     function mul_γ5x!(y::WilsonFermion_2D_wing{NC},x::WilsonFermion_2D_wing{NC}) where NC

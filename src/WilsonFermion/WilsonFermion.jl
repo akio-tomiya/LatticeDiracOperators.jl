@@ -384,15 +384,17 @@ function mk_sigma(r)
 
 end
 
+#=
 gtmp1,gtmp2,gtmp3 = mk_gamma(1)
 const γ_all = gtmp1 
 const γ5 = γ_all[:,:,5]
 
 const rplusγ1 = gtmp2
 const rminusγ1 = gtmp3
+=#
 
 
-include("./WilsontypeFermion.jl")
+#include("./WilsontypeFermion.jl")
 
 function Wx!(xout::T,U::Array{G,1},x::T,A,Dim)  where  {T,G <: AbstractGaugefields}
     #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}

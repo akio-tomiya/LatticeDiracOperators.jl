@@ -19,7 +19,15 @@ function D5DW_Domainwall_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
     @assert haskey(parameters,"L5") "parameters should have the keyword L5"
     L5 = parameters["L5"]
     @assert L5 == x.L5 "L5 in Dirac operator and fermion fields should be same. Now L5 = $L5 and x.L5 = $(x.L5)"
-    boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    if Dim == 4
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    elseif Dim == 2
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,-1])
+    else
+        error("Dim should be 2 or 4!")
+    end
+
+    #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
     T = eltype(U)
 
     #Parameters for Wilson operator
@@ -127,8 +135,15 @@ function Domainwall_Dirac_operator(U::Array{<:AbstractGaugefields{NC,Dim},1},x,p
     D5DW = D5DW_Domainwall_operator(U,x,parameters,mass)
     D5DW_PV = D5DW_Domainwall_operator(U,x,parameters,1)
 
-    boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
+    if Dim == 4
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
+    elseif Dim == 2
+        boundarycondition = check_parameters(parameters,"boundarycondition",[1,-1])
+    else
+        error("Dim should be 2 or 4!")
+    end
 
     eps_CG = check_parameters(parameters,"eps_CG",default_eps_CG)
     #println("eps_CG = ",eps_CG)
@@ -271,9 +286,24 @@ include("./DomainwallFermion_3d_wing.jl")
 
 function Initialize_DomainwallFermion(u::AbstractGaugefields{NC,Dim},L5) where {NC,Dim}
     _,_,NN... = size(u)
-    return DomainwallFermion_5D_wing(L5,NC,NN...) 
+    return Initialize_DomainwallFermion(L5,NC,NN...) 
 end
 
+
+function Initialize_DomainwallFermion(L5,NC,NN...) 
+    Dim = length(NN)
+    if Dim == 4
+        fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
+        #fermion = WilsonFermion_4D_wing{NC}(NN...)
+        #fermion = WilsonFermion_4D_wing(NC,NN...)
+    elseif Dim == 2
+        fermion = DomainwallFermion_3D_wing(L5,NC,NN...) 
+        #fermion = WilsonFermion_2D_wing{NC}(NN...)
+    else
+        error("Dimension $Dim is not supported")
+    end
+    return fermion
+end
 
 function bicg(x,A::Domainwall_Dirac_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_print(2)) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1))^(-1)

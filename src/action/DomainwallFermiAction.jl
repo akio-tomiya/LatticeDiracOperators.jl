@@ -10,7 +10,7 @@ struct DomainwallFermiAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,f
     _temporary_gaugefields::Vector{gauge}
 
     function DomainwallFermiAction(D::Dirac_operator{Dim},hascovnet,covneuralnet) where Dim
-        num = 6
+        num = 8
         temps = get_temporaryvectors(D)
         x = temps[1]
         xtype = typeof(x)
@@ -51,14 +51,15 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Domai
 
     temps_dw =fermi_action._temporary_fermionfields[1]
 
-    X = fermi_action._temporary_fermionfields[end]
-    Y = fermi_action._temporary_fermionfields[end-1]
+    X = fermi_action._temporary_fermionfields[6]
+    Y = fermi_action._temporary_fermionfields[5]
 
 
     mul!(temps_dw,D5_PV',ϕ)
 
     
     solve_DinvX!(X,Q,temps_dw)
+    #set_wing_fermion!(X)
     set_wing_fermion!(ϕ)
 
     clear_U!(UdSfdU)

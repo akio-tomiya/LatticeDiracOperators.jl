@@ -12,8 +12,8 @@ struct DomainwallFermion_3D_wing{NC,WilsonFermion} <: AbstractFermionfields_3D{N
     Dirac_operator::String
     NWilson::Int64
 
-    function DomainwallFermion_3D_wing(L5,NC::T,NX::T,NY::T,NZ::T,NT::T) where T<: Integer
-        x = WilsonFermion_4D_wing(NC,NX,NY,NZ,NT)
+    function DomainwallFermion_3D_wing(L5,NC::T,NX::T,NT::T) where T<: Integer
+        x = WilsonFermion_2D_wing(NC,NX,NT)
         xtype = typeof(x)
         w = Array{xtype,1}(undef,L5)
         w[1] = x
@@ -33,7 +33,7 @@ function Base.similar(x::DomainwallFermion_3D_wing{NC,WilsonFermion} ) where {NC
     return DomainwallFermion_3D_wing(x.L5,NC,x.NX,x.NT)
 end
 
-function D3DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1},
+function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1},
     x::DomainwallFermion_3D_wing{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
@@ -41,6 +41,7 @@ function D3DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
     #temp2 = temps[2]
     clear_fermion!(xout)
     ratio = 1
+    #ratio  =-1
     #ratio = xout.L5/L5
 
     for i5=1:L5   
@@ -50,6 +51,7 @@ function D3DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
         set_wing_fermion!(xout.w[i5])
         add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Dw*x
         set_wing_fermion!(xout.w[i5])  
+        
 
     
         j5=i5+1
@@ -87,23 +89,27 @@ function D3DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
     end  
     set_wing_fermion!(xout)   
 
+    #=
     if L5 != xout.L5
         for i5=L5+1:xout.L5
             axpy!(1,x.w[i5],xout.w[i5])
         end
     end
+    =#
 
     return
 end
 
-function D3DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1},
+function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1},
     x::DomainwallFermion_3D_wing{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
     #temp1 = temps[1]
     #temp2 = temps[2]
     clear_fermion!(xout)
+    
     ratio = 1
+    #ratio  =-1
     #ratio = xout.L5/L5
 
     for i5=1:L5   
@@ -149,11 +155,13 @@ function D3DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
 
     end  
 
+    #=
     if L5 != xout.L5
         for i5=L5+1:xout.L5
             axpy!(1,x.w[i5],xout.w[i5])
         end
     end
+    =#
 
 
     set_wing_fermion!(xout)   
