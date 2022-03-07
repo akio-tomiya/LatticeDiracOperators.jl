@@ -46,10 +46,16 @@ function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
 
     for i5=1:L5   
         j5=i5
-        Dx!(xout.w[i5],U,x.w[j5],A) #Dw*x
+        D4x!(xout.w[i5],U,x.w[j5],A,2) #Dw*x
+        #Dx!(xout.w[i5],U,x.w[j5],A) #Dw*x
         #Wx!(xout.w[i5],U,x.w[j5],temps) #Dw*x
+        #4+m
+        massfac4d = 1/(2*A.κ) #4+M
+        massfactor = (massfac4d - 2)+1
+
         set_wing_fermion!(xout.w[i5])
-        add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Dw*x
+        add!(ratio,xout.w[i5],-ratio*massfactor,x.w[j5]) 
+        #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Dw*x
         set_wing_fermion!(xout.w[i5])  
         
 
@@ -58,7 +64,7 @@ function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
         if 1 <= j5 <= L5
             #-P_-
             if L5 != 2
-                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
+                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
@@ -67,7 +73,7 @@ function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
         if 1 <= j5 <= L5
             #-P_+
             if L5 != 2
-                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
+                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
@@ -75,13 +81,13 @@ function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
         if L5 != 1
             if i5==1
                 j5 = L5
-                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
+                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],-m*ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
 
             if i5== L5
                 j5 = 1
-                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
+                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-m*ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
@@ -114,10 +120,18 @@ function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
 
     for i5=1:L5   
         j5=i5
-        Ddagx!(xout.w[i5],U,x.w[j5],A) #Ddagw*x
+
+        #Ddagx!(xout.w[i5],U,x.w[j5],A) #Ddagw*x
+        D4dagx!(xout.w[i5],U,x.w[j5],A,2) #Ddagw*x
         #Wdagx!(xout.w[i5],U,x.w[j5],temps) #Ddagw*x
+        #4+M
+        massfac4d = 1/(2*A.κ) #4+M
+        massfactor = (massfac4d - 2)+1
+
         set_wing_fermion!(xout.w[i5])
-        add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
+        add!(ratio,xout.w[i5],-ratio*massfactor,x.w[j5]) #D = x + Dw*x
+
+        #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
         set_wing_fermion!(xout.w[i5])  
 
     
@@ -125,7 +139,7 @@ function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
         if 1 <= j5 <= L5
             #-P_-
             if L5 != 2
-                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
+                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
@@ -134,7 +148,7 @@ function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
         if 1 <= j5 <= L5
             #-P_+
             if L5 != 2
-                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
+                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
@@ -142,13 +156,13 @@ function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
         if L5 != 1
             if i5==1
                 j5 = L5
-                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
+                mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-m*ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
 
             if i5==L5
                 j5 = 1
-                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
+                mul_1plusγ5x_add!(xout.w[i5],x.w[j5],-m*ratio) 
                 set_wing_fermion!(xout.w[i5])  
             end
         end
