@@ -445,6 +445,60 @@ function Wx!(xout::T,U::Array{G,1},x::T,A,Dim)  where  {T,G <: AbstractGaugefiel
 end
 
 
+function D4x!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(xout)
+    set_wing_fermion!(x)
+
+
+    for ν=1:Dim
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rminusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rplusγ,:,:,ν),temp2)
+        add_fermion!(xout,0.5,temp1,0.5,temp2)
+        
+    end
+    set_wing_fermion!(xout)
+end
+
+function D4dagx!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4]#temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(xout)
+    set_wing_fermion!(x)
+
+
+    for ν=1:Dim
+        xplus = shift_fermion(x,ν)
+        mul!(temp1,U[ν],xplus)
+        #... Dirac multiplication
+        mul!(temp1,view(A.rplusγ,:,:,ν),temp1)
+        
+        #
+        xminus = shift_fermion(x,-ν)
+        Uminus = shift_U(U[ν],-ν)
+        mul!(temp2,Uminus',xminus)
+
+        mul!(temp2,view(A.rminusγ,:,:,ν),temp2)
+        add_fermion!(xout,0.5,temp1,0.5,temp2)
+        
+    end
+    set_wing_fermion!(xout)
+end
+
 function Dx!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGaugefields}
     temp = A._temporary_fermi[4]#temps[4]
     temp1 = A._temporary_fermi[1] #temps[1]
