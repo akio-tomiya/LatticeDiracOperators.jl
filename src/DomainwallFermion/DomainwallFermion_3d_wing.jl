@@ -50,11 +50,12 @@ function D5DWx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G,1}
         #Dx!(xout.w[i5],U,x.w[j5],A) #Dw*x
         #Wx!(xout.w[i5],U,x.w[j5],temps) #Dw*x
         #4+m
-        massfac4d = 1/(2*A.κ) #4+M
-        massfactor = (massfac4d - 2)+1
+        #massfac4d = 1/(2*A.κ) #4+M
+        #massfactor = (massfac4d - 2)+1
+        massfactor = -(1/(2*A.κ) + 1)
 
         set_wing_fermion!(xout.w[i5])
-        add!(ratio,xout.w[i5],-ratio*massfactor,x.w[j5]) 
+        add!(ratio,xout.w[i5],ratio*massfactor,x.w[j5]) 
         #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Dw*x
         set_wing_fermion!(xout.w[i5])  
         
@@ -125,11 +126,10 @@ function D5DWdagx!(xout::DomainwallFermion_3D_wing{NC,WilsonFermion} ,U::Array{G
         D4dagx!(xout.w[i5],U,x.w[j5],A,2) #Ddagw*x
         #Wdagx!(xout.w[i5],U,x.w[j5],temps) #Ddagw*x
         #4+M
-        massfac4d = 1/(2*A.κ) #4+M
-        massfactor = (massfac4d - 2)+1
+        massfactor = -(1/(2*A.κ) + 1)
 
         set_wing_fermion!(xout.w[i5])
-        add!(ratio,xout.w[i5],-ratio*massfactor,x.w[j5]) #D = x + Dw*x
+        add!(ratio,xout.w[i5],ratio*massfactor,x.w[j5]) #D = x + Dw*x
 
         #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
         set_wing_fermion!(xout.w[i5])  

@@ -151,9 +151,34 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,ϕ,
 
     =#
 
+    L5 = fermi_action.diracoperator.D5DW.L5
+
+    if L5 != X.L5
+        @assert L5 % 2 == 0
+        irange = Int64[]
+        irange_out = Int64[]
+        #irange = 1:L5
+        #irange_out = (L5+1):X.L5
 
         
-    for i5=1:X.L5
+        for i5=1:X.L5
+            if i5 <= div(L5,2) || i5 >= X.L5-div(L5,2)+1
+                push!(irange,i5)
+            else
+                push!(irange_out,i5)
+            end
+
+        end
+        
+    else
+        irange = 1:L5  
+    end
+    
+
+
+        
+#    for i5=1:X.L5
+    for i5 in irange
 
         temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
         temp1_f = fermi_action._temporary_fermionfields[2].w[i5] #F_field

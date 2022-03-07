@@ -42,7 +42,7 @@ function D5DW_Domainwall_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
         M = check_parameters(parameters,"M",-1)
         #@assert haskey(parameters,"M") "parameters should have the keyword M"
         #M = parameters["M"]
-        κ_wilson = 1/(8r+2M)
+        κ_wilson = 1/(2*Dim*r+2M)
         parameters_wilson = Dict()
         parameters_wilson["κ"] = κ_wilson
         parameters_wilson["numtempvec"] = 4 
