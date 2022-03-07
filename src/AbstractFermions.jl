@@ -1,4 +1,7 @@
 
+using Requires
+
+
 abstract type Abstractfermion# <: AbstractVector{ComplexF64}
 end
 
@@ -44,6 +47,15 @@ include("./AbstractFermions_5D.jl")
 include("./AbstractFermions_2D.jl")
 include("./AbstractFermions_3D.jl")
 
+function __init__()
+    @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
+        include("./WilsonFermion/WilsonFermion_4D_wing_mpi.jl")   
+        include("./DomainwallFermion/DomainwallFermion_5d_wing_mpi.jl")     
+    end
+
+end
+
+
 
 function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2) where {NC,Dim}
     mpi = u.mpi
@@ -55,7 +67,9 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
             elseif Dirac_operator == "Wilson"
                 x = WilsonFermion_4D_mpi(u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
                 #x = Initialize_WilsonFermion(u)
-            
+            elseif Dirac_operator == "Domainwall"
+                @warn "Domainwall fermion is not well tested!!"
+                x = DomainwallFermion_5D_wing_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end

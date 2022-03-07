@@ -1,3 +1,6 @@
+
+using Requires
+
 struct D5DW_Domainwall_operator{Dim,T,fermion,wilsonfermion} <: Dirac_operator{Dim}   where  T <: AbstractGaugefields
     U::Array{T,1}
     wilsonoperator::Wilson_Dirac_operator{Dim,T,wilsonfermion} 
@@ -51,7 +54,7 @@ function D5DW_Domainwall_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
 
 
     xtype = typeof(x)
-    num = 1
+    num = 2
     _temporary_fermi = Array{xtype,1}(undef,num)
     for i=1:num
         _temporary_fermi[i] = similar(x)
@@ -267,7 +270,8 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields
     =#
     mul!(A.parent.D5DW_PV._temporary_fermi[1],A.parent.D5DW',x)
     bicg(y,A.parent.D5DW_PV',A.parent.D5DW_PV._temporary_fermi[1],
-        maxsteps = 10000)
+        eps=A.parent.eps_CG,maxsteps = A.parent.MaxCGstep,verbose = A.parent.verbose_print)
+        #maxsteps = 10000)
         #verbose = Verbose_3()) 
     
     return
@@ -276,8 +280,17 @@ end
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Domainwall_Dirac_operator, T3 <:AbstractFermionfields}
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #y = A*x = D5DW(m)*D5DW(m=1))^(-1)*x
-    bicg(A.D5DW_PV._temporary_fermi[1],A.D5DW_PV,x) 
+    #println("x ",x.w[1][1,1,1,1])
+    bicg(A.D5DW_PV._temporary_fermi[1],A.D5DW_PV,x,
+        eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print)
     mul!(y,A.D5DW,A.D5DW_PV._temporary_fermi[1])
+    #println("y ",y.w[1][1,1,1,1])
+
+    #bicg(A.D5DW._temporary_fermi[1],A.D5DW,y,
+    #eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print)
+    #mul!(A.D5DW._temporary_fermi[2],A.D5DW_PV,A.D5DW._temporary_fermi[1])
+    #println("tmp2 ",A.D5DW._temporary_fermi[2].w[1][1,1,1,1])
+    
 
     #error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
     #D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporary_fermi) 
@@ -287,6 +300,8 @@ end
 
 include("./DomainwallFermion_5d_wing.jl")
 include("./DomainwallFermion_3d_wing.jl")
+
+
 
 function Initialize_DomainwallFermion(u::AbstractGaugefields{NC,Dim},L5) where {NC,Dim}
     _,_,NN... = size(u)
@@ -313,7 +328,12 @@ function bicg(x,A::Domainwall_Dirac_operator,b;eps=1e-10,maxsteps = 1000,verbose
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #A^-1 = D5DW(m=1)*DsDW(m)^-1
     #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
+    #println("b ",b.w[1][1,1,1,1])
     bicg(A.D5DW._temporary_fermi[1],A.D5DW,b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
+
+    #mul!(x,A.D5DW,A.D5DW._temporary_fermi[1])
+    #println("x ",x.w[1][1,1,1,1])
+
     mul!(x,A.D5DW_PV,A.D5DW._temporary_fermi[1])
 end
 
@@ -333,6 +353,7 @@ function bicgstab(x,A::Domainwall_Dirac_operator,b;eps=1e-10,maxsteps = 1000,ver
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #A^-1 = D5DW(m=1)*DsDW(m)^-1
     #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
+    
     bicgstab(A.D5DW._temporary_fermi[1],A.D5DW,b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
     mul!(x,A.D5DW_PV,A.D5DW._temporary_fermi[1])
 end

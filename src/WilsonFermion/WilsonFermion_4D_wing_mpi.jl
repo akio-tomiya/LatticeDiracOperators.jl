@@ -97,6 +97,15 @@ end
     return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
 end
 
+#@inline function getvalue(x::Adjoint_fermionfields{<: WilsonFermion_4D_mpi{NC,NDW}},i1,i2,i3,i4,i5,i6) where {NC,NDW}
+#    return conj(x.parent.f[i1,i2 .+ x.parent.NDW,i3 .+ x.parent.NDW,i4 .+ x.parent.NDW,i5 .+ x.parent.NDW,i6])
+#end
+
+@inline function  getvalue(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion  #F'
+    @inbounds return conj(getvalue(F.parent,i1,i2,i3,i4,i5,i6))
+end
+
+
 @inline  function setvalue!(x::WilsonFermion_4D_mpi{NC,NDW},v,i1,i2,i3,i4,i5,i6) where {NC,NDW}
     x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6] = v
 end
@@ -1014,6 +1023,40 @@ function LinearAlgebra.mul!(y::WilsonFermion_4D_mpi{3,NDW},A::T,x::T3) where {T<
     end
 end
 
+function LinearAlgebra.mul!(y::WilsonFermion_4D_mpi{2,NDW},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion,NDW}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:y.PN[4]
+            for iz=1:y.PN[3]
+                for iy=1:y.PN[2]
+                    for ix=1:y.PN[1]
+                        #println(ix)
+                        x1 = getvalue(x,1,ix,iy,iz,it,ialpha)#  x[ic,ix,iy,iz,it,1]
+                        x2 = getvalue(x,2,ix,iy,iz,it,ialpha)
+                        #x3 = getvalue(x,3,ix,iy,iz,it,ialpha)
+
+                        v= getvalue(A,1,1,ix,iy,iz,it)*x1 + 
+                                                    getvalue(A,1,2,ix,iy,iz,it)*x2#+ 
+                                                    #getvalue(A,1,3,ix,iy,iz,it)*x3
+                        setvalue!(y,v,1,ix,iy,iz,it,ialpha)
+                        v = getvalue(A,2,1,ix,iy,iz,it)*x1+ 
+                                                    getvalue(A,2,2,ix,iy,iz,it)*x2 #+ 
+                                                    #getvalue(A,2,3,ix,iy,iz,it)*x3
+                        setvalue!(y,v,2,ix,iy,iz,it,ialpha)
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
 function LinearAlgebra.mul!(x::WilsonFermion_4D_mpi{NC,NDW},A::TA) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
@@ -1056,7 +1099,124 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_mpi{NC,NDW},A::TA) where {TA <: 
     
 end
 
-function LinearAlgebra.mul!(x::WilsonFermion_4D_mpi{NC,NDW},A::TA,iseven) where {TA <: AbstractMatrix, NC,NDW}
+function LinearAlgebra.mul!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<: WilsonFermion_4D_mpi{NC,NDW}}) where {T1 <: AbstractGaugefields,NC,NDW}
+    #_,NX,NY,NZ,NT,NG = size(y)
+    NG = x.NG
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:x.PN[4]
+            for iz=1:x.PN[3]
+                for iy=1:x.PN[2]
+                    for ix=1:x.PN[1]
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                v = getvalue(u,ia,ib,ix,iy,iz,it) + getvalue(x,ia,ix,iy,iz,it,ik)*getvalue(y,ib,ix,iy,iz,it,ik)
+                                setvalue!(u,v,ia,ib,ix,iy,iz,it)
+                                #u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+"""
+mul!(u,x,y) -> u_{ab} = x_a*y_b
+"""
+function LinearAlgebra.mul!(u::T1,x::WilsonFermion_4D_mpi{NC,NDW},y::WilsonFermion_4D_mpi{NC,NDW}) where {T1 <: AbstractGaugefields,NC,NDW}
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    NG = x.NG
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:x.PN[4]
+            for iz=1:x.PN[3]
+                for iy=1:x.PN[2]
+                    for ix=1:x.PN[1]
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                v = getvalue(u,ia,ib,ix,iy,iz,it) + getvalue(x,ia,ix,iy,iz,it,ik)*getvalue(y,ib,ix,iy,iz,it,ik)
+                                setvalue!(u,v,ia,ib,ix,iy,iz,it)
+
+                                #u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+function LinearAlgebra.mul!(y::WilsonFermion_4D_mpi{3,NDW},x::T3,A::T) where {T<:Abstractfields,T3 <:Abstractfermion,NDW}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:y.PN[4]
+            for iz=1:y.PN[3]
+                for iy=1:y.PN[2]
+                    for ix=1:y.PN[1]
+                        x1 = getvalue(x,1,ix,iy,iz,it,ialpha)
+                        x2 = getvalue(x,2,ix,iy,iz,it,ialpha)
+                        x3 = getvalue(x,3,ix,iy,iz,it,ialpha)
+                        v = x1*getvalue(A,1,1,ix,iy,iz,it) + 
+                                                    x2*getvalue(A,2,1,ix,iy,iz,it)+ 
+                                                    x3*getvalue(A,3,1,ix,iy,iz,it)
+                        setvalue!(y,v,1,ix,iy,iz,it,ialpha)
+                        v = x1*getvalue(A,1,2,ix,iy,iz,it)+ 
+                                                    x2*getvalue(A,2,2,ix,iy,iz,it) + 
+                                                    x3*getvalue(A,3,2,ix,iy,iz,it)
+                        setvalue!(y,v,2,ix,iy,iz,it,ialpha)
+                        v = x1*getvalue(A,1,3,ix,iy,iz,it)+ 
+                                                    x2*getvalue(A,2,3,ix,iy,iz,it) + 
+                                                    x3*getvalue(A,3,3,ix,iy,iz,it)
+                        setvalue!(y,v,3,ix,iy,iz,it,ialpha)
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function LinearAlgebra.mul!(y::WilsonFermion_4D_mpi{NC,NDW},A::T,x::T3) where {NC,T<:Number,T3 <:Abstractfermion,NDW}
+    @assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:y.PN[4]
+            for iz=1:y.PN[3]
+                for iy=1:y.PN[2]
+                    for ix=1:y.PN[1]
+                        for k1=1:NC
+                            v = A*getvalue(x,k1,ix,iy,iz,it,ialpha)
+                            setvalue!(y,v,k1,ix,iy,iz,it,ialpha) # A*getvalue(x,k1,ix,iy,iz,it,ialpha)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function LinearAlgebra.mul!(x::WilsonFermion_4D_mpi{NC,NDW},A::TA,iseven::Bool) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1124,11 +1284,11 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},A::TA,x::WilsonFe
                             v = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
                             setvalue!(xout,v,ic,ix,iy,iz,it,1)
                             v = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,2)
                             v = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,3)
                             v = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,4)
                     end
                 end
             end
@@ -1161,7 +1321,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},A::TA,x::WilsonFe
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},A::TA,x::WilsonFermion_4D_mpi{NC},iseven) where {TA <: AbstractMatrix, NC,NDW}
+function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},A::TA,x::WilsonFermion_4D_mpi{NC},iseven::Bool) where {TA <: AbstractMatrix, NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1187,11 +1347,11 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},A::TA,x::WilsonFe
                             v = A[1,1]*e1+A[1,2]*e2+A[1,3]*e3+A[1,4]*e4
                             setvalue!(xout,v,ic,ix,iy,iz,it,1)
                             v = A[2,1]*e1+A[2,2]*e2+A[2,3]*e3+A[2,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,2)
                             v = A[3,1]*e1+A[3,2]*e2+A[3,3]*e3+A[3,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,3)
                             v = A[4,1]*e1+A[4,2]*e2+A[4,3]*e3+A[4,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,4)
                         end
 
                     end
@@ -1226,11 +1386,11 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},x::WilsonFermion_
                             v = A[1,1]*e1+A[2,1]*e2+A[3,1]*e3+A[4,1]*e4
                             setvalue!(xout,v,ic,ix,iy,iz,it,1)
                             v = A[1,2]*e1+A[2,2]*e2+A[3,2]*e3+A[4,2]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,2)
                             v = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,3)
                             v = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,4)
 
                             #=
                             e1 = x[ic,ix,iy,iz,it,1]
@@ -1277,11 +1437,11 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},x::WilsonFermion_
                             v = A[1,1]*e1+A[2,1]*e2+A[3,1]*e3+A[4,1]*e4
                             setvalue!(xout,v,ic,ix,iy,iz,it,1)
                             v = A[1,2]*e1+A[2,2]*e2+A[3,2]*e3+A[4,2]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,2)
                             v = A[1,3]*e1+A[2,3]*e2+A[3,3]*e3+A[4,3]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,3)
                             v = A[1,4]*e1+A[2,4]*e2+A[3,4]*e3+A[4,4]*e4
-                            setvalue!(xout,v,ic,ix,iy,iz,it,1)
+                            setvalue!(xout,v,ic,ix,iy,iz,it,4)
 
                         end
                     end
@@ -1292,95 +1452,6 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_mpi{NC,NDW},x::WilsonFermion_
     
 end
 
-#=
-function set_wing_fermion!(a::WilsonFermion_4D_mpi{NC},boundarycondition) where NC 
-    NT = a.NT
-    NZ = a.NZ
-    NY = a.NY
-    NX = a.NX
-
-    #!  X-direction
-    for ialpha=1:4
-        for it=1:NT
-            for iz = 1:NZ
-                for iy=1:NY
-                    @simd for k=1:NC
-                        a[k,0,iy,iz,it,ialpha] = boundarycondition[1]*a[k,NX,iy,iz,it,ialpha]
-                    end
-                end
-            end
-        end
-    end
-
-    for ialpha=1:4
-        for it=1:NT
-            for iz=1:NZ
-                for iy=1:NY
-                    @simd for k=1:NC
-                        a[k,NX+1,iy,iz,it,ialpha] =boundarycondition[1]*a[k,1,iy,iz,it,ialpha]
-                    end
-                end
-            end
-        end
-    end
-
-    #Y-direction
-    for ialpha = 1:4
-        for it=1:NT
-            for iz=1:NZ
-                for ix=1:NX
-                    @simd for k=1:NC
-                        a[k,ix,0,iz,it,ialpha] =boundarycondition[2]*a[k,ix,NY,iz,it,ialpha]
-                    end
-                end
-            end
-        end
-    end
-
-    for ialpha=1:4
-        for it=1:NT
-            for iz=1:NZ
-                for ix=1:NX
-                    @simd for k=1:NC
-                        a[k,ix,NY+1,iz,it,ialpha] = boundarycondition[2]*a[k,ix,1,iz,it,ialpha]
-                    end
-                end
-            end
-        end
-    end
-
-    
-    for ialpha=1:4
-        # Z-direction
-        for it=1:NT
-            for iy=1:NY
-                for ix=1:NX
-                    @simd for k=1:NC
-                        a[k,ix,iy,0,it,ialpha] = boundarycondition[3]*a[k,ix,iy,NZ,it,ialpha]
-                        a[k,ix,iy,NZ+1,it,ialpha] = boundarycondition[3]*a[k,ix,iy,1,it,ialpha]
-
-                    end
-                end
-            end
-        end
-
-        #T-direction
-        for iz=1:NZ
-            for iy=1:NY
-                for ix=1:NX
-                    @simd for k=1:NC
-                        a[k,ix,iy,iz,0,ialpha] = boundarycondition[4]*a[k,ix,iy,iz,NT,ialpha]
-                        a[k,ix,iy,iz,NT+1,ialpha] =boundarycondition[4]*a[k,ix,iy,iz,1,ialpha]
-                    end
-                end
-            end
-        end
-
-    end
-
-end
-
-=#
 
 """
 c--------------------------------------------------------------------------c
@@ -1393,23 +1464,162 @@ c                  (       +1 )
 c--------------------------------------------------------------------------c
     """
     function mul_γ5x!(y::WilsonFermion_4D_mpi{NC,NDW},x::WilsonFermion_4D_mpi{NC}) where {NC,NDW}
-        NX = x.NX
-        NY = x.NY
-        NZ = x.NZ
-        NT = x.NT
-        for ig=1:4
-            for ic=1:NC
-                for it=1:NT
-                    for iz=1:NZ
-                        for iy=1:NY
-                            for ix=1:NX
-                                @simd for ic=1:NC
-                                    y[ic,ix,iy,iz,it,ig] =x[ic,ix,iy,iz,it,ig]*ifelse(ig <= 2,-1,1)
-                                end
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        @inbounds for i6=1:n6
+            for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+                                y.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
                             end
                         end
                     end
                 end
             end
         end
+
+    end
+
+
+    function apply_γ5!(x::WilsonFermion_4D_mpi{NC}) where NC
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        @inbounds for i6=1:n6
+            for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+                                x.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
+
+    function mul_1plusγ5x!(y::WilsonFermion_4D_mpi{NC},x::WilsonFermion_4D_mpi{NC})  where NC#(1+gamma_5)/2
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        #@inbounds for i6=1:n6
+            @inbounds for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+
+                                y.f[i1,i2,i3,i4,i5,1]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                                y.f[i1,i2,i3,i4,i5,2]= 0
+                                y.f[i1,i2,i3,i4,i5,3]= x.f[i1,i2,i3,i4,i5,3]
+                                y.f[i1,i2,i3,i4,i5,4]= x.f[i1,i2,i3,i4,i5,4]
+                            end
+                        end
+                    end
+                end
+            end
+        #end
+
+    end
+
+    function mul_1plusγ5x_add!(y::WilsonFermion_4D_mpi{NC},x::WilsonFermion_4D_mpi{NC},factor) where NC#x = x +(1+gamma_5)/2
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        #@inbounds for i6=1:n6
+            @inbounds for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+
+                                #y.f[i1,i2,i3,i4,i5,1]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                                #y.f[i1,i2,i3,i4,i5,2]= 0
+                                y.f[i1,i2,i3,i4,i5,3] += factor*x.f[i1,i2,i3,i4,i5,3]
+                                y.f[i1,i2,i3,i4,i5,4] += factor*x.f[i1,i2,i3,i4,i5,4]
+                            end
+                        end
+                    end
+                end
+            end
+        #end
+
+    end
+
+    function mul_1minusγ5x!(y::WilsonFermion_4D_mpi{NC},x::WilsonFermion_4D_mpi{NC}) where NC#(1-gamma_5)/2
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        #@inbounds for i6=1:n6
+            @inbounds for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+
+                                y.f[i1,i2,i3,i4,i5,1]= x.f[i1,i2,i3,i4,i5,1] #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                                y.f[i1,i2,i3,i4,i5,2]= x.f[i1,i2,i3,i4,i5,2]
+                                y.f[i1,i2,i3,i4,i5,3]= 0#x.f[i1,i2,i3,i4,i5,3]
+                                y.f[i1,i2,i3,i4,i5,4]= 0#x.f[i1,i2,i3,i4,i5,3]
+                            end
+                        end
+                    end
+                end
+            end
+        #end
+
+    end
+
+    function mul_1minusγ5x_add!(y::WilsonFermion_4D_mpi{NC},x::WilsonFermion_4D_mpi{NC},factor) where NC#+(1-gamma_5)/2
+        n1,n2,n3,n4,n5,n6 = size(x.f)
+        #println("axpby")
+    
+        #@inbounds for i6=1:n6
+            @inbounds for i5=1:n5
+                #it = i5+NDW
+                for i4=1:n4
+                    #iz = i4+NDW
+                    for i3=1:n3
+                        #iy = i3+NDW
+                        for i2=1:n2
+                            #ix = i2+NDW
+                            @simd for i1=1:NC
+
+                                #y.f[i1,i2,i3,i4,i5,1]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
+                                #y.f[i1,i2,i3,i4,i5,2]= 0
+                                y.f[i1,i2,i3,i4,i5,1] += factor*x.f[i1,i2,i3,i4,i5,1]
+                                y.f[i1,i2,i3,i4,i5,2] += factor*x.f[i1,i2,i3,i4,i5,2]
+                            end
+                        end
+                    end
+                end
+            end
+        #end
     end
