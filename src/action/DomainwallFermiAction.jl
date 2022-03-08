@@ -217,9 +217,20 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,ϕ,
             mul!(temp0_f,κ,temp1_f)
 
             # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            #println(getvalue(temp0_g,1,1,1,1,1,1))
+            #println(temp0_g[1,1,1,1,1,1])
             mul!(temp0_g,Xs,temp0_f)
+            #println("temp0_g , ",getvalue(temp0_g,1,1,1,1,1,1))
+            #println("temp0_g , ",temp0_g[1,1,1,1,1,1])
+            #println("coeff ", coeff)
+            #println("before ",getvalue(UdSfdU[μ],1,1,1,1,1,1))
+            #println("before ",UdSfdU[μ][1,1,1,1,1,1])
             
             add_U!(UdSfdU[μ],coeff,temp0_g)
+            #error("h")
+            #println("after ",getvalue(UdSfdU[μ],1,1,1,1,1,1))
+            #println("after ",UdSfdU[μ][1,1,1,1,1,1])
+
         end
 
        

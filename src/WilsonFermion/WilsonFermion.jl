@@ -459,7 +459,7 @@ function D4x!(xout::T1,U::Array{G,1},x::T2,A,Dim) where  {T1,T2,G <: AbstractGau
         mul!(temp1,U[ν],xplus)
         #... Dirac multiplication
         mul!(temp1,view(A.rminusγ,:,:,ν),temp1)
-        
+
         #
         xminus = shift_fermion(x,-ν)
         Uminus = shift_U(U[ν],-ν)

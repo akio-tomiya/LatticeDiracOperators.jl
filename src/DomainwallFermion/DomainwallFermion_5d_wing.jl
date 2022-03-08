@@ -81,6 +81,7 @@ function D5DWx!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,U::Array{G,1}
         add!(ratio,xout.w[i5],ratio*massfactor,x.w[j5]) #D = x + Dw*x
         set_wing_fermion!(xout.w[i5])  
 
+        #println("xout ",xout.w[i5][1,1,1,1,1,1])
     
         j5=i5+1
         if 1 <= j5 <= xout.L5
@@ -89,8 +90,11 @@ function D5DWx!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,U::Array{G,1}
                 #mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
                 mul_1plusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
+
+                
             end
         end
+
 
         j5=i5-1
         if 1 <= j5 <= xout.L5
@@ -117,6 +121,8 @@ function D5DWx!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,U::Array{G,1}
                 set_wing_fermion!(xout.w[i5])  
             end
         end
+
+        #println("xout ",xout.w[i5][1,1,1,1,1,1])
 
     end  
     

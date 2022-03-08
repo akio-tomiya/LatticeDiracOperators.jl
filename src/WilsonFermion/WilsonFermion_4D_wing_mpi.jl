@@ -88,7 +88,9 @@ function Base.setindex!(x::WilsonFermion_4D_mpi{NC,NDW},v,i1,i2,i3,i4,i5,i6)  wh
 end
 
 function Base.getindex(x::WilsonFermion_4D_mpi{NC,NDW},i1,i2,i3,i4,i5,i6) where {NC,NDW}
-    error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+    @warn "Each element can not be accessed by global index in $(typeof(x)) Use getvalue function"
+    return getvalue(x,i1,i2,i3,i4,i5,i6) 
+    #error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
     #@inbounds return x.f[i1,i2 .+ NDW,i3 .+ NDW,i4 .+ NDW,i5 .+ NDW,i6]
 end
 
