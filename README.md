@@ -27,6 +27,7 @@ This package can be regarded as the additional package of the Gaugefields.jl to 
 
 # Install
 
+In the package mode, Julia REPL,
 ```
 add https://github.com/akio-tomiya/LatticeDiracOperators.jl
 ```
