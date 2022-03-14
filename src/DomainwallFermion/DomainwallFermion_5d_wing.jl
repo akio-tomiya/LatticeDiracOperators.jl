@@ -35,6 +35,56 @@ function Base.similar(x::DomainwallFermion_5D_wing{NC,WilsonFermion} ) where {NC
     return DomainwallFermion_5D_wing(x.L5,NC,x.NX,x.NY,x.NZ,x.NT)
 end
 
+function apply_J!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,
+    x::DomainwallFermion_5D_wing{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    clear_fermion!(xout)
+
+    L5 = xout.L5
+    for i5=1:L5
+        j5 = L5-i5+1
+        substitute_fermion!(xout.w[i5],x.w[j5])
+    end
+end
+
+function apply_P!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,
+    x::DomainwallFermion_5D_wing{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    L5 = xout.L5
+    clear_fermion!(xout)
+
+    for i5=1:L5
+        j5 = i5
+        #P_- -> P_+ in this definition
+        mul_1plusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+
+        #P_+ -> P_- in this definition
+        j5 = i5+1
+        j5 += ifelse(j5 > L5,-L5,0)
+        mul_1minusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+    end
+end
+
+function apply_Pdag!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,
+    x::DomainwallFermion_5D_wing{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    L5 = xout.L5
+    clear_fermion!(xout)
+
+    for i5=1:L5
+        j5 = i5
+        #P_- -> P_+ in this definition
+        mul_1plusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+
+        #P_+ -> P_- in this definition
+        j5 = i5-1
+        j5 += ifelse(j5 < 1,L5,0)
+        mul_1minusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+    end
+end
+
+
 function D5DWx!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,U::Array{G,1},
     x::DomainwallFermion_5D_wing{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 

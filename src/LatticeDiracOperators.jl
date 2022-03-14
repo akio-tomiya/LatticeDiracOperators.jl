@@ -22,7 +22,7 @@ module LatticeDiracOperators
             Initialize_WilsonFermion,Initialize_4DWilsonFermion,
             DdagD_operator,solve_DinvX!,FermiAction,
             shift_fermion,bicg,bicgstab,
-            sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction,calc_UdSfdU,calc_UdSfdU!,bicgstab,
+            sample_pseudofermions!,gauss_sampling_in_action!,evaluate_FermiAction,calc_UdSfdU,calc_UdSfdU!,bicgstab,Z2_distribution_fermion!,
             Wilson_Dirac_operator_evenodd,calc_p_UdSfdU!,Wilson_GeneralDirac_operator,set_wing_fermion!,eigensystem,
             construct_sparsematrix,initialize_Adjoint_fermion,calc_dSfdU!
 
@@ -37,5 +37,5 @@ module LatticeDiracOperators
     export println_verbose_level1,println_verbose_level2,println_verbose_level3,Verbose_print
     export bicg,bicgstab
     export eigensystem,calc_dSfdU!
-    export construct_sparsematrix,initialize_Adjoint_fermion
+    export construct_sparsematrix,initialize_Adjoint_fermion,Z2_distribution_fermion!
 end

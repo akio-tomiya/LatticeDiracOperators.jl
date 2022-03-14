@@ -239,6 +239,42 @@ struct D5DWdagD5DW_Wilson_operator{T} <: DdagD_operator
     end
 end
 
+struct Reflection_matrixJ
+end
+
+struct Permutation_matrixP
+end
+
+struct Adjoint_Permutation_matrixP
+end
+
+function Base.adjoint(A::Permutation_matrixP)
+    return Adjoint_Permutation_matrixP()
+end
+
+function Base.adjoint(A::Adjoint_Permutation_matrixP)
+    return Permutation_matrixP()
+end
+
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Reflection_matrixJ, T3 <:AbstractFermionfields}
+    apply_J!(y,x)
+    return
+end
+
+
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Permutation_matrixP, T3 <:AbstractFermionfields}
+    apply_P!(y,x)
+    return
+end
+
+function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Adjoint_Permutation_matrixP, T3 <:AbstractFermionfields}
+    apply_Pdag!(y,x)
+    return
+end
+
+
+
+
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: D5DWdagD5DW_Wilson_operator, T3 <:AbstractFermionfields}
     temp = A.dirac._temporary_fermi[1]
     mul!(temp,A.dirac,x)
