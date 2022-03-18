@@ -76,7 +76,12 @@ function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
     if parameters["Dirac_operator"] == "staggered"
         Staggered_Dirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
-        Wilson_Dirac_operator(U,x,parameters)
+        fasterversion = check_parameters(parameters,"faster version",false)
+        if fasterversion
+            Wilson_Dirac_operator_faster(U,x,parameters)
+        else
+            Wilson_Dirac_operator(U,x,parameters)
+        end
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"

@@ -16,7 +16,7 @@ function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = not
 
     if diractype <: Staggered_Dirac_operator
         return StaggeredFermiAction(D,hascovnet,covneuralnet,parameters_action)
-    elseif diractype <: Wilson_Dirac_operator
+    elseif diractype <: Wilson_Dirac_operators
         return WilsonFermiAction(D,hascovnet,covneuralnet,parameters_action)
     elseif diractype <: Domainwall_Dirac_operator
         return DomainwallFermiAction(D,hascovnet,covneuralnet) 

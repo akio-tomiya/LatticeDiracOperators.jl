@@ -1,7 +1,8 @@
 include("./WilsoncloverFermion.jl")
 
+abstract type Wilson_Dirac_operators{Dim} <: Dirac_operator{Dim} end
 
-struct Wilson_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <: AbstractGaugefields
+struct Wilson_Dirac_operator{Dim,T,fermion} <: Wilson_Dirac_operators{Dim}  where T <: AbstractGaugefields
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     _temporary_fermi::Vector{fermion}
@@ -32,16 +33,7 @@ struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <: Dirac_operator{Dim}  wher
 end
 
 
-struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
-    dirac::Wilson_Dirac_operator{Dim,T,fermion}
-    function DdagD_Wilson_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where  {NC,Dim}
-        return new{Dim,eltype(U),typeof(x)}(Wilson_Dirac_operator(U,x,parameters))
-    end
 
-    function DdagD_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
-        return new{Dim,T,fermion}(D)
-    end
-end
 
 struct γ5D_Wilson_operator{Dim,T,fermion} <: γ5D_operator
     dirac::Wilson_Dirac_operator{Dim,T,fermion}
@@ -58,6 +50,7 @@ end
 include("./WilsonFermion_4D.jl")
 
 include("./WilsonFermion_4D_wing.jl")
+include("./WilsonFermion_4D_nowing.jl")
 include("./WilsonFermion_4D_wing_Adjoint.jl")
 
 include("./WilsonFermion_2D.jl")
@@ -193,9 +186,9 @@ function Base.adjoint(A::T) where T <: Wilson_Dirac_operator_evenodd
     Adjoint_Wilson_operator_evenodd{typeof(A)}(A)
 end
 
-function Initialize_WilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
+function Initialize_WilsonFermion(u::AbstractGaugefields{NC,Dim};nowing = false) where {NC,Dim}
     _,_,NN... = size(u)
-    return Initialize_WilsonFermion(NC,NN...) 
+    return Initialize_WilsonFermion(NC,NN...,nowing = nowing) 
 end
 
 function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
@@ -203,10 +196,14 @@ function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Di
     return WilsonFermion_4D_wing{NC}(NN...)
 end
 
-function Initialize_WilsonFermion(NC,NN...) 
+function Initialize_WilsonFermion(NC,NN...;nowing = false) 
     Dim = length(NN)
     if Dim == 4
-        fermion = WilsonFermion_4D_wing{NC}(NN...)
+        if nowing 
+            fermion = WilsonFermion_4D_nowing{NC}(NN...)
+        else
+            fermion = WilsonFermion_4D_wing{NC}(NN...)
+        end
         #fermion = WilsonFermion_4D_wing(NC,NN...)
     elseif Dim == 2
         fermion = WilsonFermion_2D_wing{NC}(NN...)
@@ -662,5 +659,24 @@ function Wdagx!(xout::T,U::Array{G,1},
     #display(xout)
     #    exit()
     return
+end
+
+include("./WilsonFermion_faster.jl")
+
+
+struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator 
+    dirac::Union{Wilson_Dirac_operator{Dim,T,fermion},Wilson_Dirac_operator_faster{Dim,T,fermion}}
+    function DdagD_Wilson_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where  {NC,Dim}
+        return new{Dim,eltype(U),typeof(x)}(Wilson_Dirac_operator(U,x,parameters))
+    end
+
+    function DdagD_Wilson_operator(D::Wilson_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
+        return new{Dim,T,fermion}(D)
+    end
+
+    function DdagD_Wilson_operator(D::Wilson_Dirac_operator_faster{Dim,T,fermion}) where {Dim,T,fermion}
+        return new{Dim,T,fermion}(D)
+    end
+    
 end
 

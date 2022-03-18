@@ -13,7 +13,7 @@ function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     MDsteps = 10
     temp1 = similar(U[1])
     temp2 = similar(U[1])
-    comb = 6
+    comb = 2
     factor = 1/(comb*U[1].NV*U[1].NC)
     numaccepted = 0
     Random.seed!(123)

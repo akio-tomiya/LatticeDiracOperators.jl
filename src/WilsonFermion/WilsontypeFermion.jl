@@ -1,5 +1,5 @@
 using Wilsonloop
-import Wilsonloop:DwDU,get_direction,get_position,Adjoint_GLink
+import Wilsonloop:DwDU,get_direction,get_position#,Adjoint_GLink
 import Gaugefields:evaluate_gaugelinks!,clear_U!,set_wing_U!
 
 
@@ -40,7 +40,8 @@ struct Linkinfo{Dim}
             glink = line_for_gaugefields[i]
             positions[i] = get_position(glink)
             directions[i] = get_direction(glink)
-            isdagvectors[i] = ifelse(typeof(glink ) <: Adjoint_GLink,true,false)
+            isdagvectors[i] = isdag(glink)
+            #isdagvectors[i] = ifelse(typeof(glink ) <: Adjoint_GLink,true,false)
         end
         return new{Dim}(positions,directions,isdagvectors)
     end

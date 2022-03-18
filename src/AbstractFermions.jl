@@ -50,6 +50,7 @@ include("./AbstractFermions_3D.jl")
 function __init__()
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
         include("./WilsonFermion/WilsonFermion_4D_wing_mpi.jl")   
+        include("./WilsonFermion/WilsonFermion_4D_nowing_mpi.jl") 
         include("./DomainwallFermion/DomainwallFermion_5d_wing_mpi.jl")     
     end
 
@@ -57,7 +58,7 @@ end
 
 
 
-function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2) where {NC,Dim}
+function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2,nowing = false) where {NC,Dim}
     mpi = u.mpi
     if mpi
         if Dim == 4
@@ -65,7 +66,12 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 error("Dirac_operator  = $Dirac_operator  is not supported")
                 #x = Initialize_StaggeredFermion(u)
             elseif Dirac_operator == "Wilson"
-                x = WilsonFermion_4D_mpi(u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                if nowing
+                    x = WilsonFermion_4D_nowing_mpi(u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                    #error("Dirac_operator  = $Dirac_operator with nowing = $nowing is not supported")
+                else
+                    x = WilsonFermion_4D_mpi(u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                end
                 #x = Initialize_WilsonFermion(u)
             elseif Dirac_operator == "Domainwall"
                 @warn "Domainwall fermion is not well tested!!"
@@ -83,7 +89,7 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
             if Dirac_operator == "staggered"
                 x = Initialize_StaggeredFermion(u)
             elseif Dirac_operator == "Wilson"
-                x = Initialize_WilsonFermion(u)
+                x = Initialize_WilsonFermion(u,nowing = nowing)
             elseif Dirac_operator == "Domainwall"
                 @warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u,L5)
