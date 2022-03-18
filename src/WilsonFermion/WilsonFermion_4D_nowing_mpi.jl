@@ -771,6 +771,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
                             xi = v1 * sin(v2)
 
                             v = σ*xr + σ*im*xi
+                            
                             setvalue!(x,v,ic,mu,ix,iy,iz,it)
 
                             #x[ic,ix,iy,iz,it,mu] = σ*xr + σ*im*xi
@@ -780,6 +781,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
             end
         end
     end
+    #error("v")
 
     set_wing_fermion!(x)
 

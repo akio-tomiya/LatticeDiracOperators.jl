@@ -1009,3 +1009,92 @@ c--------------------------------------------------------------------------c
             end
         end
     end
+
+
+
+"""
+c-------------------------------------------------c
+c     Random number function for Gaussian  Noise
+    with σ^2 = 1/2
+c-------------------------------------------------c
+    """
+function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing{NC}) where {NC}
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    NG = x.NG
+    #n6 = size(x.f)[6]
+    σ = sqrt(1/2)
+
+    
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    for ialpha = 1:NG
+                        for ic=1:NC 
+                            v = σ*randn()+im*σ*randn()
+                            
+                            #setvalue!(x,v,ic,ialpha,ix,iy,iz,it)
+                            x[ic,ialpha,ix,iy,iz,it] = v# σ*randn()+im*σ*randn()
+                        end
+                    end
+                end
+            end
+        end
+    end
+   
+    set_wing_fermion!(x)
+    return
+end
+
+"""
+c-------------------------------------------------c
+c     Random number function for Gaussian  Noise
+    with σ^2 = 1/2
+c-------------------------------------------------c
+    """
+function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing{NC},randomfunc,σ) where {NC}
+  
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    NG = x.NG
+    #n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    
+        
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    for mu = 1:NG
+                        for ic=1:NC
+
+                            v1 = sqrt(-log(randomfunc()+1e-10))
+                            v2 = 2pi*randomfunc()
+
+                            xr = v1*cos(v2)
+                            xi = v1 * sin(v2)
+
+                            v = σ*xr + σ*im*xi
+
+                            #println(v)
+                            #setvalue!(x,v,ic,mu,ix,iy,iz,it)
+
+                            x[ic,mu,ix,iy,iz,it] =v# σ*xr + σ*im*xi
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_fermion!(x)
+
+    return
+end
+
+

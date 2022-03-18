@@ -1,7 +1,7 @@
 """
 Struct for DomainwallFermion
 """
-struct DomainwallFermion_5D_wing{NC,WilsonFermion} <: AbstractFermionfields_5D{NC}
+struct DomainwallFermion_5D_wing{NC,WilsonFermion} <: Abstract_DomainwallFermion_5D{NC,WilsonFermion} #<: AbstractFermionfields_5D{NC}
     w::Array{WilsonFermion,1}
     NC::Int64
     NX::Int64
@@ -34,6 +34,8 @@ end
 function Base.similar(x::DomainwallFermion_5D_wing{NC,WilsonFermion} ) where {NC,WilsonFermion}
     return DomainwallFermion_5D_wing(x.L5,NC,x.NX,x.NY,x.NZ,x.NT)
 end
+
+#=
 
 function apply_J!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,
     x::DomainwallFermion_5D_wing{NC,WilsonFermion}) where  {NC,WilsonFermion}
@@ -295,3 +297,5 @@ function D5DWdagx!(xout::DomainwallFermion_5D_wing{NC,WilsonFermion} ,U::Array{G
 
     return
 end
+
+=#

@@ -3,7 +3,7 @@ import Gaugefields:comm,setvalue!
 """
 Struct for DomainwallFermion
 """
-struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFermion_5D{NC,WilsonFermion} #<: AbstractFermionfields_5D{NC}
+struct DomainwallFermion_5D_mpi{NC,WilsonFermion} <: Abstract_DomainwallFermion_5D{NC,WilsonFermion}
     w::Array{WilsonFermion,1}
     NC::Int64
     NX::Int64
@@ -20,8 +20,9 @@ struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFer
     nprocs::Int64
     myrank_xyzt::NTuple{4,Int64}
     mpi::Bool
+    nowing::Bool
 
-    function DomainwallFermion_5D_wing_mpi(L5,NC::T,NX::T,NY::T,NZ::T,NT::T,PEs) where T<: Integer
+    function DomainwallFermion_5D_mpi(L5,NC::T,NX::T,NY::T,NZ::T,NT::T,PEs;nowing = false) where T<: Integer
 
         NV = NX*NY*NZ*NT
         @assert NX % PEs[1] == 0 "NX % PEs[1] should be 0. Now NX = $NX and PEs = $PEs"
@@ -41,7 +42,16 @@ struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFer
 
         myrank_xyzt = get_myrank_xyzt(myrank,PEs)
 
-        x = WilsonFermion_4D_mpi(NC,NX,NY,NZ,NT,PEs)
+        #x = WilsonFermion_4D_mpi(NC,NX,NY,NZ,NT,PEs)
+
+        if nowing
+            x = WilsonFermion_4D_nowing_mpi(NC,NX,NY,NZ,NT,PEs)
+            #error("Dirac_operator  = $Dirac_operator with nowing = $nowing is not supported")
+        else
+            x = WilsonFermion_4D_mpi(NC,NX,NY,NZ,NT,PEs)
+        end
+
+
         xtype = typeof(x)
         w = Array{xtype,1}(undef,L5)
         w[1] = x
@@ -54,7 +64,7 @@ struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFer
         mpi = true
         mpiinit = true
         return new{NC,xtype}(w,NC,NX,NY,NZ,NT,L5,Dirac_operator,NWilson,
-                Tuple(PEs),PN,mpiinit,myrank,nprocs,myrank_xyzt,mpi)
+                Tuple(PEs),PN,mpiinit,myrank,nprocs,myrank_xyzt,mpi,nowing)
     end
 
 end
@@ -62,14 +72,14 @@ end
 
 
 
-function Base.similar(x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ) where {NC,WilsonFermion}
-    return DomainwallFermion_5D_wing_mpi(x.L5,NC,x.NX,x.NY,x.NZ,x.NT,x.PEs)
+function Base.similar(x::DomainwallFermion_5D_mpi{NC,WilsonFermion} ) where {NC,WilsonFermion}
+    return DomainwallFermion_5D_mpi(x.L5,NC,x.NX,x.NY,x.NZ,x.NT,x.PEs,nowing=x.nowing)
 end
 
 #=
 
-function D5DWx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{G,1},
-    x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
+function D5DWx!(xout::DomainwallFermion_5D_mpi{NC,WilsonFermion} ,U::Array{G,1},
+    x::DomainwallFermion_5D_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
     #temp1 = temps[1]
@@ -173,8 +183,8 @@ end
 
 
 
-function D5DWdagx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{G,1},
-    x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
+function D5DWdagx!(xout::DomainwallFermion_5D_mpi{NC,WilsonFermion} ,U::Array{G,1},
+    x::DomainwallFermion_5D_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
     #temp1 = temps[1]
@@ -283,15 +293,15 @@ end
 
 =#
 
-
 #=
+
 """
 c-------------------------------------------------c
 c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::DomainwallFermion_5D_wing_mpi{NC,NDW}) where {NC,NDW}
+function gauss_distribution_fermion!(x::DomainwallFermion_5D_mpi{NC,NDW}) where {NC,NDW}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -327,7 +337,7 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::DomainwallFermion_5D_wing_mpi{NC,NDW},randomfunc,σ) where {NC,NDW}
+function gauss_distribution_fermion!(x::DomainwallFermion_5D_mpi{NC,NDW},randomfunc,σ) where {NC,NDW}
   
     NX = x.NX
     NY = x.NY

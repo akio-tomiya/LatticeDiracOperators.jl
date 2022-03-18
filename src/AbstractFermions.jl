@@ -51,7 +51,8 @@ function __init__()
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
         include("./WilsonFermion/WilsonFermion_4D_wing_mpi.jl")   
         include("./WilsonFermion/WilsonFermion_4D_nowing_mpi.jl") 
-        include("./DomainwallFermion/DomainwallFermion_5d_wing_mpi.jl")     
+        include("./DomainwallFermion/DomainwallFermion_5d_wing_mpi.jl")    
+        include("./DomainwallFermion/DomainwallFermion_5d_mpi.jl")  
     end
 
 end
@@ -75,7 +76,11 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 #x = Initialize_WilsonFermion(u)
             elseif Dirac_operator == "Domainwall"
                 @warn "Domainwall fermion is not well tested!!"
-                x = DomainwallFermion_5D_wing_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                if nowing
+                    x = DomainwallFermion_5D_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs,nowing=nowing) 
+                else
+                    x = DomainwallFermion_5D_wing_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                end
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -92,7 +97,7 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 x = Initialize_WilsonFermion(u,nowing = nowing)
             elseif Dirac_operator == "Domainwall"
                 @warn "Domainwall fermion is not well tested!!"
-                x = Initialize_DomainwallFermion(u,L5)
+                x = Initialize_DomainwallFermion(u,L5,nowing=nowing)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end

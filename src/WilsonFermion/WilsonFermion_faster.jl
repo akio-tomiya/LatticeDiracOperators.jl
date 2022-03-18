@@ -262,7 +262,6 @@ end
 function LinearAlgebra.mul!(y::T1,A::Wilson_Dirac_1storder_operator{Dim,T,fermion},x::T3) where {T1 <:AbstractFermionfields,T, Dim,fermion, T3 <:AbstractFermionfields}
     if A.μ == 1
         apply_Dirac_1storder_1!(y,x,A.U,A.boundarycondition,A._temporary_fermi)
-        
     elseif A.μ == 2
         apply_Dirac_1storder_2!(y,x,A.U,A.boundarycondition,A._temporary_fermi)
     elseif A.μ == 3
@@ -542,6 +541,26 @@ function apply_Dirac_1storder_4_dagger!(y,x,U,boundarycondition,_temporary_fermi
     #display(xout)
     #    exit()
     return
+end
+
+function D4x!(xout::T1,U::Array{G,1},x::T2,A::T,Dim) where  {T1,T2,
+                G <: AbstractGaugefields,T <: Wilson_Dirac_operator_faster}
+    clear_fermion!(xout)
+    for μ=1:Dim
+        mul!(A._temporary_fermi[1],A.D[μ],x)
+        add_fermion!(xout,0.5,A._temporary_fermi[1])
+    end
+    set_wing_fermion!(xout)
+end
+
+function D4dagx!(xout::T1,U::Array{G,1},x::T2,A::T,Dim) where  {T1,T2,
+    G <: AbstractGaugefields,T <: Wilson_Dirac_operator_faster}
+    clear_fermion!(xout)
+    for μ=1:Dim
+        mul!(A._temporary_fermi[1],A.D[μ]',x)
+        add_fermion!(xout,0.5,A._temporary_fermi[1])
+    end
+    set_wing_fermion!(xout)
 end
 
 

@@ -1,9 +1,10 @@
-import Gaugefields:comm,setvalue!
+
+abstract type Abstract_DomainwallFermion_5D{NC,WilsonFermion} <: AbstractFermionfields_5D{NC}  end
 
 """
 Struct for DomainwallFermion
 """
-struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFermion_5D{NC,WilsonFermion} #<: AbstractFermionfields_5D{NC}
+struct DomainwallFermion_5D{NC,WilsonFermion} <: Abstract_DomainwallFermion_5D{NC,WilsonFermion}
     w::Array{WilsonFermion,1}
     NC::Int64
     NX::Int64
@@ -13,35 +14,14 @@ struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFer
     L5::Int64   
     Dirac_operator::String
     NWilson::Int64
-    PEs::NTuple{4,Int64}
-    PN::NTuple{4,Int64}
-    mpiinit::Bool
-    myrank::Int64
-    nprocs::Int64
-    myrank_xyzt::NTuple{4,Int64}
-    mpi::Bool
+    nowing::Bool
 
-    function DomainwallFermion_5D_wing_mpi(L5,NC::T,NX::T,NY::T,NZ::T,NT::T,PEs) where T<: Integer
-
-        NV = NX*NY*NZ*NT
-        @assert NX % PEs[1] == 0 "NX % PEs[1] should be 0. Now NX = $NX and PEs = $PEs"
-        @assert NY % PEs[2] == 0 "NY % PEs[2] should be 0. Now NY = $NY and PEs = $PEs"
-        @assert NZ % PEs[3] == 0 "NZ % PEs[3] should be 0. Now NZ = $NZ and PEs = $PEs"
-        @assert NT % PEs[4] == 0 "NT % PEs[4] should be 0. Now NT = $NT and PEs = $PEs"
-
-        PN = (NX ÷ PEs[1],
-                    NY ÷ PEs[2],
-                    NZ ÷ PEs[3],
-                    NT ÷ PEs[4],
-            )
-
-        nprocs = MPI.Comm_size(comm)
-        @assert prod(PEs) == nprocs "num. of MPI process should be prod(PEs). Now nprocs = $nprocs and PEs = $PEs"
-        myrank = MPI.Comm_rank(comm)
-
-        myrank_xyzt = get_myrank_xyzt(myrank,PEs)
-
-        x = WilsonFermion_4D_mpi(NC,NX,NY,NZ,NT,PEs)
+    function DomainwallFermion_5D(L5,NC::T,NX::T,NY::T,NZ::T,NT::T;nowing = false) where T<: Integer
+        if nowing 
+            x = WilsonFermion_4D_nowing(NC,NX,NY,NZ,NT)
+        else
+            x = WilsonFermion_4D_wing(NC,NX,NY,NZ,NT)
+        end
         xtype = typeof(x)
         w = Array{xtype,1}(undef,L5)
         w[1] = x
@@ -51,10 +31,7 @@ struct DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} <: Abstract_DomainwallFer
         #println(w[2][1,1,1,1,1,1])
         NWilson = length(x)
         Dirac_operator = "Domainwall"
-        mpi = true
-        mpiinit = true
-        return new{NC,xtype}(w,NC,NX,NY,NZ,NT,L5,Dirac_operator,NWilson,
-                Tuple(PEs),PN,mpiinit,myrank,nprocs,myrank_xyzt,mpi)
+        return new{NC,xtype}(w,NC,NX,NY,NZ,NT,L5,Dirac_operator,NWilson,nowing)
     end
 
 end
@@ -62,14 +39,62 @@ end
 
 
 
-function Base.similar(x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ) where {NC,WilsonFermion}
-    return DomainwallFermion_5D_wing_mpi(x.L5,NC,x.NX,x.NY,x.NZ,x.NT,x.PEs)
+function Base.similar(x::Abstract_DomainwallFermion_5D{NC,WilsonFermion} ) where {NC,WilsonFermion}
+    return DomainwallFermion_5D(x.L5,NC,x.NX,x.NY,x.NZ,x.NT,nowing=x.nowing)
 end
 
-#=
+function apply_J!(xout::Abstract_DomainwallFermion_5D{NC,WilsonFermion},
+    x::Abstract_DomainwallFermion_5D{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    clear_fermion!(xout)
 
-function D5DWx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{G,1},
-    x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
+    L5 = xout.L5
+    for i5=1:L5
+        j5 = L5-i5+1
+        substitute_fermion!(xout.w[i5],x.w[j5])
+    end
+end
+
+function apply_P!(xout::Abstract_DomainwallFermion_5D{NC,WilsonFermion},
+    x::Abstract_DomainwallFermion_5D{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    L5 = xout.L5
+    clear_fermion!(xout)
+
+    for i5=1:L5
+        j5 = i5
+        #P_- -> P_+ in this definition
+        mul_1plusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+
+        #P_+ -> P_- in this definition
+        j5 = i5+1
+        j5 += ifelse(j5 > L5,-L5,0)
+        mul_1minusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+    end
+end
+
+function apply_Pdag!(xout::Abstract_DomainwallFermion_5D{NC,WilsonFermion},
+    x::Abstract_DomainwallFermion_5D{NC,WilsonFermion}) where  {NC,WilsonFermion}
+    L5 = xout.L5
+    clear_fermion!(xout)
+
+    for i5=1:L5
+        j5 = i5
+        #P_- -> P_+ in this definition
+        mul_1plusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+
+        #P_+ -> P_- in this definition
+        j5 = i5-1
+        j5 += ifelse(j5 < 1,L5,0)
+        mul_1minusγ5x_add!(xout.w[i5],x.w[j5],1) 
+        set_wing_fermion!(xout.w[i5])  
+    end
+end
+
+
+function D5DWx!(xout::Abstract_DomainwallFermion_5D{NC,WilsonFermion},U::Array{G,1},
+    x::Abstract_DomainwallFermion_5D{NC,WilsonFermion},m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
     #temp1 = temps[1]
@@ -115,7 +140,6 @@ function D5DWx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{
         set_wing_fermion!(xout.w[i5])  
 
         #println("xout ",xout.w[i5][1,1,1,1,1,1])
-
     
         j5=i5+1
         if 1 <= j5 <= xout.L5
@@ -124,9 +148,11 @@ function D5DWx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{
                 #mul_1minusγ5x_add!(xout.w[i5],x.w[j5],-1*ratio) 
                 mul_1plusγ5x_add!(xout.w[i5],x.w[j5],ratio) 
                 set_wing_fermion!(xout.w[i5])  
+
                 
             end
         end
+
 
         j5=i5-1
         if 1 <= j5 <= xout.L5
@@ -171,10 +197,8 @@ function D5DWx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{
     return
 end
 
-
-
-function D5DWdagx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Array{G,1},
-    x::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
+function D5DWdagx!(xout::Abstract_DomainwallFermion_5D{NC,WilsonFermion} ,U::Array{G,1},
+    x::Abstract_DomainwallFermion_5D{NC,WilsonFermion} ,m,A,L5) where  {NC,WilsonFermion,G <: AbstractGaugefields}
 
     #temp = temps[4]
     #temp1 = temps[1]
@@ -281,42 +305,16 @@ function D5DWdagx!(xout::DomainwallFermion_5D_wing_mpi{NC,WilsonFermion} ,U::Arr
 end
 
 
-=#
-
-
-#=
 """
 c-------------------------------------------------c
 c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::DomainwallFermion_5D_wing_mpi{NC,NDW}) where {NC,NDW}
-    NX = x.NX
-    NY = x.NY
-    NZ = x.NZ
-    NT = x.NT
-    n6 = size(x.w[1].f)[6]
-    σ = sqrt(1/2)
-
+function gauss_distribution_fermion!(x::Abstract_DomainwallFermion_5D{NC,WilsonFermion}) where {NC,WilsonFermion}
     L5 = length(x.w)
-    for iL = 1:L5
-        for ialpha = 1:n6
-            for it=1:x.PN[4]
-                for iz=1:x.PN[3]
-                    for iy=1:x.PN[2]
-                        for ix=1:x.PN[1]
-                            for ic=1:NC 
-                                v = σ*randn()+im*σ*randn()
-                                setvalue!(x.w[iL],v,ic,ix,iy,iz,it,ialpha)
-                                #x[ic,ix,iy,iz,it,ialpha] = σ*randn()+im*σ*randn()
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        set_wing_fermion!(x.w[iL])
+    for iL=1:L5
+        gauss_distribution_fermion!(x.w[iL])
     end
     return
 end
@@ -327,47 +325,11 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::DomainwallFermion_5D_wing_mpi{NC,NDW},randomfunc,σ) where {NC,NDW}
-  
-    NX = x.NX
-    NY = x.NY
-    NZ = x.NZ
-    NT = x.NT
-    n6 = size(x.w[1].f)[6]
-    #σ = sqrt(1/2)
-
+function gauss_distribution_fermion!(x::Abstract_DomainwallFermion_5D{NC,WilsonFermion},randomfunc,σ) where {NC,WilsonFermion}
     L5 = length(x.w)
-    for iL = 1:L5
-
-
-        for mu = 1:n6
-            for ic=1:NC
-                for it=1:x.PN[4]
-                    for iz=1:x.PN[3]
-                        for iy=1:x.PN[2]
-                            for ix=1:x.PN[1]
-                                v1 = sqrt(-log(randomfunc()+1e-10))
-                                v2 = 2pi*randomfunc()
-
-                                xr = v1*cos(v2)
-                                xi = v1 * sin(v2)
-
-                                v = σ*xr + σ*im*xi
-                                setvalue!(x.w[iL],v,ic,ix,iy,iz,it,mu)
-
-                                #x[ic,ix,iy,iz,it,mu] = σ*xr + σ*im*xi
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        set_wing_fermion!(x.w[iL])
+    for iL=1:L5
+        gauss_distribution_fermion!(x.w[iL],randomfunc,σ)
     end
-
     return
+
 end
-
-
-=#

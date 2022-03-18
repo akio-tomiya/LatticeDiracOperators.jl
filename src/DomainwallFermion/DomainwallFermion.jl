@@ -3,7 +3,7 @@ using Requires
 
 struct D5DW_Domainwall_operator{Dim,T,fermion,wilsonfermion} <: Dirac_operator{Dim}   where  T <: AbstractGaugefields
     U::Array{T,1}
-    wilsonoperator::Wilson_Dirac_operator{Dim,T,wilsonfermion} 
+    wilsonoperator::Union{Wilson_Dirac_operator{Dim,T,wilsonfermion},Wilson_Dirac_operator_faster{Dim,T,wilsonfermion} }
     mass::Float64
     _temporary_fermi::Array{fermion,1}
     L5::Int64
@@ -49,7 +49,12 @@ function D5DW_Domainwall_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,p
         parameters_wilson["numtempvec_CG"] = 1
         parameters_wilson["boundarycondition"] = boundarycondition 
         x_wilson  = x.w[1]
-        wilsonoperator = Wilson_Dirac_operator(U,x_wilson,parameters_wilson)
+        fasterversion = check_parameters(parameters,"faster version",false)
+        if fasterversion
+            wilsonoperator = Wilson_Dirac_operator_faster(U,x_wilson,parameters_wilson)
+        else
+            wilsonoperator = Wilson_Dirac_operator(U,x_wilson,parameters_wilson)
+        end
     #--------------------------------
 
 
@@ -333,22 +338,27 @@ function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields
     return
 end
 
-
+include("./DomainwallFermion_5d.jl")
 include("./DomainwallFermion_5d_wing.jl")
 include("./DomainwallFermion_3d_wing.jl")
 
 
 
-function Initialize_DomainwallFermion(u::AbstractGaugefields{NC,Dim},L5) where {NC,Dim}
+function Initialize_DomainwallFermion(u::AbstractGaugefields{NC,Dim},L5;nowing=false) where {NC,Dim}
     _,_,NN... = size(u)
-    return Initialize_DomainwallFermion(L5,NC,NN...) 
+    return Initialize_DomainwallFermion(L5,NC,NN...,nowing = nowing) 
 end
 
 
-function Initialize_DomainwallFermion(L5,NC,NN...) 
+function Initialize_DomainwallFermion(L5,NC,NN...;nowing = false) 
     Dim = length(NN)
     if Dim == 4
-        fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
+        if nowing
+            fermion = DomainwallFermion_5D(L5,NC,NN...,nowing = nowing) 
+        else
+            fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
+        end
+        #fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
         #fermion = WilsonFermion_4D_wing{NC}(NN...)
         #fermion = WilsonFermion_4D_wing(NC,NN...)
     elseif Dim == 2
