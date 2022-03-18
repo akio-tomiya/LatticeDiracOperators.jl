@@ -77,7 +77,6 @@ function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::Wilso
 end
 
 function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,U,X;coeff = 1) where {Dim,Dirac,fermion,gauge,hascloverterm}
-#function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_action,U,X;coeff = 1) where {Dim}
     W = fermi_action.diracoperator(U)
     mul!(Y,W,X)
     #set_wing_fermion!(Y)
@@ -129,6 +128,8 @@ function calc_UdSfdU_fromX!(UdSfdU::Vector{<: AbstractGaugefields},Y,fermi_actio
 
 
 end
+
+
 
 
 function calc_p_UdSfdU!(p,fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} ,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields,coeff = 1) where  {Dim,Dirac,fermion,gauge,hascloverterm} 

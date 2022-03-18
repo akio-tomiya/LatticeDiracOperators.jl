@@ -30,8 +30,17 @@ struct Wilson_Dirac_operator_faster{Dim,T,fermion} <: Wilson_Dirac_operators{Dim
     method_CG::String
     verbose_print::Verbose_print
     _temporary_fermion_forCG::Vector{fermion}
+
+    γ::Array{ComplexF64,3}
+    rplusγ::Array{ComplexF64,3}
+    rminusγ::Array{ComplexF64,3}
+    r::Float64 #Wilson term
+    hopp::Array{ComplexF64,1}
+    hopm::Array{ComplexF64,1}
+
 end
 
+#=
 function Wilson_Dirac_operator_faster(U::Array{<: AbstractGaugefields{NC,Dim},1},x,κ,boundarycondition;factor=1) where {NC,Dim}
     T = eltype(U)
     xtype = typeof(x)
@@ -76,6 +85,7 @@ function Wilson_Dirac_operator_faster(U::Array{<: AbstractGaugefields{NC,Dim},1}
         verbose_print,
         _temporary_fermion_forCG)
 end
+=#
 
 function Wilson_Dirac_operator_faster(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
     T = eltype(U)
@@ -125,12 +135,38 @@ function Wilson_Dirac_operator_faster(U::Array{<: AbstractGaugefields{NC,Dim},1}
     method_CG = check_parameters(parameters,"method_CG","bicg")
 
 
+    r = check_parameters(parameters,"r",1.0)
+
+    if Dim==4
+        γ,rplusγ,rminusγ = mk_gamma(r)
+        hopp = zeros(ComplexF64,4)
+        hopm = zeros(ComplexF64,4)
+        hopp .= κ
+        hopm .= κ
+    elseif Dim == 2
+        γ,rplusγ,rminusγ = mk_sigma(r)
+        hopp = zeros(ComplexF64,2)
+        hopm = zeros(ComplexF64,2)
+        hopp .= κ
+        hopm .= κ
+    end
+
+
+
+
     return Wilson_Dirac_operator_faster{Dim,T,xtype}(U,D,κ,_temporary_fermi,factor,
         boundarycondition,
         eps_CG,MaxCGstep,verbose_level,
         method_CG,
         verbose_print,
-        _temporary_fermion_forCG)
+        _temporary_fermion_forCG,
+        γ,#::Array{ComplexF64,3}
+        rplusγ,#::Array{ComplexF64,3}
+        rminusγ,#::Array{ComplexF64,3}
+        r,#::Float64 #Wilson term
+        hopp,#::Array{ComplexF64,1}
+        hopm#::Array{ComplexF64,1})
+    )
 end
 
 
@@ -153,8 +189,7 @@ function (D::Wilson_Dirac_1storder_operator{Dim,T,fermion})(U) where {Dim,T,ferm
         U,
         D.μ,
         D.boundarycondition,
-        D._temporary_fermi
-        )
+        D._temporary_fermi)
 end
 
 function (D::Vector{Wilson_Dirac_1storder_operator{Dim,T,fermion}})(U) where {Dim,T,fermion}
@@ -175,7 +210,13 @@ function (D::Wilson_Dirac_operator_faster{Dim,T,fermion})(U) where {Dim,T,fermio
         D.eps_CG,D.MaxCGstep,D.verbose_level,
         D.method_CG,
         D.verbose_print,
-        D._temporary_fermion_forCG
+        D._temporary_fermion_forCG,
+        D.γ,#::Array{ComplexF64,3}
+        D.rplusγ,#::Array{ComplexF64,3}
+        D.rminusγ,#::Array{ComplexF64,3}
+        D.r,#::Float64 #Wilson term
+        D.hopp,#::Array{ComplexF64,1}
+        D.hopm,#::Array{ComplexF64,1})
         )
 end
 
