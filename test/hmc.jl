@@ -185,7 +185,7 @@ function test1_2D()
     D = Dirac_operator(U,x,params)
 
     Nf = 2
-    for Nf  in [8,4,2]
+    for Nf  in [4,2,1]#[8,4,2]
         println("Nf = $Nf")
         parameters_action = Dict()
         parameters_action["Nf"] = Nf
@@ -226,7 +226,7 @@ function test1_2D_NC(NC)
     D = Dirac_operator(U,x,params)
 
     Nf = 2
-    for Nf  in [8,4,2]
+    for Nf  in [4,2,1]#[8,4,2]
         println("Nf = $Nf")
         parameters_action = Dict()
         parameters_action["Nf"] = Nf

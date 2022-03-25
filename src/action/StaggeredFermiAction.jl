@@ -13,7 +13,13 @@ struct StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf} <: FermiAction{Dim,Dirac
 
     function StaggeredFermiAction(D::Dirac_operator{Dim},hascovnet,covneuralnet,parameters_action) where Dim
         @assert haskey(parameters_action,"Nf") "parameters for action should have the keyword Nf"
-        Nf = parameters_action["Nf"]
+        Nf_in = parameters_action["Nf"]
+        if Dim == 2 #Number of zero modes is different. 
+            Nf = 2*Nf_in
+        elseif Dim == 4
+            Nf = Nf_in
+        end
+
 
         if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
             rhmc_info_for_action = nothing

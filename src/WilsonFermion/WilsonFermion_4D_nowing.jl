@@ -135,7 +135,7 @@ function shifted_fermion!(x::WilsonFermion_4D_nowing{NC},boundarycondition,shift
                         factor_x = ifelse(inside_up || inside_down,bc[1],1)
                         ix_shifted += ifelse(inside_up,-NX,0)
                         ix_shifted += ifelse(inside_down,+NX,0)
-                        for ic=1:NC
+                        @inbounds @simd for ic=1:NC
                             #@code_warntype x.f[ic,ix_shifted,iy_shifted,iz_shifted,it_shifted,ig]
                             x.fshifted[ic,ix,iy,iz,it,ig] = 
                                 factor_x*factor_y*factor_z*factor_t*x[ic,ix_shifted,iy_shifted,iz_shifted,it_shifted,ig]
@@ -342,7 +342,7 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing{NC},A::TA) where {TA <: A
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                             e1 = x[ic,ix,iy,iz,it,1]
                             e2 = x[ic,ix,iy,iz,it,2]
                             e3 = x[ic,ix,iy,iz,it,3]
@@ -375,7 +375,7 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing{NC},A::TA,iseven::Bool) w
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                         evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
                         if evenodd == iseven
                             e1 = x[ic,ix,iy,iz,it,1]
@@ -412,7 +412,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing{NC},A::TA,x::Abstractf
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                             e1 = x[ic,ix,iy,iz,it,1]
                             e2 = x[ic,ix,iy,iz,it,2]
                             e3 = x[ic,ix,iy,iz,it,3]
@@ -447,7 +447,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing{NC},A::TA,x::WilsonFer
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                         evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
                         if evenodd == iseven
                             e1 = x[ic,ix,iy,iz,it,1]
@@ -483,7 +483,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing{NC},x::WilsonFermion_4
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                             e1 = x[ic,ix,iy,iz,it,1]
                             e2 = x[ic,ix,iy,iz,it,2]
                             e3 = x[ic,ix,iy,iz,it,3]
@@ -516,7 +516,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing{NC},x::AbstractFermion
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                             e1 = x[ic,ix,iy,iz,it,1]
                             e2 = x[ic,ix,iy,iz,it,2]
                             e3 = x[ic,ix,iy,iz,it,3]
@@ -549,7 +549,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing{NC},x::WilsonFermion_4
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    @simd for ix=1:NX
+                    @inbounds @simd for ix=1:NX
                         evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
                         if evenodd == iseven
                             e1 = x[ic,ix,iy,iz,it,1]
@@ -614,7 +614,7 @@ function LinearAlgebra.axpby!(a::Number, X::T, b::Number, Y::WilsonFermion_4D_no
                         ix = i2
                         evenodd = ifelse((ix+iy+iz+it) % 2 == 0,true,false)
                         if evenodd == iseven
-                            @simd for i1=1:NC
+                            @inbounds @simd for i1=1:NC
                                 Y.f[i1,i2,i3,i4,i5,i6] = a*X.f[i1,i2,i3,i4,i5,i6] + b*Y.f[i1,i2,i3,i4,i5,i6]
                             end
                         end
@@ -650,7 +650,7 @@ c--------------------------------------------------------------------------c
                         #iy = i3+NDW
                         for i2=1:n2
                             #ix = i2+NDW
-                            @simd for ic=1:NC
+                            @inbounds @simd for ic=1:NC
                                 y.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
                             end
                         end
@@ -676,7 +676,7 @@ c--------------------------------------------------------------------------c
                         #iy = i3+NDW
                         for i2=1:n2
                             #ix = i2+NDW
-                            @simd for ic=1:NC
+                            @inbounds @simd for ic=1:NC
                                 x.f[i1,i2,i3,i4,i5,i6]=x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
                             end
                         end
@@ -698,7 +698,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        @simd for ix=1:NX
+                        @inbounds @simd for ix=1:NX
                             y[ic,ix,iy,iz,it,1] = 0#-1*x[ic,ix,iy,iz,it,1]
                             y[ic,ix,iy,iz,it,2] = 0#-1*x[ic,ix,iy,iz,it,2]
                             y[ic,ix,iy,iz,it,3] = x[ic,ix,iy,iz,it,3]
@@ -720,7 +720,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        @simd for ix=1:NX
+                        @inbounds @simd for ix=1:NX
                             y[ic,ix,iy,iz,it,3] += factor*x[ic,ix,iy,iz,it,3]
                             y[ic,ix,iy,iz,it,4] += factor*x[ic,ix,iy,iz,it,4]
                         end
@@ -740,7 +740,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        @simd for ix=1:NX
+                        @inbounds @simd for ix=1:NX
                             y[ic,ix,iy,iz,it,1] = x[ic,ix,iy,iz,it,1]
                             y[ic,ix,iy,iz,it,2] = x[ic,ix,iy,iz,it,2]
                             y[ic,ix,iy,iz,it,3] = 0#x[ic,ix,iy,iz,it,3]
