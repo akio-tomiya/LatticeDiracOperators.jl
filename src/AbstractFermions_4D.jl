@@ -1002,7 +1002,7 @@ function Z2_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        for ic=1:NC
+                        @inbounds @simd for ic=1:NC
                             x[ic,ix,iy,iz,it,mu] = rand([-1,1])
                         end
                     end
@@ -1015,6 +1015,41 @@ function Z2_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
 
     return
 end
+
+"""
+c-------------------------------------------------c
+c     Random number function Z4  Noise
+c     https://arxiv.org/pdf/1611.01193.pdf
+c-------------------------------------------------c
+    """
+    function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC})  where NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f)[6]
+        θ = 0.0
+        N::Int32 = 4
+        Ninv = Float64(1/N)
+        for ialpha = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            @inbounds @simd for ic=1:NC
+                                θ = Float64(rand(0:N-1))*π*Ninv # r \in [0,π/4,2π/4,3π/4]
+                                x[ic,ix,iy,iz,it,ialpha] = cos(θ)+im*sin(θ) 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermion!(x)
+
+        return
+    end
 
 function uniform_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
     NX = x.NX

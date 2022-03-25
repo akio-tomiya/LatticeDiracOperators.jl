@@ -725,7 +725,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC}) where {
             for iy=1:x.PN[2]
                 for ix=1:x.PN[1]
                     for ialpha = 1:NG
-                        for ic=1:NC 
+                        @inbounds @simd for ic=1:NC 
                             v = σ*randn()+im*σ*randn()
                             setvalue!(x,v,ic,ialpha,ix,iy,iz,it)
                             #x[ic,ialpha,ix,iy,iz,it] = σ*randn()+im*σ*randn()
@@ -762,7 +762,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
             for iy=1:x.PN[2]
                 for ix=1:x.PN[1]
                     for mu = 1:NG
-                        for ic=1:NC
+                        @inbounds @simd for ic=1:NC
 
                             v1 = sqrt(-log(randomfunc()+1e-10))
                             v2 = 2pi*randomfunc()
@@ -787,6 +787,73 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
 
     return
 end
+
+function Z2_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    #n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    for it=1:x.PN[4]
+        for iz=1:x.PN[3]
+            for iy=1:x.PN[2]
+                for ix=1:x.PN[1]
+                    for mu = 1:NG
+                        for ic=1:NC
+                            v = rand([-1,1])
+                            setvalue!(x,v,ic,mu,ix,iy,iz,it)
+                            #x[ic,ix,iy,iz,it,mu] = rand([-1,1])
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    set_wing_fermion!(x)
+
+    return
+end
+
+"""
+c-------------------------------------------------c
+c     Random number function Z4  Noise
+c     https://arxiv.org/pdf/1611.01193.pdf
+c-------------------------------------------------c
+    """
+function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC})  where NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f)[6]
+        θ = 0.0
+        N::Int32 = 4
+        Ninv = Float64(1/N)
+        for it=1:x.PN[4]
+            for iz=1:x.PN[3]
+                for iy=1:x.PN[2]
+                    for ix=1:x.PN[1]
+                        for ialpha = 1:NG
+                            @inbounds @simd for ic=1:NC
+                                θ = Float64(rand(0:N-1))*π*Ninv # r \in [0,π/4,2π/4,3π/4]
+                                v = cos(θ)+im*sin(θ) 
+                                setvalue!(x,v,ic,ialpha,ix,iy,iz,it)
+                                #x[ic,ix,iy,iz,it,ialpha] = cos(θ)+im*sin(θ) 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermion!(x)
+
+        return
+end
+
 
 function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc) where NC
     σ = 1
