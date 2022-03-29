@@ -31,8 +31,8 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
     NG::Int64
     NDW::Int64
     Dirac_operator::String
-    PEs::NTuple{4,Int64}
-    PN::NTuple{4,Int64}
+    PEs::NTuple{4,Int64} #number of processes in each dimension
+    PN::NTuple{4,Int64} #number of sites in each process
     mpiinit::Bool
     myrank::Int64
     nprocs::Int64
@@ -77,8 +77,9 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
 
 
         #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
-        f = zeros(ComplexF64,NC,NG,PN[1]+2NDW,PN[2]+2NDW,PN[3]+2NDW,PN[4]+2NDW)
+        f = zeros(ComplexF64,NC,NG,PN[1]+2NDW,PN[2]+2NDW,PN[3]+2NDW,PN[4]+2NDW) #note: ic,ialpha,ix,iy,it,iz
         fshifted = zero(f)
+
 
         Dirac_operator = "Wilson"
         mpi = true
@@ -139,6 +140,35 @@ function Base.getindex(x::WilsonFermion_4D_nowing_mpi{NC},i1,i2,i3,i4,i5,i6) whe
     return getvalue(x,i1,i2,i3,i4,i5,i6) 
     #error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
     
+end
+
+function setindex_global!(x::WilsonFermion_4D_nowing_mpi{NC},v,ic,ix,iy,iz,it,ialpha)  where {NC}
+    i1 = ic
+    i2 = ialpha
+    i3 = ix
+    i4 = iy
+    i5 = iz
+    i6 = it
+
+    PN = x.PN
+    PEs = x.PEs
+    ii3 = i3 + ifelse(i3 < 1,x.NX,0) + ifelse(i3 > x.NX,-x.NX,0)
+    ii4 = i4 + ifelse(i4 < 1,x.NY,0) + ifelse(i4 > x.NY,-x.NY,0)
+    ii5 = i5 + ifelse(i5 < 1,x.NZ,0) + ifelse(i5 > x.NZ,-x.NZ,0)
+    ii6 = i6 + ifelse(i6 < 1,x.NT,0) + ifelse(i6 > x.NT,-x.NT,0)
+    #i = myrank_xyz*PN + i_local 
+    myrank_x = ii3 ÷ PN[1]
+    myrank_y = ii4 ÷ PN[2]
+    myrank_z = ii5 ÷ PN[3]
+    myrank_t = ii6 ÷ PN[4]
+    myrank = (((myrank_t)*PEs[3]+myrank_z)*PEs[2] + myrank_y)*PEs[1] + myrank_x
+    if myrank == x.myrank
+        ilocal_3 = ((ii3-1) % PN[1]) + 1 
+        ilocal_4 = ((ii4-1) % PN[2]) + 1 
+        ilocal_5 = ((ii5-1) % PN[3]) + 1 
+        ilocal_6 = ((ii6-1) % PN[4]) + 1
+        setvalue!(x,v,i1,i2,ilocal_3,ilocal_4,ilocal_5,ilocal_6)
+    end
 end
 
 

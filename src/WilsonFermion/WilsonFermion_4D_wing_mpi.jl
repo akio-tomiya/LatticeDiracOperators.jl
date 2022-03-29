@@ -61,6 +61,10 @@ struct WilsonFermion_4D_mpi{NC,NDW} <: WilsonFermion_4D{NC} #AbstractFermionfiel
 
 end
 
+function setindex_global!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <:  WilsonFermion_4D_mpi
+    @error("setindex_global! is not supported in type $(typeof(x))")
+end
+
 function Base.similar(x::T) where T <:  WilsonFermion_4D_mpi
     return WilsonFermion_4D_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs)
 end

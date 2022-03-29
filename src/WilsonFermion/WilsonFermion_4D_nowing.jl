@@ -168,6 +168,10 @@ function Base.setindex!(x::WilsonFermion_4D_nowing{NC},v,i1,i2,i3,i4,i5,i6)  whe
     @inbounds x.f[i1,i2,i3,i4,i5,i6] = v
 end
 
+function setindex_global!(x::WilsonFermion_4D_nowing{NC},v,i1,i2,i3,i4,i5,i6)  where {NC}
+    @inbounds x.f[i1,i2,i3,i4,i5,i6] = v
+end
+
 
 @inline  function setvalue_fermion!(x::WilsonFermion_4D_nowing{NC},v,i1,i2,i3,i4,i5,i6) where {NC}
     @inbounds x.f[i1,i2 ,i3 ,i4 ,i5 ,i6] = v

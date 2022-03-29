@@ -56,6 +56,8 @@ function Base.getindex(x::WilsonFermion_4D_wing{NC,NDW},i1::N,i2::N,i3::N,i4::N,
     @inbounds return  x.f[i1,i2 + NDW,i3 + NDW,i4 + NDW,i5 + NDW,i6]
 end
 
+function setindex_global!()
+end
 
 
 #=

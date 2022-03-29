@@ -7,6 +7,12 @@ function Base.setindex!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <: AbstractFermionfie
     @inbounds x.f[i1,i2 + x.NDW,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6] = v
 end
 
+
+function setindex_global!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <: AbstractFermionfields_4D
+    @inbounds x.f[i1,i2 + x.NDW,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6] = v
+end
+
+
 function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_4D
     #=
     i2new = i2 .+ x.NDW
@@ -1022,7 +1028,7 @@ c     Random number function Z4  Noise
 c     https://arxiv.org/pdf/1611.01193.pdf
 c-------------------------------------------------c
     """
-    function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC})  where NC
+function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC})  where NC
         NX = x.NX
         NY = x.NY
         NZ = x.NZ
@@ -1049,7 +1055,7 @@ c-------------------------------------------------c
         set_wing_fermion!(x)
 
         return
-    end
+end
 
 function uniform_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
     NX = x.NX
