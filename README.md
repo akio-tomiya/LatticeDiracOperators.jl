@@ -312,6 +312,7 @@ We show the HMC code with this package.
 
 ```julia
 using Gaugefields
+using LatticeDiracOperators
 using LinearAlgebra
 using InteractiveUtils
 using Random
@@ -528,6 +529,7 @@ We show the code of HMC with Wilson fermions with stout smearing.
 
 ```julia
 using Gaugefields
+using LatticeDiracOperators
 using LinearAlgebra
 using LatticeDiracOperators
 
