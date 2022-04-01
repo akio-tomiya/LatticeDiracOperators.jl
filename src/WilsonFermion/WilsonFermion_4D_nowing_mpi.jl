@@ -49,10 +49,11 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
     otherranks::Vector{Int64}
     win_other::MPI.Win
     your_ranks::Matrix{Int64}
+    comm::MPI.Comm
     #BoundaryCondition::Vector{Int8}
 
 
-    function WilsonFermion_4D_nowing_mpi(NC::T,NX::T,NY::T,NZ::T,NT::T,PEs) where T<: Integer
+    function WilsonFermion_4D_nowing_mpi(NC::T,NX::T,NY::T,NZ::T,NT::T,PEs;comm = MPI.COMM_WORLD) where T<: Integer
         NG = 4
         NDW = 0
         NV = NX*NY*NZ*NT
@@ -103,7 +104,7 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
 
         return new{NC}(f,NC,NX,NY,NZ,NT,NG,NDW,Dirac_operator,Tuple(PEs),PN,mpiinit,myrank,nprocs,myrank_xyzt,mpi,
                     fshifted,tempmatrix,positions,send_ranks,
-                    win,win_i,win_1i,countvec,otherranks,win_other,your_ranks)
+                    win,win_i,win_1i,countvec,otherranks,win_other,your_ranks,comm)
     end
 
 
@@ -121,11 +122,11 @@ end
 
 
 function barrier(x::T) where T <: WilsonFermion_4D_nowing_mpi
-    MPI.Barrier(comm)
+    MPI.Barrier(x.comm)
 end
 
 function Base.similar(x::T) where T <:  WilsonFermion_4D_nowing_mpi
-    return WilsonFermion_4D_nowing_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs)
+    return WilsonFermion_4D_nowing_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs,comm = x.comm)
 end
 
 
@@ -489,7 +490,7 @@ end
 function mpi_updates_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},send_ranks) where {NC}
     if length(send_ranks) != 0
 
-        val = MPI.Allreduce(length(send_ranks), +,comm) ÷ get_nprocs(x)
+        val = MPI.Allreduce(length(send_ranks), +,x.comm) ÷ get_nprocs(x)
 
         #=
         for rank=0:get_nprocs(x)
@@ -1179,7 +1180,7 @@ function LinearAlgebra.dot(a::WilsonFermion_4D_nowing_mpi{NC},b::WilsonFermion_4
         end
     end  
 
-    c = MPI.Allreduce(c,MPI.SUM,comm)
+    c = MPI.Allreduce(c,MPI.SUM,a.comm)
     return c
 end
 

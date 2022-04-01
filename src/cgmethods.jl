@@ -964,3 +964,78 @@ function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose
 
 end
 
+function shiftedbicg_2003(σ,A,b;maxsteps=3000,eps = 1e-15,verboselevel=2)
+    N = length(σ)
+    btype = typeof(b)
+    q = zero(b)
+    x = zero(b)
+    r = deepcopy(b)
+    rt = deepcopy(b)
+    u = zero(b)
+    ut = zero(b)
+    vec_u = Vector{btype}(undef,N)
+    vec_x = Vector{btype}(undef,N)
+    for j=1:N
+        vec_u[j] = zero(b)
+        vec_x[j] = zero(b)
+    end
+    ρkold = ones(ComplexF64,N)
+    ρk = ones(ComplexF64,N)
+    πkold = ones(ComplexF64,N)
+    πk = ones(ComplexF64,N)
+    πknew = ones(ComplexF64,N)
+    ρold = 1
+    αold = 1
+    residual = 0
+
+    for i=1:maxsteps
+        ρ = dot(rt,r)
+        β = -ρ/ρold    
+        axpby!(1,r,-β,u)
+        axpby!(1,rt,-β',ut)
+        mul!(q,A,u)
+        qrt = dot(rt,q)
+        α = ρ/qrt
+        axpy!(α,u,x)
+
+
+        for k=1:N
+            πknew[k] = (1+α*σ[k])*πk[k]+ (α*β/αold)*(πkold[k]- πk[k])
+            βk = (πkold[k]/πk[k])^2*β
+            αk =  (πk[k]/πknew[k])*α
+            axpby!(1/πk[k],r,-βk,vec_u[k])
+            axpy!(αk,vec_u[k],vec_x[k])
+        end
+
+
+        axpy!(-α,q,r)
+        mul!(q,A',ut)
+        axpy!(-α',q,rt)
+        αold = α
+        ρold  = ρ
+
+        residual = dot(r,r)
+        if verboselevel == 3
+            println("$i-th step: ",residual)
+        end
+
+        if abs(residual) < eps
+            if verboselevel >= 2
+                println("Converged at $i-th step. eps: $residual")
+                println("--------------------------------------")
+            end
+            return vec_x
+        end
+
+        for k=1:N
+            πkold[k] = πk[k]
+            πk[k] = πknew[k]
+        end
+
+    end
+
+    error("bicg is not converged. The residual is $residual")
+
+
+end
+

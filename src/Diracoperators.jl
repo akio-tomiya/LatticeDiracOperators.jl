@@ -22,6 +22,13 @@ end
 abstract type γ5D_operator  <: Operator #hermitian matrix
 end
 
+struct γ5D{Dirac} <: γ5D_operator 
+    dirac::Dirac
+    function γ5D(D)
+        return new{typeof(D)}(D)
+    end
+end
+
 abstract type Adjoint_Dirac_operator <: Operator
 end
 
@@ -59,6 +66,10 @@ end
 
 function get_temporaryvectors_forCG(A::T) where T <: Adjoint_Dirac_operator
     return A.parent._temporary_fermion_forCG
+end
+
+function get_temporaryvectors_forCG(A::T) where T <: γ5D_operator 
+    return A.dirac._temporary_fermion_forCG
 end
 
 const default_eps_CG = 1e-19
@@ -110,6 +121,12 @@ end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}
     error("solve_DinvX!(y,A,x) (y = A^{-1} x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+end
+
+function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  γ5D_operator, T3 <: AbstractFermionfields}
+    x2 = deepcopy(x)
+    apply_γ5!(x2)
+    solve_DinvX!(y,A.dirac,x2)
 end
 
 function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Dirac_operator, T3 <: AbstractFermionfields}
@@ -190,6 +207,8 @@ function solve_DinvX!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <
     cg(y,A,x;eps=A.dirac.eps_CG,maxsteps = A.dirac.MaxCGstep,verbose = A.dirac.verbose_print)  
     set_wing_fermion!(y,A.dirac.boundarycondition)
 end
+
+
 
 function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <: AbstractFermionfields,T2 <:  Operator, T3 <: AbstractFermionfields}
     error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
