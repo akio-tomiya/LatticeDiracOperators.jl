@@ -819,7 +819,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
     return
 end
 
-function Z2_distribution_fermion!(x::AbstractFermionfields_4D{NC})  where NC
+function Z2_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC})  where NC
     NX = x.NX
     NY = x.NY
     NZ = x.NZ

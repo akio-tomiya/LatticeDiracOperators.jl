@@ -1,6 +1,8 @@
+using JLD2
 
 abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4}
 end
+
 
 
 function Base.setindex!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <: AbstractFermionfields_4D
@@ -103,6 +105,17 @@ function clear_fermion!(a::AbstractFermionfields_4D{NC}) where NC
     end
 end
 
+function save_fermionfield(a::AbstractFermionfields_4D{NC},filename) where NC
+    jldsave(filename; ϕ=a)
+    return
+end
+
+function load_fermionfield!(a::AbstractFermionfields_4D{NC},filename) where NC
+    jldopen(filename, "r") do file
+        substitute_fermion!(a,file["ϕ"])
+    end
+end
+
 
 function substitute_fermion!(a::AbstractFermionfields_4D{NC},b::AbstractFermionfields_4D{NC}) where NC 
     n1,n2,n3,n4,n5,n6 = size(a.f)
@@ -143,7 +156,27 @@ function substitute_fermion!(a::AbstractFermionfields_4D{NC},b::Abstractfermion)
     set_wing_fermion!(a)
 end
 
+struct Shifted_fermionfields_4D_nowing{NC,T} <: Shifted_fermionfields{NC,4}
+    parent::T
+    #parent::T
+    shift::NTuple{4,Int8}
+    NC::Int64
 
+    #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
+    function Shifted_fermionfields_4D_nowing(F,shift;boundarycondition = boundarycondition_default ) 
+        NC = F.NC
+        shifted_fermion!(F,boundarycondition,shift)
+        return new{NC,typeof(F)}(F,shift,NC)
+    end
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D_nowing,i1,i2,i3,i4,i5,i6) 
+    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
+end
+
+function Base.getindex(F::Shifted_fermionfields_4D_nowing,i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {N <: Integer}
+    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
+end
 
 
 
@@ -725,6 +758,32 @@ function cross!(u::T1,x::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}},
 end
 
 
+
+function convert_to_normalvector(y::AbstractFermionfields_4D{NC}) where {NC}
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+    NV = NX*NY*NZ*NT*NG*NC
+    x = zeros(ComplexF64,NV)
+    count = 0
+    for ialpha=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for k1=1:NC
+                            count += 1
+                            x[count] = y[k1,ix,iy,iz,it,ialpha]
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return x
+end
 
 
 """

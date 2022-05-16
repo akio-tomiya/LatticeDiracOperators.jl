@@ -43,20 +43,6 @@ end
 
 const boundarycondition_default = [1,1,1,-1]
 
-struct Shifted_fermionfields_4D_nowing{NC,T} <: Shifted_fermionfields{NC,4}
-    parent::T
-    #parent::T
-    shift::NTuple{4,Int8}
-    NC::Int64
-
-    #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
-    function Shifted_fermionfields_4D_nowing(F::WilsonFermion_4D_nowing{NC},shift;boundarycondition = boundarycondition_default ) where NC
-        shifted_fermion!(F,boundarycondition,shift)
-        return new{NC,typeof(F)}(F,shift,NC)
-    end
-end
-
-
 
 
 
@@ -149,13 +135,6 @@ function shifted_fermion!(x::WilsonFermion_4D_nowing{NC},boundarycondition,shift
     
 end
 
-function Base.getindex(F::Shifted_fermionfields_4D_nowing,i1,i2,i3,i4,i5,i6) 
-    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
-end
-
-function Base.getindex(F::Shifted_fermionfields_4D_nowing,i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {N <: Integer}
-    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
-end
 
 
 

@@ -13,6 +13,7 @@ struct Staggered_Dirac_operator{Dim,T,fermion} <: Dirac_operator{Dim}  where T <
 end
 
 include("./StaggeredFermion_4D_wing.jl")
+include("./StaggeredFermion_4D_nowing.jl")
 include("./StaggeredFermion_2D_wing.jl")
 
 function Staggered_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim}
@@ -84,15 +85,19 @@ function Base.adjoint(A::T) where T <: Staggered_Dirac_operator
 end
 
 
-function Initialize_StaggeredFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
+function Initialize_StaggeredFermion(u::AbstractGaugefields{NC,Dim};nowing = false) where {NC,Dim}
     _,_,NN... = size(u)
-    return Initialize_StaggeredFermion(NC,NN...) 
+    return Initialize_StaggeredFermion(NC,NN...,nowing = nowing) 
 end
 
-function Initialize_StaggeredFermion(NC,NN...) 
+function Initialize_StaggeredFermion(NC,NN...;nowing = false) 
     Dim = length(NN)
     if Dim == 4
-        fermion = StaggeredFermion_4D_wing(NC,NN...)
+        if nowing 
+            fermion = StaggeredFermion_4D_nowing(NC,NN...)
+        else
+            fermion = StaggeredFermion_4D_wing(NC,NN...)
+        end
     elseif Dim == 2
         fermion = StaggeredFermion_2D_wing(NC,NN...)
     else

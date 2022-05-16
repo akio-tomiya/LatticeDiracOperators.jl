@@ -1015,6 +1015,9 @@ function shiftedbicg_2003(σ,A,b;maxsteps=3000,eps = 1e-15,verboselevel=2)
         ρold  = ρ
 
         residual = dot(r,r)
+        ρMAX = maximum(abs.(1/πknew))^2   
+        residual = residual* ρMAX
+
         if verboselevel == 3
             println("$i-th step: ",residual)
         end

@@ -4,6 +4,7 @@ abstract type FermiAction{Dim,Dirac,fermion,gauge} end
 include("./StaggeredFermiAction.jl")
 include("./WilsonFermiAction.jl")
 include("./DomainwallFermiAction.jl")
+include("./MobiusDomainwallFermiAction.jl")
 include("./WilsontypeFermiAction.jl")
 
 function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = nothing) where {NC,Dim}
@@ -20,6 +21,8 @@ function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = not
         return WilsonFermiAction(D,hascovnet,covneuralnet,parameters_action)
     elseif diractype <: Domainwall_Dirac_operator
         return DomainwallFermiAction(D,hascovnet,covneuralnet) 
+    elseif diractype <: MobiusDomainwall_Dirac_operator
+        return MobiusDomainwallFermiAction(D,hascovnet,covneuralnet) 
     elseif diractype <: Wilson_GeneralDirac_operator
         return Wilson_GeneralDirac_FermiAction(D,hascovnet,covneuralnet,parameters_action)
     else

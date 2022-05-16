@@ -59,7 +59,7 @@ end
 
 
 
-function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2,nowing = false) where {NC,Dim}
+function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_operator::String;L5=2,nowing = true) where {NC,Dim}
     mpi = u.mpi
     if mpi
         if Dim == 4
@@ -75,11 +75,18 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
                 end
                 #x = Initialize_WilsonFermion(u)
             elseif Dirac_operator == "Domainwall"
-                @warn "Domainwall fermion is not well tested!!"
+                #@warn "Domainwall fermion is not well tested!!"
                 if nowing
                     x = DomainwallFermion_5D_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs,nowing=nowing) 
                 else
                     x = DomainwallFermion_5D_wing_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
+                end
+            elseif Dirac_operator == "MobiusDomainwall"
+                @warn "MobiusDomainwall fermion is not well tested!!"
+                if nowing
+                    x = MobiusDomainwallFermion_5D_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs,nowing=nowing) 
+                else
+                    x = MobiusDomainwallFermion_5D_wing_mpi(L5,u.NC,u.NX,u.NY,u.NZ,u.NT,u.PEs) 
                 end
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
@@ -92,12 +99,15 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
     else
         if Dim == 4
             if Dirac_operator == "staggered"
-                x = Initialize_StaggeredFermion(u)
+                x = Initialize_StaggeredFermion(u,nowing = nowing)
             elseif Dirac_operator == "Wilson"
                 x = Initialize_WilsonFermion(u,nowing = nowing)
             elseif Dirac_operator == "Domainwall"
-                @warn "Domainwall fermion is not well tested!!"
+                #@warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u,L5,nowing=nowing)
+            elseif Dirac_operator == "MobiusDomainwall"
+                @warn "MobiusDomainwall fermion is not well tested!!"
+                x = Initialize_MobiusDomainwallFermion(u,L5,nowing=nowing)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -107,8 +117,11 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},Dirac_op
             elseif Dirac_operator == "Wilson"
                 x = Initialize_WilsonFermion(u)
             elseif Dirac_operator == "Domainwall"
-                @warn "Domainwall fermion is not well tested!!"
+                #@warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u,L5)
+            elseif Dirac_operator == "MobiusDomainwall"
+                @warn "MobiusDomainwall fermion is not well tested!!"
+                x = Initialize_MobiusDomainwallFermion(u,L5)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -146,6 +159,10 @@ function Initialize_pseudofermion_fields(u::AbstractGaugefields{NC,Dim},paramete
     end
 
     return x
+end
+
+function convert_to_normalvector(F::T) where T <: AbstractFermionfields
+    error("convert_to_normalvector is not implemented in type $(typeof(F)) ")
 end
 
 function clear_fermion!(F::T) where T <: AbstractFermionfields

@@ -80,6 +80,7 @@ include("./AbstractFermions.jl")
 include("./StaggeredFermion/StaggeredFermion.jl")
 include("./WilsonFermion/WilsonFermion.jl")
 include("./DomainwallFermion/DomainwallFermion.jl")
+include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
 include("./action/FermiAction.jl")
 
 function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters) where {NC,Dim} 
@@ -97,6 +98,8 @@ function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         Wilson_GeneralDirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
         Domainwall_Dirac_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "MobiusDomainwall"
+        MobiusDomainwall_Dirac_operator(U,x,parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end

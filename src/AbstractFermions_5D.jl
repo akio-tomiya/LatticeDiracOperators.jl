@@ -27,6 +27,17 @@ function Base.getindex(x::T,i) where T <: AbstractFermionfields_5D
     return @inbounds x.w[iL][i4D]
 end
 
+function save_fermionfield(a::AbstractFermionfields_5D{NC},filename) where NC
+    jldsave(filename; ϕ=a)
+    return
+end
+
+function load_fermionfield!(a::AbstractFermionfields_5D{NC},filename) where NC
+    jldopen(filename, "r") do file
+        substitute_fermion!(a,file["ϕ"])
+    end
+end
+
 
 function substitute_fermion!(a::AbstractFermionfields_5D{NC},b::AbstractFermionfields_5D{NC}) where NC 
     L5 = length(a.w)

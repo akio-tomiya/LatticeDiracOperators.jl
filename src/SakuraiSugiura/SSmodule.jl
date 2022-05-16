@@ -231,6 +231,9 @@ module SSmodule
 
 
             for k=1:N
+                if abs(πk[k]) < eps
+                    continue
+                end
                 πknew[k] = (1+α*(σ[k]-zseed))*πk[k]+ (α*β/αold)*(πkold[k]- πk[k])
                 βk = (πkold[k]/πk[k])^2*β
                 αk =  (πk[k]/πknew[k])*α
@@ -252,6 +255,9 @@ module SSmodule
             #println(residual,"\t",zseed,"\t")#,dot(r,r),"\t",ρMAX)
 
             for k=1:N
+                if abs(πk[k]) < eps
+                    continue
+                end
                 πkold[k] = πk[k]
                 πk[k] = πknew[k]
             end
@@ -548,7 +554,7 @@ module SSmodule
     
     end
 
-    function shiftedbicgstab_inSS(x,A,b;eps=1e-10,maxsteps = 1000) #Ax=b
+    function shiftedbicgstab_inSSold(x,A,b;eps=1e-10,maxsteps = 1000) #Ax=b
 
 
         r = deepcopy(b)
