@@ -170,6 +170,7 @@ struct Shifted_fermionfields_4D_nowing{NC,T} <: Shifted_fermionfields{NC,4}
     end
 end
 
+
 function Base.getindex(F::Shifted_fermionfields_4D_nowing,i1,i2,i3,i4,i5,i6) 
     @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
 end

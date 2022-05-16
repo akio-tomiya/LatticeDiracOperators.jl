@@ -1,27 +1,11 @@
-import Base
-
+import Gaugefields:staggered_U
 import Gaugefields:comm,setvalue!
 import Gaugefields:barrier
 import Gaugefields.AbstractGaugefields_module:getvalue
+import Gaugefields.AbstractGaugefields_module:Staggered_Gaugefields,Shifted_Gaugefields_4D_mpi_nowing,
+        Gaugefields_4D_nowing_mpi
 
-mutable struct Data_sent_fermion{NC} #data format for MPI
-    count::Int64
-    data::Array{ComplexF64,3}
-    positions::Vector{Int64}
-
-    function Data_sent_fermion(N,NC;NG = 4)
-        data = zeros(ComplexF64,NC,NG,N)
-        count = 0
-        positions = zeros(Int64,N)
-
-        return new{NC}(count,data,positions)
-    end
-end
-
-"""
-Struct for WilsonFermion
-"""
-struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionfields_4D{NC}
+struct StaggeredFermion_4D_nowing_mpi{NC} <: AbstractFermionfields_4D{NC}
     f::Array{ComplexF64,6}
     NC::Int64
     NX::Int64
@@ -50,11 +34,12 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
     win_other::MPI.Win
     your_ranks::Matrix{Int64}
     comm::MPI.Comm
-    #BoundaryCondition::Vector{Int8}
 
 
-    function WilsonFermion_4D_nowing_mpi(NC::T,NX::T,NY::T,NZ::T,NT::T,PEs;comm = MPI.COMM_WORLD) where T<: Integer
-        NG = 4
+    
+
+    function StaggeredFermion_4D_nowing_mpi(NC::T,NX::T,NY::T,NZ::T,NT::T,PEs;comm = MPI.COMM_WORLD) where T<: Integer
+        NG = 1
         NDW = 0
         NV = NX*NY*NZ*NT
         @assert NX % PEs[1] == 0 "NX % PEs[1] should be 0. Now NX = $NX and PEs = $PEs"
@@ -106,44 +91,59 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
                     fshifted,tempmatrix,positions,send_ranks,
                     win,win_i,win_1i,countvec,otherranks,win_other,your_ranks,comm)
     end
-
-
 end
 
-function get_myrank(x::T) where T <: WilsonFermion_4D_nowing_mpi
+
+
+
+function get_myrank(x::T) where T <: StaggeredFermion_4D_nowing_mpi
     return x.myrank
 end
 
 
 
-function get_nprocs(x::T) where T <: WilsonFermion_4D_nowing_mpi
+function get_nprocs(x::T) where T <: StaggeredFermion_4D_nowing_mpi
     return  x.nprocs
 end
 
 
-function barrier(x::T) where T <: WilsonFermion_4D_nowing_mpi
+function barrier(x::T) where T <: StaggeredFermion_4D_nowing_mpi
     MPI.Barrier(x.comm)
 end
 
-function Base.similar(x::T) where T <:  WilsonFermion_4D_nowing_mpi
-    return WilsonFermion_4D_nowing_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs,comm = x.comm)
+
+function Base.size(x::StaggeredFermion_4D_nowing_mpi{NC}) where NC
+    return (x.NC,x.NX,x.NY,x.NZ,x.NT,x.NG)
+    #return (x.NV,)
 end
 
+function Base.length(x::StaggeredFermion_4D_nowing_mpi{NC}) where {NC}
+    return NC*x.NX*x.NY*x.NZ*x.NT*x.NG
+end
 
+function Base.similar(x::T) where T <: StaggeredFermion_4D_nowing_mpi
+    return StaggeredFermion_4D_nowing_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs,comm = x.comm)
+end
 
-function Base.setindex!(x::WilsonFermion_4D_nowing_mpi{NC},v,i1,i2,i3,i4,i5,i6)  where {NC}
+function Base.similar(x::T) where T <: StaggeredFermion_4D_nowing_mpi
+    return StaggeredFermion_4D_nowing_mpi(x.NC,x.NX,x.NY,x.NZ,x.NT,x.PEs,comm = x.comm)
+end
+
+function Base.setindex!(x::StaggeredFermion_4D_nowing_mpi{NC},v,i1,i2,i3,i4,i5,i6)  where {NC}
     error("Each element can not be accessed by global index in $(typeof(x)). Use setvalue! function")
     
 end
 
-function Base.getindex(x::WilsonFermion_4D_nowing_mpi{NC},i1,i2,i3,i4,i5,i6) where {NC}
+function Base.getindex(x::StaggeredFermion_4D_nowing_mpi{NC},i1,i2,i3,i4,i5,i6) where {NC}
     @warn "Each element can not be accessed by global index in $(typeof(x)) Use getvalue function"
+    error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+
     return getvalue(x,i1,i2,i3,i4,i5,i6) 
     #error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
     
 end
 
-function setindex_global!(x::WilsonFermion_4D_nowing_mpi{NC},v,ic,ix,iy,iz,it,ialpha)  where {NC}
+function setindex_global!(x::StaggeredFermion_4D_nowing_mpi{NC},v,ic,ix,iy,iz,it,ialpha)  where {NC}
     i1 = ic
     i2 = ialpha
     i3 = ix
@@ -172,8 +172,7 @@ function setindex_global!(x::WilsonFermion_4D_nowing_mpi{NC},v,ic,ix,iy,iz,it,ia
     end
 end
 
-
-@inline function getvalue(x::WilsonFermion_4D_nowing_mpi{NC},i1,i2,i3,i4,i5,i6) where {NC}
+@inline function getvalue(x::StaggeredFermion_4D_nowing_mpi{NC},i1,i2,i3,i4,i5,i6) where {NC}
     @inbounds return x.f[i1,i2,i3 ,i4 ,i5 ,i6]
 end
 
@@ -184,36 +183,11 @@ end
 end
 
 
-@inline  function setvalue!(x::WilsonFermion_4D_nowing_mpi{NC},v,i1,i2,i3,i4,i5,i6) where {NC}
+@inline  function setvalue!(x::StaggeredFermion_4D_nowing_mpi{NC},v,i1,i2,i3,i4,i5,i6) where {NC}
     @inbounds x.f[i1,i2 ,i3 ,i4 ,i5 ,i6] = v
 end
 
-
-
-
-struct Shifted_fermionfields_4D_nowing_mpi{NC,T} <: Shifted_fermionfields{NC,4}
-    parent::T
-    #parent::T
-    shift::NTuple{4,Int8}
-    NC::Int64
-
-    #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
-    function Shifted_fermionfields_4D_nowing_mpi(F,shift;boundarycondition = boundarycondition_default )
-        NC = F.NC
-        shifted_fermion!(F,boundarycondition,shift)
-        return new{NC,typeof(F)}(F,shift,NC)
-    end
-end
-
-function getvalue(F::Shifted_fermionfields_4D_nowing_mpi,i1,i2,i3,i4,i5,i6) 
-    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
-end
-
-function getvalue(F::Shifted_fermionfields_4D_nowing_mpi,i1::N,i2::N,i3::N,i4::N,i5::N,i6::N)  where {N <: Integer}
-    @inbounds return F.parent.fshifted[i1,i2,i3,i4,i5,i6]
-end
-
-function shift_fermion(F::WilsonFermion_4D_nowing_mpi{NC},ν::T) where {T <: Integer,NC}
+function shift_fermion(F::StaggeredFermion_4D_nowing_mpi{NC},ν::T) where {T <: Integer,NC}
     if ν == 1
         shift = (1,0,0,0)
     elseif ν == 2
@@ -235,13 +209,8 @@ function shift_fermion(F::WilsonFermion_4D_nowing_mpi{NC},ν::T) where {T <: Int
     return Shifted_fermionfields_4D_nowing_mpi(F,shift)
 end
 
-
-function shift_fermion(F::TF,shift::NTuple{Dim,T}) where {Dim,T <: Integer,TF <: WilsonFermion_4D_nowing_mpi}
-    return Shifted_fermionfields_4D_nowing_mpi(F,shift)
-end
-
 function update_sent_data!(send_ranks,N,ix,iy,iz,it,ix_shifted,iy_shifted,iz_shifted,it_shifted,
-    PEs,myrank_xyzt,xP,yP,zP,tP,x::WilsonFermion_4D_nowing_mpi{NC},factor) where {NC}
+    PEs,myrank_xyzt,xP,yP,zP,tP,x::StaggeredFermion_4D_nowing_mpi{NC},factor) where {NC}
     NG = x.NG
     tempmatrix_mini = view(x.tempmatrix,1:NC,1:NG,1) 
 
@@ -310,7 +279,7 @@ function update_sent_data!(send_ranks,N,ix,iy,iz,it,ix_shifted,iy_shifted,iz_shi
 
 end
 
-function mpi_updates_fermion_1data!(x::WilsonFermion_4D_nowing_mpi{NC},send_ranks) where NC
+function mpi_updates_fermion_1data!(x::StaggeredFermion_4D_nowing_mpi{NC},send_ranks) where NC
     if length(send_ranks) != 0
         NG = x.NG
         #=
@@ -397,7 +366,7 @@ function mpi_updates_fermion_1data!(x::WilsonFermion_4D_nowing_mpi{NC},send_rank
     end
 end
 
-function mpi_updates_fermion_moredata!(x::WilsonFermion_4D_nowing_mpi{NC},send_ranks) where {NC}
+function mpi_updates_fermion_moredata!(x::StaggeredFermion_4D_nowing_mpi{NC},send_ranks) where {NC}
     NG = x.NG
     otherranks = x.otherranks
     win_other = x.win_other
@@ -488,7 +457,7 @@ function mpi_updates_fermion_moredata!(x::WilsonFermion_4D_nowing_mpi{NC},send_r
 
 end
 
-function mpi_updates_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},send_ranks) where {NC}
+function mpi_updates_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC},send_ranks) where {NC}
     if length(send_ranks) != 0
 
         val = MPI.Allreduce(length(send_ranks), +,x.comm) ÷ get_nprocs(x)
@@ -515,8 +484,7 @@ function mpi_updates_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},send_ranks) whe
     end
 end
 
-
-function shifted_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},boundarycondition,shift) where {NC}
+function shifted_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC},boundarycondition,shift) where {NC}
     PEs = x.PEs
     PN = x.PN
     myrank = x.myrank
@@ -724,25 +692,13 @@ function shifted_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},boundarycondition,s
 
 end
 
-
-
-
-function setvalue!(F::T,v,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields_4D_nowing_mpi
-    error("type $(typeof(F)) has no setindex method. This type is read only.")
-end
-
-function getvalue(F::T,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields_4D_nowing
-    @inbounds return F.parent.fshifted[i1,i2 ,i3 ,i4 ,i5,i6]
-end
-
-
 """
 c-------------------------------------------------c
 c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
+function gauss_distribution_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC}) where {NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -777,7 +733,7 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfunc,σ) where {NC}
+function gauss_distribution_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC},randomfunc,σ) where {NC}
   
     NX = x.NX
     NY = x.NY
@@ -820,7 +776,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC},randomfu
     return
 end
 
-function Z2_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC})  where NC
+function Z2_distribution_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC})  where NC
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -886,7 +842,6 @@ function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC})  where NC
         return
 end
 
-
 function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc) where NC
     σ = 1
     gauss_distribution_fermion!(x,randomfunc,σ)
@@ -895,117 +850,64 @@ end
 
 
 
-function set_wing_fermion!(a::WilsonFermion_4D_nowing_mpi{NC},boundarycondition) where {NC}
+function set_wing_fermion!(a::StaggeredFermion_4D_nowing_mpi{NC},boundarycondition) where {NC}
     return
 end
 
 
 
-
-
-
-function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_nowing_mpi,G <: AbstractGaugefields}
-    #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D_nowing_mpi,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
+function Dx!(xout::T,U::Array{G,1},
+    x::T,temps::Array{T,1},boundarycondition) where  {T <: StaggeredFermion_4D_nowing_mpi,G <:AbstractGaugefields}
     #temp = temps[4]
-    #temp1 = temps[1]
-    #temp2 = temps[2]
+    temp1 = temps[1]
+    temp2 = temps[2]
 
-    clear_fermion!(temp)
-    #set_wing_fermion!(x)
+    #clear!(temp)
+    set_wing_fermion!(x,boundarycondition)
+    clear_fermion!(xout)
     for ν=1:4
-        
         xplus = shift_fermion(x,ν)
-        #println(xplus)
-        
+        Us = staggered_U(U[ν],ν)
+        mul!(temp1,Us,xplus)
 
-        mul!(temp1,U[ν],xplus)
-       
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1,view(A.rminusγ,:,:,ν))
-
-        
 
         xminus = shift_fermion(x,-ν)
         Uminus = shift_U(U[ν],-ν)
-
-
-        mul!(temp2,Uminus',xminus)
-     
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rplusγ,:,:,ν))
-
-        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-
-    end
-
-    clear_fermion!(xout)
-    add_fermion!(xout,1,x,-1,temp)
-
-    set_wing_fermion!(xout,A.boundarycondition)
-
-    #display(xout)
-    #    exit()
-    return
-end
-
-
-
-function Wdagx!(xout::T,U::Array{G,1},
-    x::T,A) where  {T <: WilsonFermion_4D_nowing_mpi,G <: AbstractGaugefields}
-    #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D_nowing_mpi,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4] #temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    clear_fermion!(temp)
-    #set_wing_fermion!(x)
-    for ν=1:4
-        xplus = shift_fermion(x,ν)
-        mul!(temp1,U[ν],xplus)
+        Uminus_s = staggered_U(Uminus,ν)
+        mul!(temp2,Uminus_s',xminus)
+        
+        add_fermion!(xout,0.5,temp1,-0.5,temp2)
 
         #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-        #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
-        mul!(temp1,view(A.rplusγ,:,:,ν))
-        
-        
-        #
-        xminus = shift_fermion(x,-ν)
-        Uminus = shift_U(U[ν],-ν)
-
-        mul!(temp2,Uminus',xminus)
         #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
-        mul!(temp2,view(A.rminusγ,:,:,ν))
-
-
-        add_fermion!(temp,A.hopp[ν],temp1,A.hopm[ν],temp2)
-        
-        
+        #add!(xout,0.5,temp1,-0.5,temp2)
         
     end
 
-    clear_fermion!(xout)
-    add_fermion!(xout,1,x,-1,temp)
-    set_wing_fermion!(xout,A.boundarycondition)
+    
+    set_wing_fermion!(xout,boundarycondition)
 
-    #display(xout)
-    #    exit()
     return
 end
 
-function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Number,b::T2) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
+function clear_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC},evensite) where NC
+    ibush = ifelse(evensite,0,1)
+    for it=1:x.NT
+        for iz=1:x.NZ
+            for iy=1:x.NY
+                xran =1+(1+ibush+iy+iz+it)%2:2:x.NX
+                for ix in xran
+                    @simd for ic=1:NC
+                        x[ic,ix,iy,iz,it,1] = 0
+                    end
+                end
+            end
+        end
+    end
+    return
+end
+
+function add_fermion!(c::StaggeredFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Number,b::T2) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
     #n1,n2,n3,n4,n5,n6 = size(c.f)
 
     
@@ -1029,7 +931,7 @@ function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Nu
 end
 
 
-function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1) where {NC,T1 <: Abstractfermion}#c += alpha*a 
+function add_fermion!(c::StaggeredFermion_4D_nowing_mpi{NC},α::Number,a::T1) where {NC,T1 <: Abstractfermion}#c += alpha*a 
     #n1,n2,n3,n4,n5,n6 = size(c.f)
 
     @inbounds for it=1:c.PN[4]
@@ -1053,7 +955,7 @@ end
 
 
 
-function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Number,b::T2,iseven) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
+function add_fermion!(c::StaggeredFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Number,b::T2,iseven) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
 
     NT = c.NT
     NZ = c.NZ
@@ -1083,7 +985,7 @@ function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,β::Nu
     return
 end
 
-function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,iseven::Bool) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
+function add_fermion!(c::StaggeredFermion_4D_nowing_mpi{NC},α::Number,a::T1,iseven::Bool) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
 
 
     NT = c.NT
@@ -1115,23 +1017,40 @@ function add_fermion!(c::WilsonFermion_4D_nowing_mpi{NC},α::Number,a::T1,iseven
     return
 end
 
-function WWx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D_nowing_mpi,G <: AbstractGaugefields} #(1 - K^2 Teo Toe) xe
-    iseven = true
-    temp = A._temporary_fermi[4]#temps[4]
-    temp2 = A._temporary_fermi[5]#temps[4]
-    Toex!(temp2,U,x,A,iseven) 
-
-    iseven = false
-    Toex!(temp,U,temp2,A,iseven) 
-    add_fermion!(xout,1,x,-1,temp)
-
-    iseven = true
-    set_wing_fermion!(xout,A.boundarycondition)
-
-    return
+function shift_fermion(F::StaggeredFermion_4D_nowing_mpi{NC},ν::T) where {T <: Integer,NC}
+    if ν == 1
+        shift = (1,0,0,0)
+    elseif ν == 2
+        shift = (0,1,0,0)
+    elseif ν == 3
+        shift = (0,0,1,0)
+    elseif ν == 4
+        shift = (0,0,0,1)
+    elseif ν == -1
+            shift = (-1,0,0,0)
+    elseif ν == -2
+            shift = (0,-1,0,0)
+    elseif ν == -3
+            shift = (0,0,-1,0)
+    elseif ν == -4
+            shift = (0,0,0,-1)
+    end
+    
+    return Shifted_fermionfields_4D_nowing_mpi(F,shift)
 end
 
-function clear_fermion!(a::WilsonFermion_4D_nowing_mpi{NC} ,iseven) where {NC} 
+
+function shift_fermion(F::TF,shift::NTuple{Dim,T}) where {Dim,T <: Integer,TF <: StaggeredFermion_4D_nowing_mpi}
+    return Shifted_fermionfields_4D_nowing_mpi(F,shift)
+end
+
+
+
+function set_wing_fermion!(a::StaggeredFermion_4D_nowing_mpi{NC},boundarycondition) where NC 
+   return
+end
+
+function clear_fermion!(a::StaggeredFermion_4D_nowing_mpi{NC} ,iseven) where {NC} 
     n1,n6,n2,n3,n4,n5= size(a.f)
     @inbounds for i5=1:n5
         it = i5
@@ -1155,8 +1074,7 @@ function clear_fermion!(a::WilsonFermion_4D_nowing_mpi{NC} ,iseven) where {NC}
     end
 end
 
-
-function LinearAlgebra.dot(a::WilsonFermion_4D_nowing_mpi{NC},b::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
+function LinearAlgebra.dot(a::StaggeredFermion_4D_nowing_mpi{NC},b::StaggeredFermion_4D_nowing_mpi{NC}) where {NC}
     NT = a.NT
     NZ = a.NZ
     NY = a.NY
@@ -1185,7 +1103,7 @@ function LinearAlgebra.dot(a::WilsonFermion_4D_nowing_mpi{NC},b::WilsonFermion_4
     return c
 end
 
-function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{3},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion}
+function LinearAlgebra.mul!(y::StaggeredFermion_4D_nowing_mpi{3},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion}
     #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
     NX = y.NX
     NY = y.NY
@@ -1223,7 +1141,9 @@ function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{3},A::T,x::T3) where 
     end
 end
 
-function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{2},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion}
+
+
+function LinearAlgebra.mul!(y::StaggeredFermion_4D_nowing_mpi{2},A::T,x::T3) where {T<:Abstractfields,T3 <:Abstractfermion}
     #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
     NX = y.NX
     NY = y.NY
@@ -1257,7 +1177,9 @@ function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{2},A::T,x::T3) where 
     end
 end
 
-function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing_mpi{NC},A::TA) where {TA <: AbstractMatrix, NC}
+
+
+function LinearAlgebra.mul!(x::StaggeredFermion_4D_nowing_mpi{NC},A::TA) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1299,7 +1221,7 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing_mpi{NC},A::TA) where {TA 
     
 end
 
-function LinearAlgebra.mul!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<: WilsonFermion_4D_nowing_mpi{NC}}) where {T1 <: AbstractGaugefields,NC}
+function LinearAlgebra.mul!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<: StaggeredFermion_4D_nowing_mpi{NC}}) where {T1 <: AbstractGaugefields,NC}
     #_,NX,NY,NZ,NT,NG = size(y)
     NG = x.NG
     clear_U!(u)
@@ -1325,10 +1247,12 @@ function LinearAlgebra.mul!(u::T1,x::Abstractfermion,y::Adjoint_fermionfields{<:
     set_wing_U!(u)
 end
 
+
+
 """
 mul!(u,x,y) -> u_{ab} = x_a*y_b
 """
-function LinearAlgebra.mul!(u::T1,x::WilsonFermion_4D_nowing_mpi{NC},y::WilsonFermion_4D_nowing_mpi{NC}) where {T1 <: AbstractGaugefields,NC}
+function LinearAlgebra.mul!(u::T1,x::StaggeredFermion_4D_nowing_mpi{NC},y::StaggeredFermion_4D_nowing_mpi{NC}) where {T1 <: AbstractGaugefields,NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1358,7 +1282,7 @@ function LinearAlgebra.mul!(u::T1,x::WilsonFermion_4D_nowing_mpi{NC},y::WilsonFe
     set_wing_U!(u)
 end
 
-function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{3},x::T3,A::T) where {T<:Abstractfields,T3 <:Abstractfermion}
+function LinearAlgebra.mul!(y::StaggeredFermion_4D_nowing_mpi{3},x::T3,A::T) where {T<:Abstractfields,T3 <:Abstractfermion}
     #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
     NX = y.NX
     NY = y.NY
@@ -1394,7 +1318,7 @@ function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{3},x::T3,A::T) where 
 end
 
 
-function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{NC},A::T,x::T3) where {NC,T<:Number,T3 <:Abstractfermion}
+function LinearAlgebra.mul!(y::StaggeredFermion_4D_nowing_mpi{NC},A::T,x::T3) where {NC,T<:Number,T3 <:Abstractfermion}
     @assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
     NX = y.NX
     NY = y.NY
@@ -1418,7 +1342,7 @@ function LinearAlgebra.mul!(y::WilsonFermion_4D_nowing_mpi{NC},A::T,x::T3) where
     end
 end
 
-function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing_mpi{NC},A::TA,iseven::Bool) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(x::StaggeredFermion_4D_nowing_mpi{NC},A::TA,iseven::Bool) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1466,7 +1390,7 @@ function LinearAlgebra.mul!(x::WilsonFermion_4D_nowing_mpi{NC},A::TA,iseven::Boo
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},A::TA,x::WilsonFermion_4D_nowing_mpi{NC}) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::StaggeredFermion_4D_nowing_mpi{NC},A::TA,x::StaggeredFermion_4D_nowing_mpi{NC}) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1502,7 +1426,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},A::TA,x::Wilso
 
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},A::TA,x::WilsonFermion_4D_nowing_mpi{NC},iseven::Bool) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::StaggeredFermion_4D_nowing_mpi{NC},A::TA,x::StaggeredFermion_4D_nowing_mpi{NC},iseven::Bool) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1544,7 +1468,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},A::TA,x::Wilso
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC},A::TA) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::StaggeredFermion_4D_nowing_mpi{NC},x::StaggeredFermion_4D_nowing_mpi{NC},A::TA) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1593,7 +1517,7 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermi
     
 end
 
-function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC},A::TA,iseven) where {TA <: AbstractMatrix, NC}
+function LinearAlgebra.mul!(xout::StaggeredFermion_4D_nowing_mpi{NC},x::StaggeredFermion_4D_nowing_mpi{NC},A::TA,iseven) where {TA <: AbstractMatrix, NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1633,413 +1557,88 @@ function LinearAlgebra.mul!(xout::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermi
     
 end
 
+function Base.getindex(u::Staggered_Gaugefields{T,μ},i1,i2,i3,i4,i5,i6) where {T <: Gaugefields_4D_nowing_mpi,μ}
+    NT = u.parent.NT
+    NZ = u.parent.NZ
+    NY = u.parent.NY
+    NX = u.parent.NX
 
-"""
-c--------------------------------------------------------------------------c
-c     y = gamma_5 * x
-c     here
-c                  ( -1       )
-c        GAMMA5 =  (   -1     )
-c                  (     +1   )
-c                  (       +1 )
-c--------------------------------------------------------------------------c
-    """
-    function mul_γ5x!(y::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        @inbounds for i5=1:n5
-            
-            for i4=1:n4
-                
-                for i3=1:n3
-                    
-                    for i2=1:n2
-                        
-                        for i6=1:n6
-                            @simd for i1=1:NC
-                                y.f[i1,i6,i2,i3,i4,i5]=x.f[i1,i6,i2,i3,i4,i5]*ifelse(i6 <= 2,-1,1)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
+    t = i6-1
+    t += ifelse(t<0,NT,0)
+    t += ifelse(t ≥ NT,-NT,0)
+    #boundary_factor_t = ifelse(t == NT -1,BoundaryCondition[4],1)
+    z = i5-1
+    z += ifelse(z<0,NZ,0)
+    z += ifelse(z ≥ NZ,-NZ,0)
+    #boundary_factor_z = ifelse(z == NZ -1,BoundaryCondition[3],1)
+    y = i4-1
+    y += ifelse(y<0,NY,0)
+    y += ifelse(y ≥ NY,-NY,0)
+    #boundary_factor_y = ifelse(y == NY -1,BoundaryCondition[2],1)
+    x = i3-1
+    x += ifelse(x<0,NX,0)
+    x += ifelse(x ≥ NX,-NX,0)
+    #boundary_factor_x = ifelse(x == NX -1,BoundaryCondition[1],1)
+    if μ ==1
+        η = 1
+    elseif μ ==2
+        #η = (-1.0)^(x)
+        η = ifelse(x%2 == 0,1,-1)
+    elseif μ ==3
+        #η = (-1.0)^(x+y)
+        η = ifelse((x+y)%2 == 0,1,-1)
+    elseif μ ==4
+        #η = (-1.0)^(x+y+z)
+        η = ifelse((x+y+z)%2 == 0,1,-1)
+    else
+        error("η should be positive but η = $η")
     end
 
+    @inbounds return η*u.parent[i1,i2,i3,i4,i5,i6]
+    @inbounds return η*getvalue(u.parent,i1,i2,i3,i4,i5,i6) # u.parent[i1,i2,i3,i4,i5,i6]
+end
 
-    function apply_γ5!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        @inbounds for i5=1:n5
-            #it = i5+NDW
-            for i4=1:n4
-                #iz = i4+NDW
-                for i3=1:n3
-                    #iy = i3+NDW
-                    for i2=1:n2
-                        #ix = i2+NDW
-                        for i6=1:n6
-                            @simd for i1=1:NC
-                                x.f[i1,i6,i2,i3,i4,i5]=x.f[i1,i6,i2,i3,i4,i5]*ifelse(i6 <= 2,-1,1)
-                            end
-                        end
-                    end
-                end
-            end
-        end
+#function Base.getindex(u::Staggered_Gaugefields{Shifted_Gaugefields_4D_nowing{NC},μ},i1,i2,i3,i4,i5,i6)  where {μ,NC}
+#    error("type $(typeof(u)) has no getindex method")
+#end
 
+function Base.getindex(u::Staggered_Gaugefields{Shifted_Gaugefields_4D_mpi_nowing{NC},μ},i1,i2,i3,i4,i5,i6)  where {μ,NC}
+#function Base.getindex(u::Staggered_Gaugefields{T,μ},i1,i2,i3,i4,i5,i6) where {T <: Shifted_Gaugefields_4D,μ}
+    NT = u.parent.NT
+    NZ = u.parent.NZ
+    NY = u.parent.NY
+    NX = u.parent.NX
+
+    t = i6-1+ u.parent.shift[4]
+    t += ifelse(t<0,NT,0)
+    t += ifelse(t ≥ NT,-NT,0)
+    #boundary_factor_t = ifelse(t == NT -1,BoundaryCondition[4],1)
+    z = i5-1+ u.parent.shift[3]
+    z += ifelse(z<0,NZ,0)
+    z += ifelse(z ≥ NZ,-NZ,0)
+    #boundary_factor_z = ifelse(z == NZ -1,BoundaryCondition[3],1)
+    y = i4-1+ u.parent.shift[2]
+    y += ifelse(y<0,NY,0)
+    y += ifelse(y ≥ NY,-NY,0)
+    #boundary_factor_y = ifelse(y == NY -1,BoundaryCondition[2],1)
+    x = i3-1+ u.parent.shift[1]
+    x += ifelse(x<0,NX,0)
+    x += ifelse(x ≥ NX,-NX,0)
+    #boundary_factor_x = ifelse(x == NX -1,BoundaryCondition[1],1)
+    if μ ==1
+        η = 1
+    elseif μ ==2
+        #η = (-1.0)^(x)
+        η = ifelse(x%2 == 0,1,-1)
+    elseif μ ==3
+        #η = (-1.0)^(x+y)
+        η = ifelse((x+y)%2 == 0,1,-1)
+    elseif μ ==4
+        #η = (-1.0)^(x+y+z)
+        η = ifelse((x+y+z)%2 == 0,1,-1)
+    else
+        error("η should be positive but η = $η")
     end
 
-
-    function mul_1plusγ5x!(y::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC})  where {NC}#(1+gamma_5)/2
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        #@inbounds for i6=1:n6
-            @inbounds for i5=1:n5
-                #it = i5+NDW
-                for i4=1:n4
-                    #iz = i4+NDW
-                    for i3=1:n3
-                        #iy = i3+NDW
-                        for i2=1:n2
-                            #ix = i2+NDW
-                            @simd for i1=1:NC
-
-                                y.f[i1,1,i2,i3,i4,i5]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
-                                y.f[i1,2,i2,i3,i4,i5]= 0
-                                y.f[i1,3,i2,i3,i4,i5]= x.f[i1,3,i2,i3,i4,i5]
-                                y.f[i1,4,i2,i3,i4,i5]= x.f[i1,4,i2,i3,i4,i5]
-                            end
-                        end
-                    end
-                end
-            end
-        #end
-
-    end
-
-    function mul_1plusγ5x_add!(y::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC},factor) where {NC}#x = x +(1+gamma_5)/2
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        #@inbounds for i6=1:n6
-            @inbounds for i5=1:n5
-                #it = i5+NDW
-                for i4=1:n4
-                    #iz = i4+NDW
-                    for i3=1:n3
-                        #iy = i3+NDW
-                        for i2=1:n2
-                            #ix = i2+NDW
-                            @simd for i1=1:NC
-
-                                #y.f[i1,1,i2,i3,i4,i5]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
-                                #y.f[i1,2,i2,i3,i4,i5]= 0
-                                y.f[i1,3,i2,i3,i4,i5] += factor*x.f[i1,3,i2,i3,i4,i5]
-                                y.f[i1,4,i2,i3,i4,i5] += factor*x.f[i1,4,i2,i3,i4,i5]
-                            end
-                        end
-                    end
-                end
-            end
-        #end
-
-    end
-
-    function mul_1minusγ5x!(y::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}#(1-gamma_5)/2
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        #@inbounds for i6=1:n6
-            @inbounds for i5=1:n5
-                #it = i5+NDW
-                for i4=1:n4
-                    #iz = i4+NDW
-                    for i3=1:n3
-                        #iy = i3+NDW
-                        for i2=1:n2
-                            #ix = i2+NDW
-                            @simd for i1=1:NC
-
-                                y.f[i1,1,i2,i3,i4,i5]= x.f[i1,1,i2,i3,i4,i5] #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
-                                y.f[i1,2,i2,i3,i4,i5]= x.f[i1,2,i2,i3,i4,i5]
-                                y.f[i1,3,i2,i3,i4,i5]= 0#x.f[i1,3,i2,i3,i4,i5]
-                                y.f[i1,4,i2,i3,i4,i5]= 0#x.f[i1,3,i2,i3,i4,i5]
-                            end
-                        end
-                    end
-                end
-            end
-        #end
-
-    end
-
-    function mul_1minusγ5x_add!(y::WilsonFermion_4D_nowing_mpi{NC},x::WilsonFermion_4D_nowing_mpi{NC},factor) where {NC}#+(1-gamma_5)/2
-        n1,n6,n2,n3,n4,n5 = size(x.f)
-        #println("axpby")
-    
-        #@inbounds for i6=1:n6
-            @inbounds for i5=1:n5
-                #it = i5+NDW
-                for i4=1:n4
-                    #iz = i4+NDW
-                    for i3=1:n3
-                        #iy = i3+NDW
-                        for i2=1:n2
-                            #ix = i2+NDW
-                            @simd for i1=1:NC
-
-                                #y.f[i1,1,i2,i3,i4,i5]= 0 #x.f[i1,i2,i3,i4,i5,i6]*ifelse(i6 <= 2,-1,1)
-                                #y.f[i1,2,i2,i3,i4,i5]= 0
-                                y.f[i1,1,i2,i3,i4,i5] += factor*x.f[i1,1,i2,i3,i4,i5]
-                                y.f[i1,2,i2,i3,i4,i5] += factor*x.f[i1,2,i2,i3,i4,i5]
-                            end
-                        end
-                    end
-                end
-            end
-        #end
-    end
-
-
-    """
-               (       -i )              (       -1 )
-     GAMMA1 =  (     -i   )     GAMMA2 = (     +1   )
-               (   +i     )              (   +1     )
-               ( +i       )              ( -1       )
-    """
-
-    function mul_1minusγ1x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1-gamma_1)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) + im*getvalue(x,ic,4,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) + im*getvalue(x,ic,3,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) - im*getvalue(x,ic,2,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) - im*getvalue(x,ic,1,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    function mul_1plusγ1x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1+gamma_1)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) - im*getvalue(x,ic,4,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) - im*getvalue(x,ic,3,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) + im*getvalue(x,ic,2,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) + im*getvalue(x,ic,1,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    """
-               (       -i )              (       -1 )
-     GAMMA1 =  (     -i   )     GAMMA2 = (     +1   )
-               (   +i     )              (   +1     )
-               ( +i       )              ( -1       )
-    """
-    function mul_1minusγ2x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1-gamma_2)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) + getvalue(x,ic,4,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) - getvalue(x,ic,3,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) - getvalue(x,ic,2,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) + getvalue(x,ic,1,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    function mul_1plusγ2x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1-gamma_5)/2
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) - getvalue(x,ic,4,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) + getvalue(x,ic,3,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) + getvalue(x,ic,2,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) - getvalue(x,ic,1,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    
-    """
-                   (     -i   )              (     -1   )
-         GAMMA3 =  (       +i )     GAMMA4 = (       -1 )
-                   ( +i       )              ( -1       )
-                   (   -i     )              (   -1     )
-    
-    """
-    function mul_1minusγ3x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1-gamma_3)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) + im*getvalue(x,ic,3,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) - im*getvalue(x,ic,4,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) - im*getvalue(x,ic,1,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) + im*getvalue(x,ic,2,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    function mul_1plusγ3x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1+gamma_3)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) - im*getvalue(x,ic,3,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) + im*getvalue(x,ic,4,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) + im*getvalue(x,ic,1,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) - im*getvalue(x,ic,2,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    
-    
-    """
-                   (     -i   )              (     -1   )
-         GAMMA3 =  (       +i )     GAMMA4 = (       -1 )
-                   ( +i       )              ( -1       )
-                   (   -i     )              (   -1     )
-    
-    """
-    function mul_1minusγ4x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1-gamma_4)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) + getvalue(x,ic,3,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) + getvalue(x,ic,4,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) + getvalue(x,ic,1,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) + getvalue(x,ic,2,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    function mul_1plusγ4x!(y::WilsonFermion_4D_nowing_mpi{NC},x) where {NC}#(1+gamma_4)
-        NX = y.NX
-        NY = y.NY
-        NZ = y.NZ
-        NT = y.NT
-        #NC = x.NC
-        @inbounds for ic=1:NC
-            for it=1:y.PN[4]
-                for iz=1:y.PN[3]
-                    for iy=1:y.PN[2]
-                        @simd for ix=1:y.PN[1]
-                            v1 = getvalue(x,ic,1,ix,iy,iz,it) - getvalue(x,ic,3,ix,iy,iz,it)
-                            v2 = getvalue(x,ic,2,ix,iy,iz,it) - getvalue(x,ic,4,ix,iy,iz,it)
-                            v3 = getvalue(x,ic,3,ix,iy,iz,it) - getvalue(x,ic,1,ix,iy,iz,it)
-                            v4 = getvalue(x,ic,4,ix,iy,iz,it) - getvalue(x,ic,2,ix,iy,iz,it)
-                            setvalue!(y,v1,ic,1,ix,iy,iz,it)#] = v1
-                            setvalue!(y,v2,ic,2,ix,iy,iz,it)#] = v2
-                            setvalue!(y,v3,ic,3,ix,iy,iz,it)# = v3
-                            setvalue!(y,v4,ic,4,ix,iy,iz,it) # = v4
-                        end
-                    end
-                end
-            end
-        end
-    end
+    @inbounds return η*getvalue(u.parent,i1,i2,i3,i4,i5,i6)
+end
