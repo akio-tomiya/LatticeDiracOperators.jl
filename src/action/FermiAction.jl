@@ -7,36 +7,49 @@ include("./DomainwallFermiAction.jl")
 include("./MobiusDomainwallFermiAction.jl")
 include("./WilsontypeFermiAction.jl")
 
-function FermiAction(D::Dirac_operator{Dim},parameters_action;covneuralnet = nothing) where {NC,Dim}
+function FermiAction(
+    D::Dirac_operator{Dim},
+    parameters_action;
+    covneuralnet = nothing,
+) where {NC,Dim}
     diractype = typeof(D)
-    if covneuralnet ==  nothing
+    if covneuralnet == nothing
         hascovnet = false
     else
         hascovnet = true
     end
 
     if diractype <: Staggered_Dirac_operator
-        return StaggeredFermiAction(D,hascovnet,covneuralnet,parameters_action)
+        return StaggeredFermiAction(D, hascovnet, covneuralnet, parameters_action)
     elseif diractype <: Wilson_Dirac_operators
-        return WilsonFermiAction(D,hascovnet,covneuralnet,parameters_action)
+        return WilsonFermiAction(D, hascovnet, covneuralnet, parameters_action)
     elseif diractype <: Domainwall_Dirac_operator
-        return DomainwallFermiAction(D,hascovnet,covneuralnet) 
+        return DomainwallFermiAction(D, hascovnet, covneuralnet)
     elseif diractype <: MobiusDomainwall_Dirac_operator
-        return MobiusDomainwallFermiAction(D,hascovnet,covneuralnet) 
+        return MobiusDomainwallFermiAction(D, hascovnet, covneuralnet)
     elseif diractype <: Wilson_GeneralDirac_operator
-        return Wilson_GeneralDirac_FermiAction(D,hascovnet,covneuralnet,parameters_action)
+        return Wilson_GeneralDirac_FermiAction(
+            D,
+            hascovnet,
+            covneuralnet,
+            parameters_action,
+        )
     else
         error("Action type $diractype is not supported")
     end
-    
+
 end
 
-function evaluate_FermiAction(fermi_action::FermiAction,U,ϕ::AbstractFermionfields)
-    error("evaluate_FermiAction(fermi_action,U,ϕ) is not implemented in type fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), and ϕ:$(typeof(ϕ)),  ")
+function evaluate_FermiAction(fermi_action::FermiAction, U, ϕ::AbstractFermionfields)
+    error(
+        "evaluate_FermiAction(fermi_action,U,ϕ) is not implemented in type fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), and ϕ:$(typeof(ϕ)),  ",
+    )
 end
 
-function gauss_sampling_in_action!(η::AbstractFermionfields,U,fermi_action::FermiAction)
-    error("gauss_sampling_in_action!(η,fermi_action) is not implemented in type η:$(typeof(η)), fermi_action:$(typeof(fermi_action))")
+function gauss_sampling_in_action!(η::AbstractFermionfields, U, fermi_action::FermiAction)
+    error(
+        "gauss_sampling_in_action!(η,fermi_action) is not implemented in type η:$(typeof(η)), fermi_action:$(typeof(fermi_action))",
+    )
 end
 
 #=
@@ -51,20 +64,32 @@ det(D)^Nf =
  = int dphi dphi^* exp[- phi^* D^{-Nf/2} D^{-Nf/2} phi]
 =#
 
-function sample_pseudofermions!(ϕ::AbstractFermionfields,U,fermi_action::FermiAction,ξ) 
-    error("sample_pseudofermions!(ϕ,fermi_action,ξ) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action)), ξ:$(typeof(ξ))")
+function sample_pseudofermions!(ϕ::AbstractFermionfields, U, fermi_action::FermiAction, ξ)
+    error(
+        "sample_pseudofermions!(ϕ,fermi_action,ξ) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action)), ξ:$(typeof(ξ))",
+    )
 end
 
-function calc_UdSfdU(fermi_action::FermiAction{Dim,Dirac,fermion,gauge},U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields) where {Dim,Dirac,fermion,gauge}
+function calc_UdSfdU(
+    fermi_action::FermiAction{Dim,Dirac,fermion,gauge},
+    U::Vector{<:AbstractGaugefields},
+    ϕ::AbstractFermionfields,
+) where {Dim,Dirac,fermion,gauge}
     x = U[1]
-    UdSfdU = Array{typeof(x),1}(undef,Dim)
-    for μ=1:Dim
+    UdSfdU = Array{typeof(x),1}(undef, Dim)
+    for μ = 1:Dim
         UdSfdU[μ] = similar(x)
     end
-    calc_UdSfdU!(UdSfdU,fermi_action,U,ϕ)
+    calc_UdSfdU!(UdSfdU, fermi_action, U, ϕ)
 end
 
-function calc_UdSfdU!(UdSfdU::Vector{<: AbstractGaugefields},fermi_action::FermiAction,U::Vector{<: AbstractGaugefields},ϕ::AbstractFermionfields)
-    error("cald_UdSfdU!(UdSfdU,fermi_action,U) is not implemented in type UdSfdU:$(typeof(UdSfdU)), fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), ϕ:$(typeof(ϕ))")
+function calc_UdSfdU!(
+    UdSfdU::Vector{<:AbstractGaugefields},
+    fermi_action::FermiAction,
+    U::Vector{<:AbstractGaugefields},
+    ϕ::AbstractFermionfields,
+)
+    error(
+        "cald_UdSfdU!(UdSfdU,fermi_action,U) is not implemented in type UdSfdU:$(typeof(UdSfdU)), fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), ϕ:$(typeof(ϕ))",
+    )
 end
-
