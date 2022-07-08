@@ -209,40 +209,50 @@ function sample_pseudofermions!(
     ξ::AbstractFermionfields,
 ) where {Dim,Dirac,Nf,fermion,gauge}
     W = fermi_action.diracoperator(U)
-    WdagW = DdagD_Staggered_operator(W)
 
-    rhmc = fermi_action.rhmc_info_for_action
+    if Nf == 4
+        mul!(ϕ, W', ξ)
+        set_wing_fermion!(ϕ)
+    elseif Nf == 8
+        mul!(ϕ, W', ξ)
+        set_wing_fermion!(ϕ)
+    else
 
-    N = get_order(rhmc)
+        WdagW = DdagD_Staggered_operator(W)
 
-    x = ϕ #fermi_action._temporary_fermionfields[1]
-    vec_x = fermi_action._temporary_fermionfields[end-N+1:end]
-    for j = 1:N
-        clear_fermion!(vec_x[j])
+        rhmc = fermi_action.rhmc_info_for_action
+
+        N = get_order(rhmc)
+
+        x = ϕ #fermi_action._temporary_fermionfields[1]
+        vec_x = fermi_action._temporary_fermionfields[end-N+1:end]
+        for j = 1:N
+            clear_fermion!(vec_x[j])
+        end
+
+        vec_β = get_β(rhmc)
+        vec_α = get_α(rhmc)
+        α0 = get_α0(rhmc)
+        #set_wing_fermion!(ξ)
+
+        shiftedcg(
+            vec_x,
+            vec_β,
+            x,
+            WdagW,
+            ξ,
+            eps = W.eps_CG,
+            maxsteps = W.MaxCGstep,
+            verbose = W.verbose_print,
+        )
+        clear_fermion!(ϕ)
+        add_fermion!(ϕ, α0, ξ)
+        for j = 1:N
+            αk = vec_α[j]
+            add_fermion!(ϕ, αk, vec_x[j])
+        end
+        set_wing_fermion!(ϕ)
     end
-
-    vec_β = get_β(rhmc)
-    vec_α = get_α(rhmc)
-    α0 = get_α0(rhmc)
-    #set_wing_fermion!(ξ)
-
-    shiftedcg(
-        vec_x,
-        vec_β,
-        x,
-        WdagW,
-        ξ,
-        eps = W.eps_CG,
-        maxsteps = W.MaxCGstep,
-        verbose = W.verbose_print,
-    )
-    clear_fermion!(ϕ)
-    add_fermion!(ϕ, α0, ξ)
-    for j = 1:N
-        αk = vec_α[j]
-        add_fermion!(ϕ, αk, vec_x[j])
-    end
-    set_wing_fermion!(ϕ)
 
     #error("sample_pseudofermions!(ϕ,fermi_action) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action))")
 end
