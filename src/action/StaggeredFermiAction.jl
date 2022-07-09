@@ -20,7 +20,7 @@ struct StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf} <:
         parameters_action,
     ) where {Dim}
         @assert haskey(parameters_action, "Nf") "parameters for action should have the keyword Nf"
-        Nf_in = parameters_action["Nf"]
+        Nf_in::Int = parameters_action["Nf"]
         if Dim == 2 #Number of zero modes is different. 
             Nf = 2 * Nf_in
         elseif Dim == 4
