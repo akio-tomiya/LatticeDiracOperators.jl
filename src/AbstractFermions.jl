@@ -33,6 +33,103 @@ function Base.size(x::Adjoint_fermionfields{T}) where {T<:Abstractfermion}
 end
 
 
+struct σμν{μ,ν}
+    σ::NTuple{4,ComplexF64}
+    indices::NTuple{4,Int64}
+
+    function σμν(μ,ν)  
+        if μ < ν
+            facμν = 1
+            μ0 = μ
+            ν0 = ν
+        else
+            facμν = -1
+            μ0 = ν
+            ν0 = μ
+        end
+
+        if μ0 == 1 && ν0 == 2
+            ϵ = facμν
+            σ = (-ϵ,ϵ,-ϵ,ϵ)
+            indices = (1,2,3,4)
+        elseif μ0 == 1 && ν0 == 3
+            ϵ = facμν
+            σ = (-im*ϵ,im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
+        elseif μ0 == 1 && ν0 == 4
+            ϵ = facμν
+            σ = (-ϵ,-ϵ,ϵ,ϵ)
+            indices = (2,1,4,3)
+        elseif μ0 == 2 && ν0 == 3
+            ϵ = facμν
+            σ = (-ϵ,-ϵ,-ϵ,-ϵ)
+            indices = (2,1,4,3)
+        elseif μ0 == 2 && ν0 == 4
+            ϵ = facμν
+            σ = (im*ϵ,-im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
+        elseif μ0 == 3 && ν0 == 4
+            ϵ = facμν
+            σ = (-ϵ,ϵ,ϵ,-ϵ)
+            indices = (1,2,3,4)
+        else
+            error("""something is wrong in σμν
+                μ,ν : $μ $ν
+                """)
+        end
+        return new{μ,ν}(σ,indices)
+    end
+    #=
+
+    
+
+    function σμν(μ,ν)        
+        if μ == 2 && ν == 3
+            i = 1
+            ϵ = 1
+            σ = (ϵ,ϵ,ϵ,ϵ)
+            indices = (2,1,4,3)
+        elseif μ == 1 && ν == 3
+            i = 2
+            ϵ = -1
+            σ = (-im*ϵ,im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
+        elseif μ == 1 && ν == 2
+            i = 3
+            ϵ = 1 #3,1,2
+            σ = (ϵ,-ϵ,ϵ,-ϵ)
+            indices = (1,2,3,4)
+        elseif μ == 3 && ν == 2
+            i = 1
+            ϵ = -1 #132
+            σ = (ϵ,ϵ,ϵ,ϵ)
+            indices = (2,1,4,3)
+        elseif μ == 3 && ν == 1
+            i = 2
+            ϵ = 1 #231
+            σ = (-im*ϵ,im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
+        elseif μ == 2 && ν == 1
+            i = 3
+            ϵ = -1 #321
+            σ = (ϵ,-ϵ,ϵ,-ϵ)
+            indices = (1,2,3,4)
+        end
+        return new{μ,ν}(σ,indices)
+    end
+    =#
+end
+
+#=
+const σ12 = σμν(1,2)
+const σ21 = σμν(2,1)
+const σ13 = σμν(1,3)
+const σ31 = σμν(3,1)
+const σ23 = σμν(2,3)
+const σ32 = σμν(3,2)
+=#
+
+
 
 
 abstract type Shifted_fermionfields{NC,Dim} <: Abstractfermion end
@@ -281,4 +378,14 @@ end
 
 function initialize_Adjoint_fermion(x::T1) where {T1<:AbstractFermionfields}
     error("initialize_Adjoint_fermion is not implemented in type $(typeof(x)) ")
+end
+
+#=
+function apply_σμν!(a::T1,μ,ν,b::T2) where {T1<:Abstractfermion,T2<:Abstractfermion}
+    error("apply_σμν! is not implemented in type a:$(typeof(a)),b:$(typeof(b))")
+end
+=#
+
+function apply_σ!(a::T1,σ::σμν{μ,ν},b::T2;factor=1) where {μ,ν,T1<:Abstractfermion,T2<:Abstractfermion}
+    error("apply_σ! is not implemented in type a:$(typeof(a)),b:$(typeof(b))")
 end

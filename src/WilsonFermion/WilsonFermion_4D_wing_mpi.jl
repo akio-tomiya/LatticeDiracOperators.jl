@@ -1735,6 +1735,31 @@ function apply_γ5!(x::WilsonFermion_4D_mpi{NC}) where {NC}
 
 end
 
+function apply_σ!(x::WilsonFermion_4D_mpi{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_mpi{NC};factor=1) where {NC,μ,ν}
+    n1, n6, n2, n3, n4, n5 = size(a.f)
+    @inbounds for i5 = 1:n5
+        #it = i5+NDW
+        for i4 = 1:n4
+            #iz = i4+NDW
+            for i3 = 1:n3
+                #iy = i3+NDW
+                for i2 = 1:n2
+                    #ix = i2+NDW
+                    for i6 = 1:n6
+                        value = σ.σ[i6]
+                        iβ = σ.indices[i6]
+                        @simd for i1 = 1:NC
+                            x.f[i1, i6, i2, i3, i4, i5] += factor*value*b.f[i1, iβ, i2, i3, i4, i5] 
+                                #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+end
+
 
 function mul_1plusγ5x!(y::WilsonFermion_4D_mpi{NC}, x::WilsonFermion_4D_mpi{NC}) where {NC}#(1+gamma_5)/2
     n1, n2, n3, n4, n5, n6 = size(x.f)

@@ -3,14 +3,14 @@ import Wilsonloop: DwDU, get_direction, get_position#,Adjoint_GLink
 import Gaugefields: evaluate_gaugelinks!, clear_U!, set_wing_U!
 
 
-#=
+
 g1,g2,g3 = mk_gamma(1)
 const γmatrices = g1 
-const γ5 = γmatrices[:,:,5]
+#const γ5 = γmatrices[:,:,5]
 
-const rplusγ1 = g2
-const rminusγ1 = g3
-=#
+#const rplusγ1 = g2
+#const rminusγ1 = g3
+
 
 function shift_wilsonloop(w::Wilsonline{Dim}, shift) where {Dim}
     wshifted = Wilsonline(Dim = Dim)

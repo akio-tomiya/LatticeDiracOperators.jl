@@ -1,3 +1,4 @@
+using Gaugefields
 struct Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge} <:
        Wilsontype_FermiAction{Dim,Dirac,fermion,gauge}
     hascovnet::Bool
@@ -42,13 +43,35 @@ struct Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge} <:
     end
 end
 
+function calc_UdSfdU!(
+    UdSfdU::Vector{<:AbstractGaugefields},
+    fermi_action::Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge},
+    U::Vector{<:AbstractGaugefields},
+    ϕ::AbstractFermionfields,
+) where {Dim,Dirac,fermion,gauge,hascloverterm}
+
+    calc_dSfdU!(
+        UdSfdU,
+        fermi_action,
+        U,
+        ϕ,
+    )
+
+    
+    for μ = 1:Dim
+        temp0_g = fermi_action._temporary_gaugefields[1]
+        substitute_U!(temp0_g,UdSfdU[μ])
+        mul!(UdSfdU[μ],U[μ],temp0_g)
+    end
+    
+end
+
 function calc_dSfdU!(
     dSfdU::Vector{<:AbstractGaugefields},
     fermi_action::Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
-    #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_GeneralDirac_operator(W)
     X = fermi_action._temporary_fermionfields[5]

@@ -689,6 +689,37 @@ function LinearAlgebra.mul!(
 
 end
 
+function LinearAlgebra.mul!(
+    xout::WilsonFermion_4D_nowing{NC},
+    x::WilsonFermion_4D_nowing{NC},
+    A::σμν{μ,ν}   ,
+) where {μ,ν,NC}
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+
+    #n6 = size(x.f)[6]
+    #f = zeros(ComplexF64,4)
+    #e = zeros(ComplexF64,4)
+
+    for ic = 1:NC
+        for it = 1:NT
+            for iz = 1:NZ
+                for iy = 1:NY
+                    @inbounds for ix = 1:NX
+                        @simd for iα=1:4
+                            iβ = A.indices[iα]
+                            xout[ic, ix, iy, iz, it, iα] = A.σ[iα]*x[ic, ix, iy, iz, it,  iβ]
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+end
+
 function LinearAlgebra.dot(
     a::WilsonFermion_4D_nowing{NC},
     b::WilsonFermion_4D_nowing{NC},
@@ -783,7 +814,7 @@ function mul_γ5x!(y::WilsonFermion_4D_nowing{NC}, x::WilsonFermion_4D_nowing{NC
                     #iy = i3+NDW
                     for i2 = 1:n2
                         #ix = i2+NDW
-                        @inbounds @simd for ic = 1:NC
+                        @inbounds @simd for i1 = 1:NC
                             y.f[i1, i2, i3, i4, i5, i6] =
                                 x.f[i1, i2, i3, i4, i5, i6] * ifelse(i6 <= 2, -1, 1)
                         end
@@ -1186,7 +1217,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing{NC}) where {NC}
                             v = σ * randn() + im * σ * randn()
 
                             #setvalue!(x,v,ic,ialpha,ix,iy,iz,it)
-                            x[ic, ialpha, ix, iy, iz, it] = v# σ*randn()+im*σ*randn()
+                            x[ic, ix, iy, iz, it,ialpha] = v# σ*randn()+im*σ*randn()
                         end
                     end
                 end
@@ -1238,7 +1269,7 @@ function gauss_distribution_fermion!(
                             #println(v)
                             #setvalue!(x,v,ic,mu,ix,iy,iz,it)
 
-                            x[ic, mu, ix, iy, iz, it] = v# σ*xr + σ*im*xi
+                            x[ic, ix, iy, iz, it, mu] = v# σ*xr + σ*im*xi
                         end
                     end
                 end
@@ -1249,3 +1280,92 @@ function gauss_distribution_fermion!(
 
     return
 end
+
+function apply_σ!(a::WilsonFermion_4D_nowing{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_nowing{NC};factor=1) where {NC,μ,ν}
+    NX = a.NX
+    NY = a.NY
+    NZ = a.NZ
+    NT = a.NT
+    @inbounds for iα=1:4
+        value = σ.σ[iα]
+        iβ = σ.indices[iα]
+        for it = 1:NT
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix = 1:NX
+                        @simd for ic = 1:NC
+                            a[ic, ix, iy, iz, it, iα] += factor*value*b[ic, ix, iy, iz, it, iβ] 
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function cloverterm!(vec::WilsonFermion_4D_nowing{NC},cloverterm,x::WilsonFermion_4D_nowing{NC}) where {NC}
+    NT = x.NT
+    NZ = x.NZ
+    NY = x.NY
+    NX = x.NX
+    CloverFμν = cloverterm.CloverFμν
+
+    i  =0
+    @inbounds for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    i += 1
+                    for k1=1:NC
+                        for k2=1:NC
+
+                            c1 = x[k2,ix,iy,iz,it,1]
+                            c2 = x[k2,ix,iy,iz,it,2]
+                            c3 = x[k2,ix,iy,iz,it,3]
+                            c4 = x[k2,ix,iy,iz,it,4]
+
+                            vec[k1,ix,iy,iz,it,1] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(-   c1) + 
+                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(-im*c2) + 
+                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(-   c2) + 
+                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c2) + 
+                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*( im*c2) + 
+                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(-   c1)
+                                                     #   println("$ix $iy $iz $it $k1 $k2 $(vec[k1,ix,iy,iz,it,1] )")
+                            
+                            
+
+                            vec[k1,ix,iy,iz,it,2] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   c2) + 
+                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(im*c1) + 
+                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(-   c1) + 
+                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c1) + 
+                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(-im*c1) + 
+                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(   c2)
+
+                            vec[k1,ix,iy,iz,it,3] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   -c3) + 
+                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(-im*c4) + 
+                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(   c4) + 
+                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c4) + 
+                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(-im*c4) + 
+                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(   c3)
+
+                            vec[k1,ix,iy,iz,it,4] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   c4) + 
+                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(im*c3) + 
+                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(   c3) + 
+                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c3) + 
+                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(im*c3) + 
+                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*( -  c4)
+
+
+                        end
+                    end
+                end
+            end
+
+        end
+    end
+
+    #println("vec = ",vec*vec)
+
+end
+

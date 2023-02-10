@@ -1546,11 +1546,14 @@ end
 function LinearAlgebra.mul!(
     u::T1,
     x::Abstractfermion,
-    y::Adjoint_fermionfields{<:WilsonFermion_4D_nowing_mpi{NC}},
+    y::Adjoint_fermionfields{<:WilsonFermion_4D_nowing_mpi{NC}};clear=true
 ) where {T1<:AbstractGaugefields,NC}
     #_,NX,NY,NZ,NT,NG = size(y)
     NG = x.NG
-    clear_U!(u)
+    if clear
+        clear_U!(u)
+    end
+    #clear_U!(u)
 
 
     @inbounds for it = 1:x.PN[4]
@@ -1582,14 +1585,17 @@ mul!(u,x,y) -> u_{ab} = x_a*y_b
 function LinearAlgebra.mul!(
     u::T1,
     x::WilsonFermion_4D_nowing_mpi{NC},
-    y::WilsonFermion_4D_nowing_mpi{NC},
+    y::WilsonFermion_4D_nowing_mpi{NC};clear = true
 ) where {T1<:AbstractGaugefields,NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
     NT = x.NT
     NG = x.NG
-    clear_U!(u)
+    if clear
+        clear_U!(u)
+    end
+    #clear_U!(u)
 
 
     @inbounds for it = 1:x.PN[4]
@@ -1980,6 +1986,31 @@ function apply_γ5!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
                         @simd for i1 = 1:NC
                             x.f[i1, i6, i2, i3, i4, i5] =
                                 x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+end
+
+function apply_σ!(x::WilsonFermion_4D_nowing_mpi{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_nowing_mpi{NC};factor=1) where {NC,μ,ν}
+    n1, n6, n2, n3, n4, n5 = size(a.f)
+    @inbounds for i5 = 1:n5
+        #it = i5+NDW
+        for i4 = 1:n4
+            #iz = i4+NDW
+            for i3 = 1:n3
+                #iy = i3+NDW
+                for i2 = 1:n2
+                    #ix = i2+NDW
+                    for i6 = 1:n6
+                        value = σ.σ[i6]
+                        iβ = σ.indices[i6]
+                        @simd for i1 = 1:NC
+                            x.f[i1, i6, i2, i3, i4, i5] += factor*value*b.f[i1, iβ, i2, i3, i4, i5] 
+                                #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
                         end
                     end
                 end

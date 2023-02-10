@@ -25,6 +25,8 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <:
 end
 
 
+has_cloverterm(D::Wilson_Dirac_operator) = ifelse(typeof(D.cloverterm) == Nothing,false,true)
+
 
 struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
@@ -79,12 +81,30 @@ function Wilson_Dirac_operator(
     parameters,
 ) where {NC,Dim}
     xtype = typeof(x)
+
     num = check_parameters(parameters, "numtempvec", 7)
-    #num = 7
-    _temporary_fermi = Array{xtype,1}(undef, num)
 
     @assert haskey(parameters, "κ") "parameters should have the keyword κ"
     κ = parameters["κ"]
+
+    hasclover = check_parameters(parameters, "hasclover", false)
+    if hasclover
+        @assert Dim == 4 "Dimension should be 4 if you want to use Clover terms!"
+        cSW =  check_parameters(parameters, "cSW", 1.5612)
+        NV = length(x)÷ (NC*4)
+        cloverterm = WilsonClover(cSW,Dim,NV,U,κ)
+        num += 6
+        #error("notsupported")
+    else
+        cloverterm = nothing
+    end
+
+
+    
+    #num = 7
+    _temporary_fermi = Array{xtype,1}(undef, num)
+
+
     if Dim == 4
         boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
     elseif Dim == 2
@@ -139,14 +159,7 @@ function Wilson_Dirac_operator(
         _temporary_fermi[i] = similar(x)
     end
 
-    hasclover = check_parameters(parameters, "hasclover", false)
-    if hasclover
-        cSW = r = check_parameters(parameters, "cSW", 1.0)
-        cloverterm = WilsonClover(cSW)
-        #error("notsupported")
-    else
-        cloverterm = nothing
-    end
+
 
 
     return Wilson_Dirac_operator{Dim,eltype(U),xtype}(
@@ -171,6 +184,12 @@ function Wilson_Dirac_operator(
 end
 
 function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
+    if D.cloverterm != nothing
+        #println(sum(abs.(U[1].U)))
+        cloverterm = D.cloverterm(U)
+    else
+        cloverterm = nothing
+    end
     return Wilson_Dirac_operator{Dim,T,fermion}(
         U,
         D.boundarycondition,
@@ -186,7 +205,7 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.MaxCGstep,
         D.verbose_level,
         D.method_CG,
-        D.cloverterm,
+        cloverterm,
         D.verbose_print,
         D._temporary_fermion_forCG,
     )
@@ -250,10 +269,10 @@ function LinearAlgebra.mul!(
 
     #@time Wx!(y,A.U,x,A,A._temporary_fermi) 
     Wx!(y, A.U, x, A)
-    if A.cloverterm != nothing
-        Wclover!(y, A.U, x, A)
-        error("not implemented!")
-    end
+    #if A.cloverterm != nothing
+    #    Wclover!(y, A.U, x, A)
+    #    #error("not implemented!")
+    #end
     #error("w")
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
@@ -280,6 +299,7 @@ function LinearAlgebra.mul!(
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Wilson_operator,T3<:AbstractFermionfields}
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
+    
     Wdagx!(y, A.parent.U, x, A.parent)
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
@@ -521,7 +541,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     #temp2 = temps[2]
 
     clear_fermion!(temp)
-    #set_wing_fermion!(x)
+    set_wing_fermion!(x)
     for ν = 1:Dim
 
         xplus = shift_fermion(x, ν)
@@ -555,7 +575,25 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     end
 
     clear_fermion!(xout)
+
     add_fermion!(xout, 1, x, -1, temp)
+    set_wing_fermion!(xout, A.boundarycondition)
+
+    if A.cloverterm != nothing
+        #clear_fermion!(xout) #debug
+        #println("xout ",sum(abs.(xout.f)))
+        #println(sum(abs.(x.f)))
+        #println(sum(abs.(xout.f)))
+        
+        cloverterm_σμν!(xout,A.cloverterm,x,temp,temp2)
+        #println("after: ",dot(xout,xout))
+        
+        #clear_fermion!(xout) #debug
+        #cloverterm!(xout,A.cloverterm,x)
+        #println(sum(abs.(xout.f)))
+        #error("dddd")
+        #add_fermion!(xout, 1, xout, 1, temp2)
+    end
 
     set_wing_fermion!(xout, A.boundarycondition)
 
@@ -746,6 +784,14 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 end
 
 function Wdagx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
+    if A.cloverterm != nothing
+        Wdagx_clover!(xout,U,x,A,Dim)
+    else
+        Wdagx_noclover!(xout,U,x,A,Dim)
+    end
+end
+
+function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
     temp = A._temporary_fermi[4] #temps[4]
     temp1 = A._temporary_fermi[1] #temps[1]
@@ -789,32 +835,115 @@ function Wdagx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugef
     return
 end
 
+function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
+    #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
+    temp = A._temporary_fermi[4] #temps[4]
+    temp1 = A._temporary_fermi[1] #temps[1]
+    temp2 = A._temporary_fermi[2] #temps[2]
+
+    clear_fermion!(temp)
+    set_wing_fermion!(x, A.boundarycondition)
+    x5 = A._temporary_fermi[5]
+    mul_γ5x!(x5,x)
+    #set_wing_fermion!(x5)
+    set_wing_fermion!(x5, A.boundarycondition)
+
+    for ν = 1:Dim
+        xplus = shift_fermion(x5, ν)
+        mul!(temp1, U[ν], xplus)
+
+        #fermion_shift!(temp1,U,ν,x)
+
+        #... Dirac multiplication
+        #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+        #mul!(temp1, view(A.rplusγ, :, :, ν))
+        mul!(temp1, view(A.rminusγ, :, :, ν))
+
+
+        #
+        xminus = shift_fermion(x5, -ν)
+        Uminus = shift_U(U[ν], -ν)
+
+        mul!(temp2, Uminus', xminus)
+        #fermion_shift!(temp2,U,-ν,x)
+        #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
+        #mul!(temp2, view(A.rminusγ, :, :, ν))
+        mul!(temp2, view(A.rplusγ, :, :, ν))
+
+
+        add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
+
+
+
+    end
+
+    clear_fermion!(temp1)
+    add_fermion!(temp1, 1, x5, -1, temp)
+    set_wing_fermion!(temp1, A.boundarycondition)
+    cloverterm_σμν!(temp1,A.cloverterm,x5,temp,temp2)
+    #println("before ",dot(temp1,temp1))
+    #println("x5 ",dot(x5,x5))
+    #clear_fermion!(temp1)
+    #for ix=1:4
+    #for i=1:6
+    #    println("clover $i $ix", A.cloverterm.CloverFμν[i][:,:,ix,1,1,1])
+    #end
+    #end
+    #error("dd")
+    #cloverterm!(temp1,A.cloverterm,x5)
+    #println("after ",dot(temp1,temp1))
+    #add_fermion!(temp, 1, temp1, 1, temp2)
+    #cloverterm!(temp1,A.cloverterm,x5)
+    #add_fermion!(xout, 1, x, -1, temp)
+    #mul_γ5x!(xout,temp)
+    mul_γ5x!(xout,temp1)
+    set_wing_fermion!(xout, A.boundarycondition)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
 include("./WilsonFermion_faster.jl")
 
 
-struct DdagD_Wilson_operator{Dim,T,fermion} <: DdagD_operator
-    dirac::Union{
-        Wilson_Dirac_operator{Dim,T,fermion},
-        Wilson_Dirac_operator_faster{Dim,T,fermion},
-    }
+struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
+    dirac::TF#{Dim,T,fermion}
+    #Union{
+    #    TF{Dim,T,fermion},
+    #    TF{Dim,T,fermion},
+    #}
     function DdagD_Wilson_operator(
         U::Array{<:AbstractGaugefields{NC,Dim},1},
         x,
         parameters,
     ) where {NC,Dim}
-        return new{Dim,eltype(U),typeof(x)}(Wilson_Dirac_operator(U, x, parameters))
+        D = Wilson_Dirac_operator(U, x, parameters)
+        return new{Dim,eltype(U),typeof(x),typeof(D)}(D)
     end
 
     function DdagD_Wilson_operator(
         D::Wilson_Dirac_operator{Dim,T,fermion},
     ) where {Dim,T,fermion}
-        return new{Dim,T,fermion}(D)
+        return new{Dim,T,fermion,typeof(D)}(D)
     end
 
     function DdagD_Wilson_operator(
         D::Wilson_Dirac_operator_faster{Dim,T,fermion},
     ) where {Dim,T,fermion}
-        return new{Dim,T,fermion}(D)
+        return new{Dim,T,fermion,typeof(D)}(D)
     end
+
+    function DdagD_Wilson_operator(
+        D::TF,
+    ) where {TF}
+        typeparam = typeof(D).parameters
+        Dim = typeparam[1]
+        T = typeparam[2]
+        fermion = typeparam[3]
+        return new{Dim,T,fermion,TF}(D)
+    end
+
+    
 
 end

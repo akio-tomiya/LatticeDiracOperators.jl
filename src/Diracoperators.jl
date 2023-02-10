@@ -15,6 +15,8 @@ import Gaugefields.Verboseprint_mpi:
     Verbose_print, println_verbose_level1, println_verbose_level2, println_verbose_level3
 using SparseArrays
 
+
+
 include("./cgmethods.jl")
 include("./SakuraiSugiura/SakuraiSugiuramethod.jl")
 
@@ -34,6 +36,8 @@ struct γ5D{Dirac} <: γ5D_operator
         return new{typeof(D)}(D)
     end
 end
+
+has_cloverterm(D::Dirac_operator) = false
 
 abstract type Adjoint_Dirac_operator <: Operator end
 
@@ -103,6 +107,14 @@ function Dirac_operator(
         else
             Wilson_Dirac_operator(U, x, parameters)
         end
+    elseif parameters["Dirac_operator"] == "WilsonClover"
+        @warn "not implemented completely!!"
+        fasterversion = check_parameters(parameters, "faster version", false)
+        if fasterversion 
+            @warn "The faster version is not supported but now \"faster version\" is true. We ignore it. "
+        end
+        parameters["hasclover"] = true
+        Wilson_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"

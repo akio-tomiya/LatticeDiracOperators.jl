@@ -623,6 +623,7 @@ function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #
     res = temps[1]
     substitute_fermion!(res, b)
     temp1 = temps[2]
+    #println("in CG $(sum(abs.(x.f)))")
     mul!(temp1, A, x)
     add!(res, -1, temp1)
     q = temps[3]
