@@ -174,7 +174,7 @@ function test1()
 
 
     params = Dict()
-    params["Dirac_operator"] = "Wilson"
+    params["Dirac_operator"] = "WilsonClover"
     params["κ"] = 0.141139/2
     params["eps_CG"] = 1.0e-19
     params["verbose_level"] = 2
@@ -191,47 +191,7 @@ function test1()
 
 end
 
-function test1_2D()
-    NX = 4
-    #NY = 4
-    #NZ = 4
-    NT = 4
-    Nwing = 1
-    Dim = 2
-    NC = 3
 
-    #U = Initialize_4DGaugefields(NC,Nwing,NX,NT,condition = "cold")
-    U  =Initialize_Gaugefields(NC,Nwing,NX,NT,condition = "cold")
-
-
-    gauge_action = GaugeAction(U)
-    plaqloop = make_loops_fromname("plaquette",Dim=2)
-    append!(plaqloop,plaqloop')
-    β = 5.5/2
-    push!(gauge_action,β,plaqloop)
-    
-    show(gauge_action)
-
-    x = Initialize_pseudofermion_fields(U[1],"Wilson")
-
-
-    params = Dict()
-    params["Dirac_operator"] = "Wilson"
-    params["κ"] = 0.141139/2
-    params["eps_CG"] = 1.0e-19
-    params["verbose_level"] = 2
-    #params["method_CG"] = "preconditiond_bicgstab"
-    #params["method_CG"] = "bicgstab"
-    params["method_CG"] = "bicg"
-    D = Dirac_operator(U,x,params)
-
-    parameters_action = Dict()
-    fermi_action = FermiAction(D,parameters_action)
-    y = similar(x)
-
-    MDtest!(gauge_action,U,Dim,fermi_action,x,y)
-
-end
 
 function gauss_distribution(nv) 
     variance = 1
@@ -252,8 +212,6 @@ function gauss_distribution(nv)
 end
 
 
-println("2D HMC ")
-test1_2D()
 
 println("4D HMC ")
 test1()

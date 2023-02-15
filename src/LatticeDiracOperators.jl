@@ -21,6 +21,7 @@ include("./rhmc/rhmc.jl")
 
 include("Diracoperators.jl")
 include("./SakuraiSugiura/SSmodule.jl")
+include("Fermionvector.jl")
 
 
 import .Dirac_operators:
@@ -86,4 +87,5 @@ export setindex_global!
 export uniform_distribution_fermion!, γ5D
 export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
+export Fermionvector
 end

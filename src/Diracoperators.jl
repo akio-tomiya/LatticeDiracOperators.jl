@@ -377,11 +377,40 @@ function construct_sparsematrix(D::Operator) # D_ij = e_i D e_j
         set_wing_fermion!(temp1)
         mul!(temp2, D, temp1)
         for i = 1:NN
-            mat_D[i, j] = temp2[i]
+            if abs(temp2[i]) > 1e-20
+                mat_D[i, j] = temp2[i]
+            end
         end
     end
     return mat_D
 end
 
+function Base.eltype(A::Dirac_operator)
+    return ComplexF64
+end
+
+function Base.:*(A::Dirac_operator,x::Vector{T}) where T
+    x0 = get_temporaryvectors_forCG(A)[1]
+    y0 = similar(x0)
+    @assert length(y0) == length(x) "the size mismatch!"
+    mul!(y0,A,x0)
+    y = zero(x)
+    for i = 1:length(y)
+        y[i] = y0[i]
+    end
+    return y
+end
+
+function Base.:*(A::γ5D_operator,x::Vector{T}) where T
+    x0 = get_temporaryvectors_forCG(A.dirac)[1]
+    y0 = similar(x0)
+    @assert length(y0) == length(x) "the size mismatch!"
+    mul!(y0,A,x0)
+    y = zero(x)
+    for i = 1:length(y)
+        y[i] = y0[i]
+    end
+    return y
+end
 
 end
