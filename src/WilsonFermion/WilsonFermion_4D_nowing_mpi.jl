@@ -1545,7 +1545,7 @@ end
 
 function LinearAlgebra.mul!(
     u::T1,
-    x::Abstractfermion,
+    x::WilsonFermion_4D_nowing_mpi{NC},
     y::Adjoint_fermionfields{<:WilsonFermion_4D_nowing_mpi{NC}};clear=true
 ) where {T1<:AbstractGaugefields,NC}
     #_,NX,NY,NZ,NT,NG = size(y)
