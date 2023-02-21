@@ -53,7 +53,8 @@ function Staggered_Dirac_operator(
         _temporary_fermion_forCG[i] = similar(x)
     end
 
-    verbose_print = Verbose_print(verbose_level)
+    #verbose_print = Verbose_print(verbose_level)
+    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
 
     return Staggered_Dirac_operator{Dim,eltype(U),xtype}(
         U,
