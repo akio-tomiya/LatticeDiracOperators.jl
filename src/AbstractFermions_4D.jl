@@ -4,6 +4,8 @@ abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4} end
 
 
 
+
+
 function Base.setindex!(x::T, v, i1, i2, i3, i4, i5, i6) where {T<:AbstractFermionfields_4D}
     @inbounds x.f[i1, i2+x.NDW, i3+x.NDW, i4+x.NDW, i5+x.NDW, i6] = v
 end

@@ -147,7 +147,7 @@ function Wilson_Dirac_operator_faster(
 
     verbose_level = check_parameters(parameters, "verbose_level", 2)
     #verbose_print = Verbose_print(verbose_level)
-    #println("myid ",get_myrank(x))
+    
     verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
