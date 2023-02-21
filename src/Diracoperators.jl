@@ -172,6 +172,7 @@ function solve_DinvX!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Dirac_operator,T3<:AbstractFermionfields}
+    #println("print $(A.verbose_print)")
     if A.method_CG == "bicg"
         bicg(y, A, x; eps = A.eps_CG, maxsteps = A.MaxCGstep, verbose = A.verbose_print)#set_verbose(A.verbose_level)) 
         set_wing_fermion!(y, A.boundarycondition)

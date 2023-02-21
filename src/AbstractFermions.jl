@@ -5,6 +5,14 @@ using Requires
 abstract type Abstractfermion# <: AbstractVector{ComplexF64}
 end
 
+function get_myrank(x::T) where {T<:Abstractfermion}
+    return 0
+end
+
+function get_nprocs(x::T) where {T<:Abstractfermion}
+    return 0
+end
+
 abstract type AbstractFermionfields{NC,Dim} <: Abstractfermion end
 
 

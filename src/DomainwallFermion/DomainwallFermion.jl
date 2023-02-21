@@ -86,7 +86,8 @@ function D5DW_Domainwall_operator(
     MaxCGstep = check_parameters(parameters, "MaxCGstep", default_MaxCGstep)
 
     verbose_level = check_parameters(parameters, "verbose_level", 2)
-    verbose_print = Verbose_print(verbose_level)
+    #verbose_print = Verbose_print(verbose_level)
+    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
     #println("xtype ",xtype)
