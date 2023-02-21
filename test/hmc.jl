@@ -5,7 +5,7 @@ function MDtest!(gauge_action,U,Dim,fermi_action,η,ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
     Uold = similar(U)
     substitute_U!(Uold,U)
-    MDsteps = 20
+    MDsteps = 30
     temp1 = similar(U[1])
     temp2 = similar(U[1])
     comb = 6
