@@ -1585,9 +1585,11 @@ function apply_σμν!(a,μ,ν,b)
     apply_σ!(a,σ,b)
 end
 
+#=
 function apply_σ!(a::Abstractfermion,σ::σμν{μ,ν},b::Abstractfermion;factor=1) where {μ,ν}
     error("apply_σ! is not implemented in type a:$(typeof(a)),b:$(typeof(b))")
 end
+=#
 
 function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::AbstractFermionfields_4D{NC};factor=1) where {NC,μ,ν}
     NX = a.NX

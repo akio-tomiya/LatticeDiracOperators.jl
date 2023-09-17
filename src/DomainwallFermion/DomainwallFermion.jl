@@ -508,7 +508,7 @@ function bicg(
     eps = 1e-10,
     maxsteps = 1000,
     verbose = Verbose_print(2),
-) where {T} #A*x = b -> x = A^-1*b
+) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1)^(-1)
     #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
     #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+
@@ -557,7 +557,7 @@ function bicgstab(
     eps = 1e-10,
     maxsteps = 1000,
     verbose = Verbose_print(2),
-) where {T} #A*x = b -> x = A^-1*b
+) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1)^(-1)
     #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
     #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+

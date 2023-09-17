@@ -10,7 +10,7 @@ function FermiAction(
     D::Dirac_operator{Dim},
     parameters_action;
     covneuralnet = nothing,
-) where {NC,Dim}
+) where {Dim}
     diractype = typeof(D)
     if covneuralnet == nothing
         hascovnet = false

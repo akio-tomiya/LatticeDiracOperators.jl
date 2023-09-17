@@ -84,7 +84,7 @@ function evaluate_FermiAction(
     fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
     U,
     ϕ::AbstractFermionfields,
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
     η = fermi_action._temporary_fermionfields[1]
     solve_DinvX!(η, W', ϕ)
@@ -97,7 +97,7 @@ function calc_UdSfdU!(
     fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
 
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
@@ -289,7 +289,7 @@ function gauss_sampling_in_action!(
     η::AbstractFermionfields,
     U,
     fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
     #gauss_distribution_fermion!(η)
     gauss_distribution_fermion!(η, rand)
 end
@@ -301,7 +301,7 @@ function sample_pseudofermions!(
     U,
     fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
     ξ::AbstractFermionfields,
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
     mul!(ϕ, W', ξ)
     set_wing_fermion!(ϕ)

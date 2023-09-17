@@ -48,7 +48,7 @@ function calc_UdSfdU!(
     fermi_action::Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
 
     calc_dSfdU!(
         UdSfdU,
@@ -71,7 +71,7 @@ function calc_dSfdU!(
     fermi_action::Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
-) where {Dim,Dirac,fermion,gauge,hascloverterm}
+) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_GeneralDirac_operator(W)
     X = fermi_action._temporary_fermionfields[5]

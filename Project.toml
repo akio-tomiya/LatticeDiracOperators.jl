@@ -1,7 +1,7 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -20,6 +20,7 @@ Requires = "1"
 Wilsonloop = "0.1.3"
 Gaugefields  = "0.2"
 julia = "1.6"
+SparseArrays = "1,2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

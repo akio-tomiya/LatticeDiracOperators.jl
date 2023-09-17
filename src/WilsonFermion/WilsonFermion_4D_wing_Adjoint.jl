@@ -412,7 +412,7 @@ function add_fermion!(
     α::Number,
     a::T1,
     iseven::Bool,
-) where {NC,NDW,NumofBasis,T1<:Abstractfermion,T2<:Abstractfermion}#c += alpha*a + beta*b
+) where {NC,NDW,NumofBasis,T1<:Abstractfermion}#c += alpha*a + beta*b
     n1, n2, n3, n4, n5, n6 = size(c.f)
 
     @inbounds for i6 = 1:n6
