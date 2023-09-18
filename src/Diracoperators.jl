@@ -73,6 +73,10 @@ function get_temporaryvectors_forCG(A::T) where {T<:Dirac_operator}
     return A._temporary_fermion_forCG
 end
 
+function get_temporaryvectors(A::T,ith) where {T<:Dirac_operator}
+    return A._temporary_fermion[ith]
+end
+
 function get_temporaryvectors_forCG(A::T) where {T<:Adjoint_Dirac_operator}
     return A.parent._temporary_fermion_forCG
 end
@@ -312,6 +316,7 @@ function LinearAlgebra.mul!(
     A::T,
     x::AbstractFermionfields{NC,Dim},
 ) where {T<:DdagD_operator,NC,Dim} #y = A*x
+    #temp = get_temporaryvectors(A.dirac,5)
     temp = A.dirac._temporary_fermi[5]
 
     mul!(temp, A.dirac, x)

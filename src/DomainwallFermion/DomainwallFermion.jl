@@ -197,6 +197,13 @@ function Domainwall_Dirac_operator(
     )
 end
 
+function get_temporaryvectors(A::T,ith) where {T<:Domainwall_Dirac_operator}
+    n = length(A.D5DW._temporary_fermi) 
+    i  =ifelse(n < ith,n,ith)
+    return A.D5DW._temporary_fermi[i]
+end
+
+
 
 function (D::Domainwall_Dirac_operator{Dim,T,fermion,wilsonfermion})(
     U,
@@ -574,6 +581,27 @@ function bicgstab(
 
 end
 
+function LinearAlgebra.mul!(
+    y::AbstractFermionfields{NC,Dim},
+    A::T,
+    x::AbstractFermionfields{NC,Dim},
+) where {T<:DdagD_Domainwall_operator,NC,Dim} #y = A*x
+    #temp = get_temporaryvectors(A.dirac,5)
+
+    solve_DinvX!(A.dirac.D5DW._temporary_fermi[2],A.dirac.D5DW_PV,x)
+    DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
+    mul!(A.dirac.D5DW._temporary_fermi[2], DdagD , A.dirac.D5DW._temporary_fermi[2]) 
+    solve_DinvX!(y,A.dirac.D5DW_PV',A.dirac.D5DW._temporary_fermi[2])
+
+        #=
+    solve_DinvX!(A.dirac.D5DW._temporary_fermi[1],A.dirac.D5DW_PV,x)
+    DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
+    mul!(A.dirac.D5DW_PV._temporary_fermi[2], DdagD , A.dirac.D5DW_PV._temporary_fermi[1]) 
+    solve_DinvX!(y,A.dirac.D5DW_PV',A.dirac.D5DW_PV._temporary_fermi[2])
+    =#
+    return
+end
+
 function cg(
     x,
     A::DdagD_Domainwall_operator,
@@ -591,13 +619,35 @@ function cg(
     mul!(A.dirac.D5DW_PV._temporary_fermi[1], A.dirac.D5DW_PV', b) #D5DW(m=1)^+*b
 
     temp = A.dirac.D5DW_PV._temporary_fermi[1]
+    DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
+    #println("d5d tm ",temp[1,1,1,1,1,1,1])
     cg(
-        A.dirac.D5DW._temporary_fermi[1],
-        A.DdagD,
+        A.dirac.D5DW._temporary_fermi[2],
+        DdagD,#A.DdagD,
         temp;
         eps = eps,
         maxsteps = maxsteps,
         verbose = verbose,
     ) #(  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
-    mul!(x, A.dirac.D5DW_PV, A.dirac.D5DW._temporary_fermi[1])
+
+    #mul!(A.dirac.D5DW_PV._temporary_fermi[1], DdagD, A.dirac.D5DW._temporary_fermi[2])
+    #println("d5d ",A.dirac.D5DW_PV._temporary_fermi[1][1,1,1,1,1,1,1])
+    #error("d")
+    
+    mul!(x, A.dirac.D5DW_PV, A.dirac.D5DW._temporary_fermi[2])
+    return
+
+    #=
+    println("ddag b ", b[1,1,1,1,1,1,1])
+    #println("ddag x ", x[1,1,1,1,1,1,1])
+    solve_DinvX!(A.dirac.D5DW._temporary_fermi[2],A.dirac.D5DW_PV,x)
+    #println("ddag temp ", temp[1,1,1,1,1,1,1])
+    #mul!(A.dirac.D5DW_PV._temporary_fermi[2],A.dirac.D5DW_PV,temp)
+    #error("dd $(A.dirac.D5DW_PV._temporary_fermi[2][1,1,1,1,1,1,1])")
+    DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
+    mul!(A.dirac.D5DW._temporary_fermi[2], DdagD , A.dirac.D5DW._temporary_fermi[2]) 
+    solve_DinvX!(temp,A.dirac.D5DW_PV',A.dirac.D5DW._temporary_fermi[2])
+    println("ddag bt ", temp[1,1,1,1,1,1,1])
+    =#
+    error("x")
 end
