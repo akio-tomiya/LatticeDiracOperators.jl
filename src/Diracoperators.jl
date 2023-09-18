@@ -94,6 +94,7 @@ include("./StaggeredFermion/StaggeredFermion.jl")
 include("./WilsonFermion/WilsonFermion.jl")
 include("./DomainwallFermion/DomainwallFermion.jl")
 include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
+include("./GeneralDomainwallFermion/GeneralDomainwallFermion.jl")
 include("./action/FermiAction.jl")
 
 function Dirac_operator(
@@ -125,6 +126,8 @@ function Dirac_operator(
         Domainwall_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "MobiusDomainwall"
         MobiusDomainwall_Dirac_operator(U, x, parameters)
+    elseif parameters["Dirac_operator"] == "GeneralDomainwall"
+        GeneralDomainwall_Dirac_operator(U, x, parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
