@@ -70,6 +70,14 @@ function Staggered_Dirac_operator(
     )
 end
 
+function get_Dim(::Staggered_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
+    return Dim
+end
+
+function get_fermiontype(::Staggered_Dirac_operator{Dim,T,fermion}) where {Dim,T,fermion}
+    return fermion
+end
+
 function (D::Staggered_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
     return Staggered_Dirac_operator{Dim,T,fermion}(
         U,
@@ -93,7 +101,10 @@ struct DdagD_Staggered_operator{Dim,T,fermion} <: DdagD_operator
         x,
         parameters,
     ) where {T<:AbstractGaugefields}
-        return new{Dim,T,fermion}(Staggered_Dirac_operator(U, x, parameters))
+        D = Staggered_Dirac_operator(U, x, parameters)
+        Dim = get_Dim(D)
+        fermion = get_fermiontype(D)
+        return new{Dim,T,fermion}(D)
     end
 
     function DdagD_Staggered_operator(
