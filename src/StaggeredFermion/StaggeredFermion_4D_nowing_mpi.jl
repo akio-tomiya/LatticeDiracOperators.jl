@@ -45,7 +45,7 @@ struct StaggeredFermion_4D_nowing_mpi{NC} <: AbstractFermionfields_4D{NC}
         NZ::T,
         NT::T,
         PEs;
-        comm = MPI.COMM_WORLD,
+        comm=MPI.COMM_WORLD,
     ) where {T<:Integer}
         NG = 1
         NDW = 0
@@ -168,7 +168,7 @@ function Base.similar(x::T) where {T<:StaggeredFermion_4D_nowing_mpi}
         x.NZ,
         x.NT,
         x.PEs,
-        comm = x.comm,
+        comm=x.comm,
     )
 end
 
@@ -180,7 +180,7 @@ function Base.similar(x::T) where {T<:StaggeredFermion_4D_nowing_mpi}
         x.NZ,
         x.NT,
         x.PEs,
-        comm = x.comm,
+        comm=x.comm,
     )
 end
 
@@ -1887,7 +1887,7 @@ function Base.getindex(
         error("η should be positive but η = $η")
     end
 
-    @inbounds return η * u.parent[i1, i2, i3, i4, i5, i6]
+    #@inbounds return η * u.parent[i1, i2, i3, i4, i5, i6]
     @inbounds return η * getvalue(u.parent, i1, i2, i3, i4, i5, i6) # u.parent[i1,i2,i3,i4,i5,i6]
 end
 
