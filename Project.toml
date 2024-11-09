@@ -15,7 +15,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 
 [compat]
-JLD2 = "0.4"
+JLD2 = "0.4,0.5"
 Requires = "1"
 Wilsonloop = "0.1.5"
 Gaugefields  = "0.2,0.3"
