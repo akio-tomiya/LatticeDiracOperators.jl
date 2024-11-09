@@ -1,7 +1,7 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
-version = "0.2.6"
+version = "0.3.0"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -18,8 +18,8 @@ Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 JLD2 = "0.4"
 Requires = "1"
 Wilsonloop = "0.1.5"
-Gaugefields  = "0.2"
-julia = "1.6"
+Gaugefields  = "0.2,0.3"
+julia = "1.10"
 SparseArrays = "1,2"
 
 [extras]
