@@ -18,7 +18,7 @@ Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 JLD2 = "0.4,0.5"
 Requires = "1"
 Wilsonloop = "0.1.5"
-Gaugefields  = "0.2,0.3"
+Gaugefields  = "0.2,0.3,0.4"
 julia = "1.10"
 SparseArrays = "1,2"
 
