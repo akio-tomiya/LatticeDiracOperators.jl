@@ -721,6 +721,323 @@ end
 test1()
 ```
 
+# SLHMC
+```
+using LinearAlgebra
+using Optimisers
+using Wilsonloop
+using Gaugefields
+using LatticeDiracOperators
+import Gaugefields.Abstractsmearing_module: get_parameters, zero_grad!, set_parameters!
+
+# For debug
+import InteractiveUtils
+versionstring = """
+$(InteractiveUtils.versioninfo())
+LatticeDiracOperators $(pkgversion(LatticeDiracOperators))
+Gaugefields $(pkgversion(Gaugefields))
+Wilsonloop $(pkgversion(Wilsonloop))
+"""
+println(versionstring)
+#---
+
+const NX = 4
+const NY = 4
+const NZ = 4
+const NT = 4
+
+const Ncin = 2
+const β0 = 2.45
+const mass = 0.3
+const mass_eff = 0.4
+
+const Nf = 4
+const filename = "mass005eff01_stout_2_1109.txt"
+const paramfilename = "param_" * filename
+const actionfilename = "diff_" * filename
+
+const MDsteps = 20
+const numtrj = 100
+const numbatch = 1
+const eta = 1e-4 #parameter for ADAM 
+const optimiser = Optimisers.Adam(eta)
+const trainable = true
+
+function MDtest!(gauge_action, U, Dim, nn, fermi_action, η, ξ, fermi_action_eff, numtrj, isbare)
+    p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
+    Uold = similar(U)
+    dSdU = similar(U)
+
+    substitute_U!(Uold, U)
+    temp1 = similar(U[1])
+    temp2 = similar(U[1])
+    comb = 6
+    factor = 1 / (comb * U[1].NV * U[1].NC)
+    numaccepted = 0
+    fp = open(filename, "w")
+    fp2 = open(paramfilename, "w")
+    fp3 = open(actionfilename, "w")
+
+    θ = get_parameters(nn)
+    state = Optimisers.setup(optimiser, θ)
+    dLdθ = zero(θ)
+
+
+    for itrj = 1:numtrj
+        accepted = MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, nn, dSdU, fermi_action, η, ξ, fermi_action_eff, state, θ, dLdθ, fp3, isbare)
+
+        if itrj % numbatch == 0 && !isbare
+            println("θ_before = $θ        ")
+            if trainable
+                println("dLdθ ")
+                display(dLdθ)
+                Optimisers.update!(state, θ, dLdθ / numbatch)
+            end
+            println("θ = $θ        ")
+            set_parameters!(nn, θ)
+            dLdθ .= 0
+        end
+
+
+        for p in θ
+            print(fp2, p, "\t")
+        end
+        println(fp2, "\t")
+        flush(fp2)
+        flush(fp3)
+        numaccepted += ifelse(accepted, 1, 0)
+
+        plaq_t = calculate_Plaquette(U, temp1, temp2) * factor
+        println("$itrj plaq_t = $plaq_t")
+        #println(fp,"$itrj $plaq_t")
+        println("acceptance ratio ", numaccepted / itrj)
+        println(fp, "$itrj $plaq_t $(numaccepted / itrj) #itrj plaq_t acceptanceratio")
+        flush(fp)
+
+    end
+    close(fp)
+    close(fp2)
+    close(fp3)
+end
+
+function calc_action(gauge_action, U, p)
+    NC = U[1].NC
+    Sg = -evaluate_GaugeAction(gauge_action, U) / NC #evaluate_GaugeAction(gauge_action,U) = tr(evaluate_GaugeAction_untraced(gauge_action,U))
+    Sp = p * p / 2
+    S = Sp + Sg
+    return real(S)
+end
+
+
+function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, nn, dSdU, fermi_action, η, ξ,
+    fermi_action_eff, state, θ, dLdθ, fp3, isbare)
+
+    Δτ = 1 / MDsteps
+    gauss_distribution!(p)
+
+
+    #Uout, Uout_multi, _ = calc_smearedU(U, nn)
+    substitute_U!(Uold, U)
+
+    gauss_sampling_in_action!(ξ, U, fermi_action)
+    sample_pseudofermions!(η, U, fermi_action, ξ)
+    Sfold = real(dot(ξ, ξ))
+    println("Sfold = $Sfold")
+
+    Sgold = calc_action(gauge_action, U, p)
+    println("Sgold = $Sgold")
+    Sold = Sgold + Sfold
+    println("Sold = ", Sold)
+
+
+    for itrj = 1:MDsteps
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action)
+
+        P_update!(U, p, 1.0, Δτ, Dim, gauge_action)
+        #P_update_fermion!(U, p, 1.0, Δτ, Dim, gauge_action, dSdU, nn, fermi_action, η)
+        P_update_fermion!(U, p, 1.0, Δτ, Dim, gauge_action, dSdU, nn, fermi_action_eff, η, isbare)
+
+        U_update!(U, p, 0.5, Δτ, Dim, gauge_action)
+    end
+
+    Sfnew = evaluate_FermiAction(fermi_action, U, η)
+    println("Sfnew = $Sfnew")
+    if !isbare
+        Uout, Uout_multi, _ = calc_smearedU(U, nn)
+        Sfnew_eff = evaluate_FermiAction(fermi_action_eff, Uout, η)
+        println(fp3, "$Sfnew \t $(Sfnew_eff) #Sf, Sf_eff")
+        zero_grad!(nn)
+    end
+
+
+
+
+    if !isbare
+        temps = get_temporary_gaugefields(gauge_action)
+        UdSfdUμ = temps[1:Dim]
+        for μ = 1:Dim
+            calc_UdSfdU!(UdSfdUμ, fermi_action_eff, Uout, η)
+            mul!(dSdU[μ], Uout[μ]', UdSfdUμ[μ])
+        end
+
+        dSdUbare = back_prop(dSdU, nn, Uout_multi, U)
+        dSdw = deepcopy(get_parameter_derivatives(nn) * -1)
+
+        loss = (Sfnew - Sfnew_eff)^2
+        dLdw = (-2) * dSdw * (Sfnew - Sfnew_eff)
+
+
+        dLdθ .+= dLdw
+        println(dSdw)
+        println(dLdw)
+        println("loss = $loss")
+    end
+
+
+    Sgnew = calc_action(gauge_action, U, p)
+    Snew = Sgnew + Sfnew
+    println("Sgnew = $Sgnew")
+    println("Sg: Sgnew Sgold Sgnew-Sgold: $Sgnew $Sgold $(Sgnew-Sgold)")
+    println("Sf: Sfnew Sfold Sfnew-Sfold: $Sfnew $Sfold $(Sfnew-Sfold)")
+
+    println("Sold = $Sold, Snew = $Snew")
+    println("Snew - Sold = $(Snew-Sold)")
+    ratio = min(1, exp(-(Snew - Sold)))
+    if rand() > ratio
+        substitute_U!(U, Uold)
+        return false
+    else
+        return true
+    end
+end
+
+
+function U_update!(U, p, ϵ, Δτ, Dim, gauge_action)
+    temps = get_temporary_gaugefields(gauge_action)
+    temp1 = temps[1]
+    temp2 = temps[2]
+    expU = temps[3]
+    W = temps[4]
+    for μ = 1:Dim
+        exptU!(expU, ϵ * Δτ, p[μ], [temp1, temp2])
+        mul!(W, expU, U[μ])
+        substitute_U!(U[μ], W)
+
+    end
+end
+
+function P_update!(U, p, ϵ, Δτ, Dim, gauge_action) # p -> p +factor*U*dSdUμ
+    NC = U[1].NC
+    temps = get_temporary_gaugefields(gauge_action)
+    dSdUμ = temps[end]
+    factor = -ϵ * Δτ / (NC)
+
+    for μ = 1:Dim
+        calc_dSdUμ!(dSdUμ, gauge_action, μ, U)
+        mul!(temps[1], U[μ], dSdUμ) # U*dSdUμ
+        Traceless_antihermitian_add!(p[μ], factor, temps[1])
+    end
+end
+
+
+function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, dSdU,
+    nn, fermi_action, η, isbare)  # p -> p +factor*U*dSdUμ
+    temps = get_temporary_gaugefields(gauge_action)
+    UdSfdUμ = temps[1:Dim]
+    factor = -ϵ * Δτ
+
+    if !isbare
+        Uout, Uout_multi, _ = calc_smearedU(U, nn)
+        for μ = 1:Dim
+            calc_UdSfdU!(UdSfdUμ, fermi_action, Uout, η)
+            mul!(dSdU[μ], Uout[μ]', UdSfdUμ[μ])
+        end
+        dSdUbare = back_prop(dSdU, nn, Uout_multi, U)
+
+        for μ = 1:Dim
+            mul!(temps[1], U[μ], dSdUbare[μ]) # U*dSdUμ
+            Traceless_antihermitian_add!(p[μ], factor, temps[1])
+        end
+
+    else
+        for μ = 1:Dim
+            calc_UdSfdU!(UdSfdUμ, fermi_action, U, η)
+            mul!(dSdU[μ], U[μ]', UdSfdUμ[μ])
+        end
+
+        for μ = 1:Dim
+            mul!(temps[1], U[μ], dSdU[μ]) # U*dSdUμ
+            Traceless_antihermitian_add!(p[μ], factor, temps[1])
+        end
+    end
+
+
+end
+
+function test1()
+    Nwing = 0
+    Dim = 4
+    NC = Ncin
+
+    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="hot")
+
+    gauge_action = GaugeAction(U)
+    plaqloop = make_loops_fromname("plaquette")
+    append!(plaqloop, plaqloop')
+    β = β0 / 2
+    push!(gauge_action, β, plaqloop)
+
+    show(gauge_action)
+
+    L = [NX, NY, NZ, NT]
+
+    nn = CovNeuralnet()
+    layername = ["plaquette", "polyakov_x", "polyakov_y", "polyakov_z", "polyakov_t"]
+    ρ = (2 * rand(length(layername)) .- 1) * 1e-3
+    st = STOUT_Layer(layername, ρ, U)
+    push!(nn, st)
+    ρ = (2 * rand(length(layername)) .- 1) * 1e-3
+    st2 = STOUT_Layer(layername, ρ, U)
+    push!(nn, st2)
+
+    x = Initialize_pseudofermion_fields(U[1], "staggered")
+    gauss_distribution_fermion!(x)
+    params = Dict()
+    params["Dirac_operator"] = "staggered"
+    params["mass"] = mass
+    params["eps_CG"] = 1.0e-8
+    params["verbose_level"] = 2
+    D = Dirac_operator(U, x, params)
+
+    parameters_action = Dict()
+    parameters_action["Nf"] = Nf
+    fermi_action = FermiAction(D, parameters_action)
+
+    y = similar(x)
+
+    isbare = true
+    MDtest!(gauge_action, U, Dim, nn, fermi_action, x, y, fermi_action, 10, isbare)
+
+    x_eff = Initialize_pseudofermion_fields(U[1], "staggered")
+    params_eff = Dict()
+    params_eff["Dirac_operator"] = "staggered"
+    params_eff["mass"] = mass_eff
+
+    params_eff["eps_CG"] = 1.0e-8
+    params_eff["verbose_level"] = 2
+    D_eff = Dirac_operator(U, x_eff, params_eff)
+    parameters_action_eff = Dict()
+    parameters_action_eff["Nf"] = Nf
+    fermi_action_eff = FermiAction(D_eff, parameters_action_eff)
+
+    isbare = false
+    MDtest!(gauge_action, U, Dim, nn, fermi_action, x, y, fermi_action_eff, numtrj, isbare)
+
+end
+
+test1()
+```
+
 # Acknowledgment
 If you write a paper using this package, please refer this code.
 
