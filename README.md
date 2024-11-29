@@ -722,7 +722,8 @@ test1()
 ```
 
 # SLHMC
-```
+
+```julia
 using LinearAlgebra
 using Optimisers
 using Wilsonloop
