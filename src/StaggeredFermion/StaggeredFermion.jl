@@ -16,6 +16,7 @@ end
 include("./StaggeredFermion_4D_wing.jl")
 include("./StaggeredFermion_4D_nowing.jl")
 include("./StaggeredFermion_2D_wing.jl")
+include("./StaggeredFermion_2D_nowing.jl")
 
 function Staggered_Dirac_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
@@ -54,7 +55,7 @@ function Staggered_Dirac_operator(
     end
 
     #verbose_print = Verbose_print(verbose_level)
-    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
+    verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))
 
     return Staggered_Dirac_operator{Dim,eltype(U),xtype}(
         U,
@@ -129,13 +130,13 @@ end
 
 function Initialize_StaggeredFermion(
     u::AbstractGaugefields{NC,Dim};
-    nowing = false,
+    nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_StaggeredFermion(NC, NN..., nowing = nowing)
+    return Initialize_StaggeredFermion(NC, NN..., nowing=nowing)
 end
 
-function Initialize_StaggeredFermion(NC, NN...; nowing = false)
+function Initialize_StaggeredFermion(NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
         if nowing
@@ -144,7 +145,11 @@ function Initialize_StaggeredFermion(NC, NN...; nowing = false)
             fermion = StaggeredFermion_4D_wing(NC, NN...)
         end
     elseif Dim == 2
-        fermion = StaggeredFermion_2D_wing(NC, NN...)
+        if nowing
+            fermion = StaggeredFermion_2D_nowing(NC, NN...)
+        else
+            fermion = StaggeredFermion_2D_wing(NC, NN...)
+        end
     else
         error("Dimension $Dim is not supported")
     end
