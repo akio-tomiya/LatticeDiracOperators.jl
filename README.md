@@ -689,7 +689,7 @@ function test1()
     show(gauge_action)
 
     L = [NX,NY,NZ,NT]
-    nn = CovNeuralnet()
+    nn = CovNeuralnet(U)
     ρ = [0.1]
     layername = ["plaquette"]
     st = STOUT_Layer(layername,ρ,L)
@@ -992,7 +992,7 @@ function test1()
 
     L = [NX, NY, NZ, NT]
 
-    nn = CovNeuralnet()
+    nn = CovNeuralnet(U)
     layername = ["plaquette", "polyakov_x", "polyakov_y", "polyakov_z", "polyakov_t"]
     ρ = (2 * rand(length(layername)) .- 1) * 1e-3
     st = STOUT_Layer(layername, ρ, U)
