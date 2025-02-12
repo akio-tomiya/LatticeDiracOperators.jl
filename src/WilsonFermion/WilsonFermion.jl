@@ -25,7 +25,7 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <:
 end
 
 
-has_cloverterm(D::Wilson_Dirac_operator) = ifelse(typeof(D.cloverterm) == Nothing,false,true)
+has_cloverterm(D::Wilson_Dirac_operator) = ifelse(typeof(D.cloverterm) == Nothing, false, true)
 
 
 struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <:
@@ -67,7 +67,7 @@ include("./WilsonFermion_4D_wing_Adjoint.jl")
 
 include("./WilsonFermion_2D.jl")
 include("./WilsonFermion_2D_wing.jl")
-
+include("./WilsonFermion_4D_accelerator.jl")
 
 
 
@@ -90,9 +90,9 @@ function Wilson_Dirac_operator(
     hasclover = check_parameters(parameters, "hasclover", false)
     if hasclover
         @assert Dim == 4 "Dimension should be 4 if you want to use Clover terms!"
-        cSW =  check_parameters(parameters, "cSW", 1.5612)
-        NV = length(x)÷ (NC*4)
-        cloverterm = WilsonClover(cSW,Dim,NV,U,κ)
+        cSW = check_parameters(parameters, "cSW", 1.5612)
+        NV = length(x) ÷ (NC * 4)
+        cloverterm = WilsonClover(cSW, Dim, NV, U, κ)
         num += 6
         #error("notsupported")
     else
@@ -100,7 +100,7 @@ function Wilson_Dirac_operator(
     end
 
 
-    
+
     #num = 7
     _temporary_fermi = Array{xtype,1}(undef, num)
 
@@ -150,7 +150,7 @@ function Wilson_Dirac_operator(
     MaxCGstep = check_parameters(parameters, "MaxCGstep", default_MaxCGstep)
 
     verbose_level = check_parameters(parameters, "verbose_level", 2)
-    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
+    verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
 
@@ -231,10 +231,10 @@ end
 
 function Initialize_WilsonFermion(
     u::AbstractGaugefields{NC,Dim};
-    nowing = false,
+    nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_WilsonFermion(NC, NN..., nowing = nowing)
+    return Initialize_WilsonFermion(NC, NN..., nowing=nowing)
 end
 
 function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
@@ -242,7 +242,7 @@ function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Di
     return WilsonFermion_4D_wing{NC}(NN...)
 end
 
-function Initialize_WilsonFermion(NC, NN...; nowing = false)
+function Initialize_WilsonFermion(NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
         if nowing
@@ -299,7 +299,7 @@ function LinearAlgebra.mul!(
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Wilson_operator,T3<:AbstractFermionfields}
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
-    
+
     Wdagx!(y, A.parent.U, x, A.parent)
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
@@ -584,10 +584,10 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         #println("xout ",sum(abs.(xout.f)))
         #println(sum(abs.(x.f)))
         #println(sum(abs.(xout.f)))
-        
-        cloverterm_σμν!(xout,A.cloverterm,x,temp,temp2)
+
+        cloverterm_σμν!(xout, A.cloverterm, x, temp, temp2)
         #println("after: ",dot(xout,xout))
-        
+
         #clear_fermion!(xout) #debug
         #cloverterm!(xout,A.cloverterm,x)
         #println(sum(abs.(xout.f)))
@@ -785,9 +785,9 @@ end
 
 function Wdagx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     if A.cloverterm != nothing
-        Wdagx_clover!(xout,U,x,A,Dim)
+        Wdagx_clover!(xout, U, x, A, Dim)
     else
-        Wdagx_noclover!(xout,U,x,A,Dim)
+        Wdagx_noclover!(xout, U, x, A, Dim)
     end
 end
 
@@ -844,7 +844,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     clear_fermion!(temp)
     set_wing_fermion!(x, A.boundarycondition)
     x5 = A._temporary_fermi[5]
-    mul_γ5x!(x5,x)
+    mul_γ5x!(x5, x)
     #set_wing_fermion!(x5)
     set_wing_fermion!(x5, A.boundarycondition)
 
@@ -880,7 +880,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     clear_fermion!(temp1)
     add_fermion!(temp1, 1, x5, -1, temp)
     set_wing_fermion!(temp1, A.boundarycondition)
-    cloverterm_σμν!(temp1,A.cloverterm,x5,temp,temp2)
+    cloverterm_σμν!(temp1, A.cloverterm, x5, temp, temp2)
     #println("before ",dot(temp1,temp1))
     #println("x5 ",dot(x5,x5))
     #clear_fermion!(temp1)
@@ -896,7 +896,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     #cloverterm!(temp1,A.cloverterm,x5)
     #add_fermion!(xout, 1, x, -1, temp)
     #mul_γ5x!(xout,temp)
-    mul_γ5x!(xout,temp1)
+    mul_γ5x!(xout, temp1)
     set_wing_fermion!(xout, A.boundarycondition)
 
     #display(xout)
@@ -944,6 +944,6 @@ struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
         return new{Dim,T,fermion,TF}(D)
     end
 
-    
+
 
 end

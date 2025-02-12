@@ -63,7 +63,7 @@ function Base.size(x::AbstractFermionfields_4D{NC}) where {NC}
 end
 
 
-function Base.iterate(x::T, state = 1) where {T<:AbstractFermionfields_4D}
+function Base.iterate(x::T, state=1) where {T<:AbstractFermionfields_4D}
     if state > length(x)
         return nothing
     end
@@ -135,7 +135,7 @@ function clear_fermion!(a::AbstractFermionfields_4D{NC}) where {NC}
 end
 
 function save_fermionfield(a::AbstractFermionfields_4D{NC}, filename) where {NC}
-    jldsave(filename; ϕ = a)
+    jldsave(filename; ϕ=a)
     return
 end
 
@@ -198,7 +198,7 @@ struct Shifted_fermionfields_4D_nowing{NC,T} <: Shifted_fermionfields{NC,4}
     function Shifted_fermionfields_4D_nowing(
         F,
         shift;
-        boundarycondition = boundarycondition_default,
+        boundarycondition=boundarycondition_default,
     )
         NC = F.NC
         shifted_fermion!(F, boundarycondition, shift)
@@ -780,7 +780,7 @@ mul!(u,x,y) -> u_{ab} = x_a*y_b
 function LinearAlgebra.mul!(
     u::T1,
     x::AbstractFermionfields_4D{NC},
-    y::AbstractFermionfields_4D{NC};clear = true
+    y::AbstractFermionfields_4D{NC}; clear=true
 ) where {T1<:AbstractGaugefields,NC}
     NX = x.NX
     NY = x.NY
@@ -804,7 +804,7 @@ function LinearAlgebra.mul!(
                         for ib = 1:NC
                             @simd for ia = 1:NC
                                 c = x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
-                            
+
                                 u[ia, ib, ix, iy, iz, it] += c
                             end
                         end
@@ -828,7 +828,7 @@ function LinearAlgebra.mul!(
         clear_U!(u)
     end
 
-    
+
 
     for ik = 1:NG
         for it = 1:NT
@@ -934,14 +934,14 @@ end
 function LinearAlgebra.mul!(
     u::T1,
     x::Adjoint_fermionfields,
-    y::AbstractFermionfields_4D{NC} ;clear=true
+    y::AbstractFermionfields_4D{NC}; clear=true
 ) where {T1<:AbstractGaugefields,NC}
     _, NX, NY, NZ, NT, NG = size(y)
     #clear_U!(u)
     if clear
         clear_U!(u)
     else
-    #    println(sum(abs.(u.U)))
+        #    println(sum(abs.(u.U)))
     end
 
 
@@ -953,14 +953,14 @@ function LinearAlgebra.mul!(
                     for ix = 1:NX
                         for ib = 1:NC
                             @simd for ia = 1:NC
-                                c =  x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
-                                u[ia, ib, ix, iy, iz, it] += c 
-                                   # x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
+                                c = x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
+                                u[ia, ib, ix, iy, iz, it] += c
+                                # x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
 
-                                    #if clear == false
-                                    #    println("c = $c")
-                                    #    println(y[ib, ix, iy, iz, it, ik])
-                                    #end
+                                #if clear == false
+                                #    println("c = $c")
+                                #    println(y[ib, ix, iy, iz, it, ik])
+                                #end
                             end
                         end
                     end
@@ -976,14 +976,14 @@ end
 function LinearAlgebra.mul!(
     u::T1,
     x::AbstractFermionfields_4D{NC},
-    y::Adjoint_fermionfields, ;clear=true
+    y::Adjoint_fermionfields, ; clear=true
 ) where {T1<:AbstractGaugefields,NC}
     _, NX, NY, NZ, NT, NG = size(x)
     #clear_U!(u)
     if clear
         clear_U!(u)
     else
-    #    println(sum(abs.(u.U)))
+        #    println(sum(abs.(u.U)))
     end
 
 
@@ -995,14 +995,14 @@ function LinearAlgebra.mul!(
                     for ix = 1:NX
                         for ib = 1:NC
                             @simd for ia = 1:NC
-                                c =  x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
-                                u[ia, ib, ix, iy, iz, it] += c 
-                                   # x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
+                                c = x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
+                                u[ia, ib, ix, iy, iz, it] += c
+                                # x[ia, ix, iy, iz, it, ik] * y[ib, ix, iy, iz, it, ik]
 
-                                    #if clear == false
-                                    #    println("c = $c")
-                                    #    println(y[ib, ix, iy, iz, it, ik])
-                                    #end
+                                #if clear == false
+                                #    println("c = $c")
+                                #    println(y[ib, ix, iy, iz, it, ik])
+                                #end
                             end
                         end
                     end
@@ -1321,30 +1321,32 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
+#=
 function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}) where {NC}
-    NX = x.NX
-    NY = x.NY
-    NZ = x.NZ
-    NT = x.NT
-    n6 = size(x.f)[6]
-    σ = sqrt(1 / 2)
+NX = x.NX
+NY = x.NY
+NZ = x.NZ
+NT = x.NT
+n6 = size(x.f)[6]
+σ = sqrt(1 / 2)
 
-    for ialpha = 1:n6
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    for ix = 1:NX
-                        for ic = 1:NC
-                            x[ic, ix, iy, iz, it, ialpha] = σ * randn() + im * σ * randn()
-                        end
+for ialpha = 1:n6
+    for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                for ix = 1:NX
+                    for ic = 1:NC
+                        x[ic, ix, iy, iz, it, ialpha] = σ * randn() + im * σ * randn()
                     end
                 end
             end
         end
     end
-    set_wing_fermion!(x)
-    return
 end
+set_wing_fermion!(x)
+return
+end
+=#
 
 """
 c-------------------------------------------------c
@@ -1388,6 +1390,11 @@ function gauss_distribution_fermion!(
     set_wing_fermion!(x)
 
     return
+end
+
+function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}) where {NC}
+    σ = 1
+    gauss_distribution_fermion!(x, rand, σ)
 end
 
 function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}, randomfunc) where {NC}
@@ -1573,16 +1580,16 @@ function LinearAlgebra.dot(
 end
 
 
-function apply_σμν!(a,μ,ν,b) 
+function apply_σμν!(a, μ, ν, b)
     @assert μ != ν """μ should not be equal to ν 
     μ,ν : $μ $ν
     """
     @assert 1 <= μ <= 4 "μ should be 1,2,or 3. now $μ"
     @assert 1 <= ν <= 4 "μ should be 1,2,or 3. now $ν"
 
-    σ = σμν(μ,ν)
+    σ = σμν(μ, ν)
     clear_fermion!(a)
-    apply_σ!(a,σ,b)
+    apply_σ!(a, σ, b)
 end
 
 #=
@@ -1591,12 +1598,12 @@ function apply_σ!(a::Abstractfermion,σ::σμν{μ,ν},b::Abstractfermion;facto
 end
 =#
 
-function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::AbstractFermionfields_4D{NC};factor=1) where {NC,μ,ν}
+function apply_σ!(a::AbstractFermionfields_4D{NC}, σ::σμν{μ,ν}, b::AbstractFermionfields_4D{NC}; factor=1) where {NC,μ,ν}
     NX = a.NX
     NY = a.NY
     NZ = a.NZ
     NT = a.NT
-    @inbounds for iα=1:4
+    @inbounds for iα = 1:4
         value = σ.σ[iα]
         iβ = σ.indices[iα]
         for it = 1:NT
@@ -1604,7 +1611,7 @@ function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::Abstract
                 for iy = 1:NY
                     for ix = 1:NX
                         @simd for ic = 1:NC
-                            a[ic, ix, iy, iz, it, iα] += factor*value*b[ic, ix, iy, iz, it, iβ] 
+                            a[ic, ix, iy, iz, it, iα] += factor * value * b[ic, ix, iy, iz, it, iβ]
                         end
                     end
                 end
@@ -1613,12 +1620,12 @@ function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::Abstract
     end
 end
 
-function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::Shifted_fermionfields{NC,4};factor=1) where {NC,μ,ν}
+function apply_σ!(a::AbstractFermionfields_4D{NC}, σ::σμν{μ,ν}, b::Shifted_fermionfields{NC,4}; factor=1) where {NC,μ,ν}
     NX = a.NX
     NY = a.NY
     NZ = a.NZ
     NT = a.NT
-    @inbounds for iα=1:4
+    @inbounds for iα = 1:4
         value = σ.σ[iα]
         iβ = σ.indices[iα]
         for it = 1:NT
@@ -1626,7 +1633,7 @@ function apply_σ!(a::AbstractFermionfields_4D{NC},σ::σμν{μ,ν},b::Shifted_
                 for iy = 1:NY
                     for ix = 1:NX
                         @simd for ic = 1:NC
-                            a[ic, ix, iy, iz, it, iα] += factor*value*b[ic, ix, iy, iz, it, iβ] 
+                            a[ic, ix, iy, iz, it, iα] += factor * value * b[ic, ix, iy, iz, it, iβ]
                         end
                     end
                 end

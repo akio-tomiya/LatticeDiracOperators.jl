@@ -1,4 +1,4 @@
-import Gaugefields: Traceless_antihermitian_add!,Generator
+import Gaugefields: Traceless_antihermitian_add!, Generator
 
 #include("clover_data.jl")
 
@@ -11,7 +11,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
     covneuralnet::Union{Nothing,CovNeuralnet{Dim}}
     diracoperator::Dirac
     hascloverterm::Bool
-   # clover_data::Union{Nothing,Wilsonclover_data}
+    # clover_data::Union{Nothing,Wilsonclover_data}
     _temporary_fermionfields::Vector{fermion}
     _temporary_gaugefields::Vector{gauge}
     SUNgenerator::Union{Nothing,Generator}
@@ -27,8 +27,8 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
         #hascloverterm = check_parameters(parameters_action, "hascloverterm", false)
         numU = 2
         num = 6
-        NC =  D._temporary_fermi[1].NC
-        numbasis = NC^2-1
+        NC = D._temporary_fermi[1].NC
+        numbasis = NC^2 - 1
         if hascloverterm
             numU += 9 + 2numbasis
             num += 4 #+ 2numbasis
@@ -37,17 +37,17 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
             SUNgenerator = nothing
         end
         #if hascloverterm
-            #NC,_,NN... = size(D.U[1])
-            #NV = prod(NN)
-            #clover_data = Wilsonclover_data(D,NV)            
-            #numU += 2
+        #NC,_,NN... = size(D.U[1])
+        #NV = prod(NN)
+        #clover_data = Wilsonclover_data(D,NV)            
+        #numU += 2
         #    error("not implemented yet.")
         #else
         #    clover_data = nothing
-            
+
         #end
 
-        
+
 
         x = D._temporary_fermi[1]
         xtype = typeof(x)
@@ -58,7 +58,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)
-        
+
         _temporary_gaugefields = Array{Utype,1}(undef, numU)
         for i = 1:numU
             _temporary_gaugefields[i] = similar(Utemp)
@@ -72,8 +72,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
             hascloverterm,
             #clover_data,
             _temporary_fermionfields,
-            _temporary_gaugefields
-            ,
+            _temporary_gaugefields,
             SUNgenerator
         )
 
@@ -124,7 +123,7 @@ function calc_UdSfdU_fromX!(
     fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm},
     U,
     X;
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     W = fermi_action.diracoperator(U)
     mul!(Y, W, X)
@@ -138,7 +137,7 @@ function calc_UdSfdU_fromX!(
         D = fermi_action.diracoperator
         hop = D.κ
         Clover_coefficient = D.cloverterm.cSW
-        coe = im*0.125*hop*Clover_coefficient
+        coe = im * 0.125 * hop * Clover_coefficient
     end
 
 
@@ -182,9 +181,9 @@ function calc_UdSfdU_fromX!(
 
         if hascloverterm
             clear_U!(temp0_g)
-            dSclover!(temp0_g,μ,X,Y,U,fermi_action)
+            dSclover!(temp0_g, μ, X, Y, U, fermi_action)
             #println(sum(abs.(temp0_g.U)))
-            add_U!(UdSfdU[μ],-coeff*0, temp0_g)
+            add_U!(UdSfdU[μ], -coeff * 0, temp0_g)
             #add!(p[μ],-τ*mdparams.Δτ,c)
         end
 
@@ -201,7 +200,7 @@ function calc_p_UdSfdU!(
     fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     #println("------dd")
     W = fermi_action.diracoperator(U)
@@ -215,7 +214,7 @@ function calc_p_UdSfdU!(
     #println("X ",X[1,1,1,1,1,1])
     #clear_U!(UdSfdU)
 
-    calc_p_UdSfdU_fromX!(p, Y, fermi_action, U, X, coeff = coeff)
+    calc_p_UdSfdU_fromX!(p, Y, fermi_action, U, X, coeff=coeff)
     #println("----aa--")
     #set_wing_U!(UdSfdU)
 end
@@ -226,7 +225,7 @@ function calc_p_UdSfdU_fromX!(
     fermi_action::WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm},
     U,
     X;
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     W = fermi_action.diracoperator(U)
     mul!(Y, W, X)
@@ -291,8 +290,13 @@ function gauss_sampling_in_action!(
     fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
 ) where {Dim,Dirac,fermion,gauge}
     #gauss_distribution_fermion!(η)
-    gauss_distribution_fermion!(η, rand)
+    #gauss_distribution_fermion!(η, rand)
+    gauss_distribution_fermion!(η)
 end
+
+
+
+
 
 using InteractiveUtils
 
@@ -307,7 +311,7 @@ function sample_pseudofermions!(
     set_wing_fermion!(ϕ)
 end
 
-function UdScloverdU(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
+function UdScloverdU(z, μ, X, Y, U, fermi_action::WilsonFermiAction{Dim,Dirac,
     fermion,gauge,hascloverterm}) where {Dim,Dirac,fermion,gauge,hascloverterm}
     @assert Dim == 4 "only Dim =4 is supported!"
     D = fermi_action.diracoperator
@@ -318,8 +322,8 @@ end
 """
 Calculate   dS_clover/dA_mu(x)
 """
-function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
-        fermion,gauge,hascloverterm}) where {Dim,Dirac,fermion,gauge,hascloverterm}
+function dSclover!(z, μ, X, Y, U, fermi_action::WilsonFermiAction{Dim,Dirac,
+    fermion,gauge,hascloverterm}) where {Dim,Dirac,fermion,gauge,hascloverterm}
     @assert Dim == 4 "only Dim =4 is supported!"
     D = fermi_action.diracoperator
     cloverterm = D.cloverterm
@@ -331,8 +335,8 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
     NZ = X.NZ
     NT = X.NT
     NC = X.NC
-    NV = NX*NY*NZ*NT
-    numbasis = NC^2-1
+    NV = NX * NY * NZ * NT
+    numbasis = NC^2 - 1
     temps = fermi_action._temporary_gaugefields
     #numbasis = ifelse(NC==3,8,3)
 
@@ -373,8 +377,8 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
     #is2 = cloverterm._is2
     #inn = cloverterm.inn_table
 
-    substitute_fermion!(veta,Y)
-    substitute_fermion!(vxi,X)
+    substitute_fermion!(veta, Y)
+    substitute_fermion!(vxi, X)
 
     #=
     for ν=1:4
@@ -464,9 +468,9 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
 
 
 
-    for ν=1:4
-    #for ν=μ:4
-        if ν==μ
+    for ν = 1:4
+        #for ν=μ:4
+        if ν == μ
             continue
         end
 
@@ -476,16 +480,16 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
          .....................  
         =#
         iflag = 1
-        cal_dFμν!(dF1,dF2,
-                    U,fermi_action,
-                    work1,work2,work3,work4,
-                    gtmp1,gtmp2,gtmp3,gtmp4,
-                    μ,ν,iflag)
+        cal_dFμν!(dF1, dF2,
+            U, fermi_action,
+            work1, work2, work3, work4,
+            gtmp1, gtmp2, gtmp3, gtmp4,
+            μ, ν, iflag)
 
         # ... Case 1
         #println("z = ",sum(abs.(z.U)))
-        for ia=1:numbasis
-            VxSigxV!(veta,vxi,dF1,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta, vxi, dF1, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
         #println("z1 = ",z*z)
         #println(sum(abs.(z.U)))
@@ -498,7 +502,7 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
                 |              w4 |           | w2
                 |                 |           |
                 +----> mu         .-----------. 
-                     
+
         =#
         # -> nu,mu shift!
         #=
@@ -510,14 +514,14 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
                 is2[is] = inn[is1[is],ν,1]
             end
         =#
-        shift = zeros(Int64,4)
+        shift = zeros(Int64, 4)
         shift[μ] = 1
         shift[ν] = 1
-        veta_shift = shift_fermion(veta,Tuple(shift))
-        vxi_shift   = shift_fermion(vxi,Tuple(shift))
+        veta_shift = shift_fermion(veta, Tuple(shift))
+        vxi_shift = shift_fermion(vxi, Tuple(shift))
 
-        for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF2,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF2, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
 
 
@@ -531,21 +535,21 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
 
         iflag = 2
 
-        cal_dFμν!(dF1,dF2,
-                U,fermi_action,
-                work1,work2,work3,work4,
-                gtmp1,gtmp2,gtmp3,gtmp4,
-                μ,ν,iflag)
-#=
-                                        w3
-                                  .-----------+
-        Case 2                    |           |
-            nu                    |           |
-                |             w4  |           | w2
-                |                 |           |
-                +----> mu         .---------->o 
-                                    x    w1 
-=#
+        cal_dFμν!(dF1, dF2,
+            U, fermi_action,
+            work1, work2, work3, work4,
+            gtmp1, gtmp2, gtmp3, gtmp4,
+            μ, ν, iflag)
+        #=
+                                                w3
+                                          .-----------+
+                Case 2                    |           |
+                    nu                    |           |
+                        |             w4  |           | w2
+                        |                 |           |
+                        +----> mu         .---------->o 
+                                            x    w1 
+        =#
         # ... Case 2
         # mu shift
         #=
@@ -554,11 +558,11 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
             end
         =#
 
-        veta_shift = shift_fermion(veta,μ)
-        vxi_shift   = shift_fermion(vxi,μ)
+        veta_shift = shift_fermion(veta, μ)
+        vxi_shift = shift_fermion(vxi, μ)
 
-        for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF1,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF1, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
 
         # ... Case 4
@@ -567,11 +571,11 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
                 is1[is] = inn[is,ν,1]
             end
         =#
-        veta_shift = shift_fermion(veta,ν)
-        vxi_shift   = shift_fermion(vxi,ν)
+        veta_shift = shift_fermion(veta, ν)
+        vxi_shift = shift_fermion(vxi, ν)
 
-        for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF2,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF2, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
 
         #println("z4 = ",z*z)
@@ -584,24 +588,24 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
 
         iflag = 3
 
-        cal_dFμν!(dF1,dF2,
-                U,fermi_action,
-                work1,work2,work3,work4,
-                gtmp1,gtmp2,gtmp3,gtmp4,
-                μ,ν,iflag)
+        cal_dFμν!(dF1, dF2,
+            U, fermi_action,
+            work1, work2, work3, work4,
+            gtmp1, gtmp2, gtmp3, gtmp4,
+            μ, ν, iflag)
 
         # ... Case 4'
-        for ia=1:numbasis
-            VxSigxV!(veta,vxi,dF1,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta, vxi, dF1, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
         #println("z5 = ",z*z)
 
         # ... Case 2' 
-        shift = zeros(Int64,4)
+        shift = zeros(Int64, 4)
         shift[μ] = 1
         shift[ν] = -1
-        veta_shift = shift_fermion(veta,Tuple(shift))
-        vxi_shift   = shift_fermion(vxi,Tuple(shift))
+        veta_shift = shift_fermion(veta, Tuple(shift))
+        vxi_shift = shift_fermion(vxi, Tuple(shift))
 
         #=
         for is=1:NV
@@ -625,8 +629,8 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
             end
         end
         =#
-        for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF2,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF2, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
         #println("z6 = ",z*z)
 
@@ -637,38 +641,38 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
         =#
         iflag = 4
 
-        cal_dFμν!(dF1,dF2,
-                U,fermi_action,
-                work1,work2,work3,work4,
-                gtmp1,gtmp2,gtmp3,gtmp4,
-                μ,ν,iflag)
+        cal_dFμν!(dF1, dF2,
+            U, fermi_action,
+            work1, work2, work3, work4,
+            gtmp1, gtmp2, gtmp3, gtmp4,
+            μ, ν, iflag)
 
 
 
 
         # ... Case 3'
-        veta_shift = shift_fermion(veta,μ)
-        vxi_shift   = shift_fermion(vxi,μ)
+        veta_shift = shift_fermion(veta, μ)
+        vxi_shift = shift_fermion(vxi, μ)
 
-       #for is=1:NV
-       #     is1[is] = inn[is,μ,1]
-       # end
-        
-           for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF1,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
-           end
+        #for is=1:NV
+        #     is1[is] = inn[is,μ,1]
+        # end
+
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF1, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
+        end
 
 
         # ... Case 1' 
-        veta_shift = shift_fermion(veta,-ν)
-        vxi_shift   = shift_fermion(vxi,-ν)
+        veta_shift = shift_fermion(veta, -ν)
+        vxi_shift = shift_fermion(vxi, -ν)
         #=
         for is=1:NV
             is1[is] = inn[is,ν,2]
         end
-=#
-        for ia=1:numbasis
-            VxSigxV!(veta_shift,vxi_shift,dF2,z,ftmp1,ftmp2,μ,ν,gtmp1,ia)
+        =#
+        for ia = 1:numbasis
+            VxSigxV!(veta_shift, vxi_shift, dF2, z, ftmp1, ftmp2, μ, ν, gtmp1, ia)
         end
 
 
@@ -677,42 +681,42 @@ function dSclover!(z,μ,X,Y,U,fermi_action::WilsonFermiAction{Dim,Dirac,
 
 end
 
-function VxSigxV!(v1,v2,u,z,tmp1,tmp2,μ,ν,gtmp1,ia)
+function VxSigxV!(v1, v2, u, z, tmp1, tmp2, μ, ν, gtmp1, ia)
 
-    apply_σμν!(tmp2,μ,ν,v2) 
-    mul!(tmp1,u[ia],tmp2)
+    apply_σμν!(tmp2, μ, ν, v2)
+    mul!(tmp1, u[ia], tmp2)
     #println("VxSigxV! ",sum(abs.(tmp1.f))," z $(sum(abs.(z.U)))")
-    mul!(gtmp1,v1',tmp1)
-    add_U!(z,gtmp1)
+    mul!(gtmp1, v1', tmp1)
+    add_U!(z, gtmp1)
 
 end
 
-function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi_action,work1,work2,work3,work4,temp1,temp2,temp3,temp4,μ,ν,iflag) where NC
-#function calc_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi_action,μ,ν,iflag,work1,work4)
+function cal_dFμν_old!(dFμν1, dFμν2, U::Array{<:AbstractGaugefields{NC},1}, fermi_action, work1, work2, work3, work4, temp1, temp2, temp3, temp4, μ, ν, iflag) where {NC}
+    #function calc_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi_action,μ,ν,iflag,work1,work4)
     D = fermi_action.diracoperator
     hop = D.κ
     Clover_coefficient = D.cloverterm.cSW
-    coe = im*0.125*hop*Clover_coefficient
+    coe = im * 0.125 * hop * Clover_coefficient
     #println("coe ",coe)
-        #=
-        ...  A) the upper staple  ....................
-                                   w3
-           nu                 .-----------+
-                              |           | 
-           /|             w4  |           | w2
-            |                 |           |
-            |                 |           |
-            +----> mu         .-----------.
-          
+    #=
+    ...  A) the upper staple  ....................
+                               w3
+       nu                 .-----------+
+                          |           | 
+       /|             w4  |           | w2
+        |                 |           |
+        |                 |           |
+        +----> mu         .-----------.
+
     =#
     if iflag == 1 || iflag == 2
-        substitute_U!(work1,U[μ])
+        substitute_U!(work1, U[μ])
         #substitute!(work1,U[μ])
         U2 = shift_U(U[ν], μ)
         #gauge_shift!(work2,μ,U[ν])
-        U3 = shift_U(U[μ],ν)
+        U3 = shift_U(U[μ], ν)
         #gauge_shift!(work3,ν,U[μ])
-        substitute_U!(work4,U[ν])
+        substitute_U!(work4, U[ν])
         #substitute!(work4,U[ν])
     end
 
@@ -727,7 +731,7 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                 |                 |           |
                 +----> mu         o-----------. 
                                   x    w1 
-        
+
                                        w3
                                   .<----------o
           Case 3                  |           |
@@ -735,25 +739,25 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                 |              w4 |           | w2
                 |                 |           |
                 +----> mu         .-----------. 
-             
+
         =#
-        mul!(temp1,work1,U2) #U1U2
-        mul!(temp2,work4,U3) #U4U3
+        mul!(temp1, work1, U2) #U1U2
+        mul!(temp2, work4, U3) #U4U3
 
-        for ia=1:numbasis
-            lambdamul(temp3,temp1,ia,fparam.SUNgenerator)
-            mul!(temp4,temp3,temp2')
+        for ia = 1:numbasis
+            lambdamul(temp3, temp1, ia, fparam.SUNgenerator)
+            mul!(temp4, temp3, temp2')
             #mul!(temp4,im)
-            Antihermitian!(temp4,factor=im)
+            Antihermitian!(temp4, factor=im)
             #cimaglnk!(temp4)
-            substitute!(dFμν1[ia],coe,temp4)
+            substitute!(dFμν1[ia], coe, temp4)
 
-            mul!(temp4,temp2',temp3)
-            Antihermitian!(temp4,factor=im)
+            mul!(temp4, temp2', temp3)
+            Antihermitian!(temp4, factor=im)
             #mul!(temp4,im)
             #cimaglnk!(temp4)
-            substitute!(dFμν2[ia],coe,temp4)
-            
+            substitute!(dFμν2[ia], coe, temp4)
+
         end
 
 
@@ -763,7 +767,7 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
 
         #mul!(temp4,temp2',temp1) #U3' U4' U1 U2
         #mul!(dFμν2,coe,temp4)
-    end    
+    end
 
     # ...  iflag = 2 (Case 2 and 4)
     if iflag == 2
@@ -776,7 +780,7 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                 |                 |           |
                 +----> mu         .---------->o 
                                     x    w1 
-        
+
                                         w3
                                   o-----------+
             Case 4                |           |
@@ -786,22 +790,22 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                 +----> mu         .-----------. 
                                     x    w1 
         =#
-        mul!(temp1,U2,U3') #U2 U3'
+        mul!(temp1, U2, U3') #U2 U3'
 
-        for ia=1:numbasis
-            lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
-            mul!(temp3,work4',temp2)
-            mul!(temp4,temp1,temp3)
-            Antihermitian!(temp4,factor=im)
+        for ia = 1:numbasis
+            lambdamul(temp2, work1, ia, fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
+            mul!(temp3, work4', temp2)
+            mul!(temp4, temp1, temp3)
+            Antihermitian!(temp4, factor=im)
             #mul!(temp4,im)
             cimaglnk!(temp4)
-            substitute!(dFμν1[ia],coe,temp4)
+            substitute!(dFμν1[ia], coe, temp4)
 
-            mul!(temp4,temp3,temp1)
-            Antihermitian!(temp4,factor=im)
+            mul!(temp4, temp3, temp1)
+            Antihermitian!(temp4, factor=im)
             #mul!(temp4,im)
             cimaglnk!(temp4)
-            substitute!(dFμν2[ia],coe,temp4)
+            substitute!(dFμν2[ia], coe, temp4)
         end
 
 
@@ -818,7 +822,7 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
 
     #=
         ...  B) the lower staple  ....................
-    
+
            nu
            /|
             |
@@ -830,14 +834,14 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                               |           |
                               |           |
                               .-----------.
-      
-    =#       
+
+    =#
     if iflag == 3 || iflag == 4
-        substitute_U!(work1,U[μ])
+        substitute_U!(work1, U[μ])
         #substitute!(work1,U[μ])
-        shift = zeros(Int64,4)
+        shift = zeros(Int64, 4)
         shift[μ] = 1
-        shift[ν] = -1 
+        shift[ν] = -1
         U2 = shift_U(U[ν], Tuple(shift))
         #idir2= (μ,-ν)
         #gauge_shift!(work2,idir2,U[ν])
@@ -847,8 +851,8 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
         #gauge_shift!(work4,-ν,U[ν])
         #println(work2[1,1,1])
         #exit()
-    end 
-    
+    end
+
     #   ...  iflag = 3 (Case 4' and 2')
     if iflag == 3
         #=
@@ -876,14 +880,14 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                                        w3
         =#
 
-        mul!(temp1,U4',U3) #U4' U3
+        mul!(temp1, U4', U3) #U4' U3
 
-        mul!(temp3,U2,work1') # U2 U1'
-        mul!(temp4,temp1,temp3) #U4' U3 U2 U1'
-        mul!(dFμν1,-coe,temp4)
+        mul!(temp3, U2, work1') # U2 U1'
+        mul!(temp4, temp1, temp3) #U4' U3 U2 U1'
+        mul!(dFμν1, -coe, temp4)
 
-        mul!(temp4,temp3,temp1) #U2 U1' U4' U3
-        mul!(dFμν2,-coe,temp4)
+        mul!(temp4, temp3, temp1) #U2 U1' U4' U3
+        mul!(dFμν2, -coe, temp4)
 
 
     end
@@ -912,32 +916,32 @@ function cal_dFμν_old!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},f
                                   |           |
                                   |           |
                                   o-----------.
-              
+
         =#
 
-        mul!(temp1,U3,U2) #U3 U2
+        mul!(temp1, U3, U2) #U3 U2
 
-        mul!(temp3,U4,work1)  #U4 U1
-        mul!(temp4,temp3',temp1) #U1' U4' U3 U2
-        mul!(dFμν1,-coe,temp4)
+        mul!(temp3, U4, work1)  #U4 U1
+        mul!(temp4, temp3', temp1) #U1' U4' U3 U2
+        mul!(dFμν1, -coe, temp4)
 
-        mul!(temp4,temp1,temp3') #U3 U2 U1' U4'
-        mul!(dFμν2,-coe,temp4)
+        mul!(temp4, temp1, temp3') #U3 U2 U1' U4'
+        mul!(dFμν2, -coe, temp4)
 
-    end    
+    end
 
 
 
 end
 
 
-function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi_action,work1,work2,work3,work4,temp1,temp2,temp3,temp4,μ,ν,iflag) where NC
+function cal_dFμν!(dFμν1, dFμν2, U::Array{<:AbstractGaugefields{NC},1}, fermi_action, work1, work2, work3, work4, temp1, temp2, temp3, temp4, μ, ν, iflag) where {NC}
     D = fermi_action.diracoperator
     hop = D.κ
     Clover_coefficient = D.cloverterm.cSW
-    coe = im*0.125*hop*Clover_coefficient
+    coe = im * 0.125 * hop * Clover_coefficient
     #numbasis = ifelse(NC == 3,8,3)
-    numbasis = NC^2-1
+    numbasis = NC^2 - 1
 
 
     #=
@@ -949,16 +953,16 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
             |                 |           |
             |                 |           |
             +----> mu         .-----------.
-          
+
     =#
     if iflag == 1 || iflag == 2
-        substitute_U!(work1,U[μ])
+        substitute_U!(work1, U[μ])
         #substitute!(work1,U[μ])
         U2 = shift_U(U[ν], μ)
         #gauge_shift!(work2,μ,U[ν])
-        U3 = shift_U(U[μ],ν)
+        U3 = shift_U(U[μ], ν)
         #gauge_shift!(work3,ν,U[μ])
-        substitute_U!(work4,U[ν])
+        substitute_U!(work4, U[ν])
         #substitute!(work4,U[ν])
     end
 
@@ -973,7 +977,7 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                 |                 |           |
                 +----> mu         o-----------. 
                                   x    w1 
-        
+
                                        w3
                                   .<----------o
           Case 3                  |           |
@@ -981,35 +985,35 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                 |              w4 |           | w2
                 |                 |           |
                 +----> mu         .-----------. 
-             
+
         =#
-        mul!(temp1,work1,U2)
-        mul!(temp2,work4,U3)
-        
+        mul!(temp1, work1, U2)
+        mul!(temp2, work4, U3)
 
 
-        for ia=1:numbasis
-            Gaugefields.lambda_k_mul!(temp3,temp1,ia,fermi_action.SUNgenerator)
+
+        for ia = 1:numbasis
+            Gaugefields.lambda_k_mul!(temp3, temp1, ia, fermi_action.SUNgenerator)
             #lambdamul(temp3,temp1,ia,fermi_action.SUNgenerator)
             #mul!(temp4,temp3,temp2')
-            mul!(temp4,temp3,temp2')
-            mul!(temp3,im,temp4)
+            mul!(temp4, temp3, temp2')
+            mul!(temp3, im, temp4)
             #mul!(temp4,im)
-            Antihermitian!(dFμν1[ia],temp3,factor=coe)
+            Antihermitian!(dFμν1[ia], temp3, factor=coe)
             #cimaglnk!(temp4)
             #substitute!(dFμν1[ia],coe,temp4)
 
-            mul!(temp4,temp2',temp3)
-            mul!(temp3,im,temp4)
+            mul!(temp4, temp2', temp3)
+            mul!(temp3, im, temp4)
             #mul!(temp4,im)
             #cimaglnk!(temp4)
-            Antihermitian!(dFμν2[ia],temp3,factor=coe)
+            Antihermitian!(dFμν2[ia], temp3, factor=coe)
             #substitute!(dFμν2[ia],coe,temp4)
-            
+
         end
 
 
-    end        
+    end
     # ...  iflag = 2 (Case 2 and 4)
     if iflag == 2
         #=
@@ -1021,7 +1025,7 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                 |                 |           |
                 +----> mu         .---------->o 
                                   x    w1 
-        
+
                                         w3
                                   o-----------+
           Case 4                  |           |
@@ -1031,23 +1035,23 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                 +----> mu         .-----------. 
                                   x    w1 
         =#
-        mul!(temp1,U2,U3')
+        mul!(temp1, U2, U3')
 
-        for ia=1:numbasis
+        for ia = 1:numbasis
             #lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
-            Gaugefields.lambda_k_mul!(temp2,work1,ia,fermi_action.SUNgenerator)
-            mul!(temp3,work4',temp2)
-            mul!(temp4,temp1,temp3)
-            mul!(temp2,im,temp4)
+            Gaugefields.lambda_k_mul!(temp2, work1, ia, fermi_action.SUNgenerator)
+            mul!(temp3, work4', temp2)
+            mul!(temp4, temp1, temp3)
+            mul!(temp2, im, temp4)
             #mul!(temp4,im)
-            Antihermitian!(dFμν1[ia],temp2,factor=coe)
+            Antihermitian!(dFμν1[ia], temp2, factor=coe)
             #cimaglnk!(temp4)
             #substitute!(dFμν1[ia],coe,temp4)
 
-            mul!(temp4,temp3,temp1)
-            mul!(temp2,im,temp4)
+            mul!(temp4, temp3, temp1)
+            mul!(temp2, im, temp4)
             #mul!(temp4,im)
-            Antihermitian!(dFμν2[ia],temp2,factor=coe)
+            Antihermitian!(dFμν2[ia], temp2, factor=coe)
             #cimaglnk!(temp4)
             #substitute!(dFμν2[ia],coe,temp4)
 
@@ -1057,7 +1061,7 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
 
     #=
         ...  B) the lower staple  ....................
-    
+
            nu
            /|
             |
@@ -1069,14 +1073,14 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                               |           |
                               |           |
                               .-----------.
-      
-    =#       
+
+    =#
     if iflag == 3 || iflag == 4
-        substitute_U!(work1,U[μ])
+        substitute_U!(work1, U[μ])
         #substitute!(work1,U[μ])
-        shift = zeros(Int64,4)
+        shift = zeros(Int64, 4)
         shift[μ] = 1
-        shift[ν] = -1 
+        shift[ν] = -1
         U2 = shift_U(U[ν], Tuple(shift))
         #idir2= (μ,-ν)
         #gauge_shift!(work2,idir2,U[ν])
@@ -1086,7 +1090,7 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
         #gauge_shift!(work4,-ν,U[ν])
         #println(work2[1,1,1])
         #exit()
-    end 
+    end
     #   ...  iflag = 3 (Case 4' and 2')
     if iflag == 3
         #=
@@ -1114,24 +1118,24 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                                        w3
         =#
 
-        mul!(temp1,U4',U3)
+        mul!(temp1, U4', U3)
 
-        for ia=1:numbasis
-            Gaugefields.lambda_k_mul!(temp2,work1,ia,fermi_action.SUNgenerator)
+        for ia = 1:numbasis
+            Gaugefields.lambda_k_mul!(temp2, work1, ia, fermi_action.SUNgenerator)
             #lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
-            mul!(temp3,U2,temp2')
+            mul!(temp3, U2, temp2')
 
-            mul!(temp4,temp1,temp3)
-            mul!(temp2,-im,temp4)
-            Antihermitian!(dFμν1[ia],temp2,factor=coe)
+            mul!(temp4, temp1, temp3)
+            mul!(temp2, -im, temp4)
+            Antihermitian!(dFμν1[ia], temp2, factor=coe)
 
             #mul!(temp4,-im)
             #cimaglnk!(temp4)
             #substitute!(dFμν1[ia],coe,temp4)
 
-            mul!(temp4,temp3,temp1)
-            mul!(temp2,-im,temp4)
-            Antihermitian!(dFμν2[ia],temp2,factor=coe)
+            mul!(temp4, temp3, temp1)
+            mul!(temp2, -im, temp4)
+            Antihermitian!(dFμν2[ia], temp2, factor=coe)
             #mul!(temp4,-im)
             #cimaglnk!(temp4)
             #substitute!(dFμν2[ia],coe,temp4)
@@ -1162,32 +1166,32 @@ function cal_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi
                                   |           |
                                   |           |
                                   o-----------.
-              
+
         =#
 
-        mul!(temp1,U3,U2)
+        mul!(temp1, U3, U2)
 
-        for ia=1:numbasis
-            Gaugefields.lambda_k_mul!(temp2,work1,ia,fermi_action.SUNgenerator)
+        for ia = 1:numbasis
+            Gaugefields.lambda_k_mul!(temp2, work1, ia, fermi_action.SUNgenerator)
             #lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
-            mul!(temp3,U4,temp2)
+            mul!(temp3, U4, temp2)
 
-            mul!(temp4,temp3',temp1)
-            mul!(temp2,-im,temp4)
+            mul!(temp4, temp3', temp1)
+            mul!(temp2, -im, temp4)
             #mul!(temp4,-im)
             #cimaglnk!(temp4)
             #println(temp4.g)
             #exit()
-            Antihermitian!(dFμν1[ia],temp2,factor=coe)
-            
+            Antihermitian!(dFμν1[ia], temp2, factor=coe)
+
             #substitute!(dFμν1[ia],coe,temp4)
 
-            mul!(temp4,temp1,temp3')
-            mul!(temp2,-im,temp4)
+            mul!(temp4, temp1, temp3')
+            mul!(temp2, -im, temp4)
             #mul!(temp4,-im)
-            Antihermitian!(dFμν2[ia],temp2,factor=coe)
+            Antihermitian!(dFμν2[ia], temp2, factor=coe)
             #cimaglnk!(temp4)
-            
+
             #substitute!(dFμν2[ia],coe,temp4)
         end
     end
