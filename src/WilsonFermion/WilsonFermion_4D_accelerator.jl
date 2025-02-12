@@ -1,5 +1,5 @@
 import Gaugefields.AbstractGaugefields_module:
-    Gaugefields_4D_accelerator, Blockindices
+    Gaugefields_4D_accelerator, Blockindices, Adjoint_Gaugefields, fourdim_cordinate
 
 struct WilsonFermion_4D_accelerator{NC,TF,NG} <: WilsonFermion_4D{NC}
     f::TF
@@ -136,16 +136,160 @@ function add_fermion!(
 
 end
 
-function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
-    A::T,
-    x::T3,
-) where {T<:Gaugefields_4D_accelerator,T3<:WilsonFermion_4D_accelerator,TF,NG}
 
-    for r = 1:y.blockinfo.rsize
-        for b = 1:y.blockinfo.blocksize
-            kernel_mul_yUx_NC3!(b, r, y.f, A.U, x.f, NG)
+function set_wing_fermion!(F::WilsonFermion_4D_accelerator)
+end
+
+function shifted_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    boundarycondition,
+    shift,
+) where {NC,TF,NG}
+
+    bc = boundarycondition
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_shifted_fermion!(b, r, x.f, x.fshifted, x.blockinfo, bc, shift, NC, NX, NY, NZ, NT)
+        end
+    end
+
+
+end
+
+
+function mul_1plusγ5x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1plusγ5x!(b, r, y.f, x.f, NC)
         end
     end
 
 end
+
+function mul_1plusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1plusγ1x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+function mul_1plusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1plusγ2x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+
+function mul_1plusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1plusγ3x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+function mul_1plusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1plusγ4x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+
+
+function mul_1minusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1minusγ1x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+function mul_1minusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1minusγ2x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+
+function mul_1minusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1minusγ3x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+function mul_1minusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1minusγ4x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
+
+
