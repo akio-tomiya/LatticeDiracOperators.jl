@@ -145,6 +145,7 @@ abstract type Shifted_fermionfields{NC,Dim} <: Abstractfermion end
 const default_boundaryconditions = (nothing, [1, -1], nothing, [1, 1, 1, -1])
 
 include("./AbstractFermions_4D.jl")
+
 include("./AbstractFermions_5D.jl")
 include("./AbstractFermions_2D.jl")
 include("./AbstractFermions_3D.jl")
@@ -159,11 +160,11 @@ function __init__()
     end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
-        include("./WilsonFermion/kernelfunctions/kernel_wilson.jl")
+        include("./WilsonFermion/kernelfunctions/Wilson_cuda.jl")
     end
-
-
 end
+
+
 
 
 

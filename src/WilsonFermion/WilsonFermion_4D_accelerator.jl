@@ -1,6 +1,8 @@
 import Gaugefields.AbstractGaugefields_module:
     Gaugefields_4D_accelerator, Blockindices, Adjoint_Gaugefields, fourdim_cordinate
 
+include("./kernelfunctions/kernel_wilson.jl")
+
 struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
     f::TF
     NC::Int64
@@ -521,3 +523,5 @@ function substitute_fermion!(
     end
 
 end
+
+

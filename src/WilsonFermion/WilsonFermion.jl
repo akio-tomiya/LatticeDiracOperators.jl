@@ -63,6 +63,9 @@ end
 
 
 include("./WilsonFermion_4D.jl")
+include("./WilsonFermion_4D_accelerator.jl")
+
+
 
 include("./WilsonFermion_4D_wing.jl")
 include("./WilsonFermion_4D_nowing.jl")
@@ -70,7 +73,7 @@ include("./WilsonFermion_4D_wing_Adjoint.jl")
 
 include("./WilsonFermion_2D.jl")
 include("./WilsonFermion_2D_wing.jl")
-include("./WilsonFermion_4D_accelerator.jl")
+
 
 
 
@@ -1021,3 +1024,5 @@ struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
 
 
 end
+
+include("./kernelfunctions/linearalgebra_mul.jl")
