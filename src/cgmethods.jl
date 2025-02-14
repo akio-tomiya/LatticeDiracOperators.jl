@@ -28,7 +28,7 @@ end
 
 
 
-function bicg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #Ax=b
+function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     #println_verbose_level3()
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg method")
@@ -45,14 +45,19 @@ function bicg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2))
 
 
     temps = get_temporaryvectors_forCG(A)
-    res = temps[1]
+    #res = temps[1]
+    res, it_res = get_temp(temps)
     substitute_fermion!(res, b)
-    temp1 = temps[2]
+    temp1, it_temp1 = get_temp(temps)
+    #temp1 = temps[2]
     mul!(temp1, A, x)
     add!(res, -1, temp1)
-    p = temps[4]
-    q = temps[5]
-    s = temps[6]
+    p, it_p = get_temp(temps)
+    q, it_q = get_temp(temps)
+    s, it_s = get_temp(temps)
+    #p = temps[4]
+    #q = temps[5]
+    #s = temps[6]
 
 
 
@@ -82,6 +87,11 @@ function bicg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2))
             #println("Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "--------------------------------------")
+            unused!(temps, it_res)
+            unused!(temps, it_temp1)
+            unused!(temps, it_p)
+            unused!(temps, it_q)
+            unused!(temps, it_s)
             return
         end
 
@@ -106,7 +116,7 @@ function bicg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2))
 
 end
 
-function bicgstab(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #Ax=b
+function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg-stab method")
 
@@ -126,19 +136,26 @@ function bicgstab(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print
 
 
     temps = get_temporaryvectors_forCG(A)
-    r = temps[1]
+    r, it_r = get_temp(temps)
+    #r = temps[1]
     substitute_fermion!(r, b)
-    temp1 = temps[2]
+    temp1, it_temp1 = get_temp(temps)
+    #temp1 = temps[2]
     mul!(temp1, A, x)
     add!(r, -1, temp1)
 
-    rs = temps[3]
+    rs, it_rs = get_temp(temps)
+    #rs = temps[3]
     substitute_fermion!(rs, r)
-    p = temps[4]
+    p, it_p = get_temp(temps)
+    #p = temps[4]
     substitute_fermion!(p, r)
-    Ap = temps[5]
-    s = temps[6]
-    t = temps[7]
+    Ap, it_Ap = get_temp(temps)
+    #Ap = temps[5]
+    s, it_s = get_temp(temps)
+    #s = temps[6]
+    t, it_t = get_temp(temps)
+    #t = temps[7]
 
 
 
@@ -183,6 +200,14 @@ function bicgstab(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print
         if rnorm < eps
             println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "--------------------------------------")
+
+            unused!(temps, it_r)
+            unused!(temps, it_temp1)
+            unused!(temps, it_rs)
+            unused!(temps, it_p)
+            unused!(temps, it_Ap)
+            unused!(temps, it_s)
+            unused!(temps, it_t)
             return
         end
 
@@ -200,7 +225,7 @@ function bicgstab(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print
 
 end
 
-function bicgstab_3(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #Ax=b
+function bicgstab_3(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg-stab method")
     r = deepcopy(b)
@@ -369,7 +394,7 @@ function bicgstab_3(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_pri
 
 end
 
-function bicgstab_YN(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #Ax=b
+function bicgstab_YN(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg-stab method")
     r = deepcopy(b)
@@ -440,9 +465,9 @@ function bicgstab_evenodd(
     A,
     b,
     iseven;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg-stab even-odd method")
@@ -521,9 +546,9 @@ function bicgstab_evenodd_YN(
     A,
     b,
     iseven;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "bicg-stab even-odd method")
@@ -604,7 +629,7 @@ function bicgstab_evenodd_YN(
 
 end
 
-function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #Ax=b
+function cg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     temps = get_temporaryvectors_forCG(A)
 
     println_verbose_level3(verbose, "--------------------------------------")
@@ -619,26 +644,30 @@ function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #
     p = deepcopy(res)
     =#
 
+    if any(isnan, x.f)
+        error("NaN detected in array x!")
+    end
 
-    res = temps[1]
+    res, it_res = get_temp(temps)
+    #res = temps[1]
     substitute_fermion!(res, b)
-    temp1 = temps[2]
+    temp1, it_temp1 = get_temp(temps)
+    #temp1 = temps[2]
     #println("in CG $(sum(abs.(x.f)))")
     mul!(temp1, A, x)
+
+
     add!(res, -1, temp1)
-    q = temps[3]
-    p = temps[4]
+    q, it_q = get_temp(temps)
+    p, it_p = get_temp(temps)
+    #q = temps[3]
+    #p = temps[4]
     substitute_fermion!(p, res)
-
-
-
-
-
-
 
     #p = deepcopy(res)
 
     rnorm = real(res ⋅ res)
+
     #println(rnorm)
 
     if rnorm < eps
@@ -647,9 +676,11 @@ function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #
 
     c1 = p ⋅ p
 
+
     for i = 1:maxsteps
         mul!(q, A, p)
         c2 = dot(p, q)
+
         #c2 = p ⋅ q
 
         α = c1 / c2
@@ -669,6 +700,10 @@ function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #
             #println("$i eps: $eps rnorm $rnorm")
             println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "--------------------------------------")
+            unused!(temps, it_res)
+            unused!(temps, it_temp1)
+            unused!(temps, it_q)
+            unused!(temps, it_p)
             return
         end
 
@@ -679,6 +714,7 @@ function cg(x, A, b; eps = 1e-10, maxsteps = 1000, verbose = Verbose_print(2)) #
         add!(β, p, 1, res) #p = beta*p + s
 
     end
+
 
 
     error("""
@@ -701,9 +737,9 @@ function shiftedcg(
     x,
     A,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #Ax=b
 
     println_verbose_level3(verbose, "--------------------------------------")
@@ -799,9 +835,9 @@ function shiftedbicg(
     x,
     A,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #Ax=b
 
     println_verbose_level3(verbose, "--------------------------------------")
@@ -911,9 +947,9 @@ function reducedshiftedcg(
     x,
     A,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #Ax=b
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "shifted cg method")
@@ -1015,7 +1051,7 @@ function reducedshiftedcg(
 
 end
 
-function shiftedbicg_2003(σ, A, b; maxsteps = 3000, eps = 1e-15, verboselevel = 2)
+function shiftedbicg_2003(σ, A, b; maxsteps=3000, eps=1e-15, verboselevel=2)
     N = length(σ)
     btype = typeof(b)
     q = zero(b)

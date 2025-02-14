@@ -1,4 +1,5 @@
 import Gaugefields: Traceless_antihermitian_add!, Generator
+import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
 #include("clover_data.jl")
 
@@ -12,8 +13,8 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
     diracoperator::Dirac
     hascloverterm::Bool
     # clover_data::Union{Nothing,Wilsonclover_data}
-    _temporary_fermionfields::Vector{fermion}
-    _temporary_gaugefields::Vector{gauge}
+    _temporary_fermionfields::Temporalfields{fermion}# Vector{fermion}
+    _temporary_gaugefields::Temporalfields{gauge}# Vector{gauge}
     SUNgenerator::Union{Nothing,Generator}
 
     function WilsonFermiAction(
@@ -49,20 +50,22 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
 
 
 
-        x = D._temporary_fermi[1]
+        #x = D._temporary_fermi[1]
+        x, it_x = get_temp(D._temporary_fermi)
+
         xtype = typeof(x)
-        _temporary_fermionfields = Array{xtype,1}(undef, num)
-        for i = 1:num
-            _temporary_fermionfields[i] = similar(x)
-        end
+        _temporary_fermionfields = Temporalfields(x; num)# Array{xtype,1}(undef, num)
+        #for i = 1:num
+        #    _temporary_fermionfields[i] = similar(x)
+        #end
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)
 
-        _temporary_gaugefields = Array{Utype,1}(undef, numU)
-        for i = 1:numU
-            _temporary_gaugefields[i] = similar(Utemp)
-        end
+        _temporary_gaugefields = Temporalfields(Utemp; num=numU)#Array{Utype,1}(undef, numU)
+        #for i = 1:numU
+        #    _temporary_gaugefields[i] = similar(Utemp)
+        #end
 
 
         return new{Dim,typeof(D),xtype,Utype,hascloverterm}(
@@ -85,9 +88,10 @@ function evaluate_FermiAction(
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
-    η = fermi_action._temporary_fermionfields[1]
+    η, it_eta = get_temp(fermi_action._temporary_fermionfields)#fermi_action._temporary_fermionfields[1]
     solve_DinvX!(η, W', ϕ)
     Sf = dot(η, η)
+    unused!(fermi_action._temporary_fermionfields, it_eta)
     return real(Sf)
 end
 
@@ -100,8 +104,10 @@ function calc_UdSfdU!(
 
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
-    X = fermi_action._temporary_fermionfields[end]
-    Y = fermi_action._temporary_fermionfields[2]
+    X, it_X = get_temp(fermi_action._temporary_fermionfields)
+    Y, it_Y = get_temp(fermi_action._temporary_fermionfields)
+    #X = fermi_action._temporary_fermionfields[end]
+    #Y = fermi_action._temporary_fermionfields[2]
     #X = (D^dag D)^(-1) ϕ 
     #
     #println("Xd ",X[1,1,1,1,1,1])
@@ -115,6 +121,8 @@ function calc_UdSfdU!(
     calc_UdSfdU_fromX!(UdSfdU, Y, fermi_action, U, X)
     #println("----aa--")
     set_wing_U!(UdSfdU)
+    unused!(fermi_action._temporary_fermionfields, it_X)
+    unused!(fermi_action._temporary_fermionfields, it_Y)
 end
 
 function calc_UdSfdU_fromX!(
@@ -129,9 +137,12 @@ function calc_UdSfdU_fromX!(
     mul!(Y, W, X)
     #set_wing_fermion!(Y)
 
-    temp0_f = fermi_action._temporary_fermionfields[3]
-    temp1_f = fermi_action._temporary_fermionfields[4]
-    temp0_g = fermi_action._temporary_gaugefields[1]
+    temp0_f, it_temp0_f = get_temp(fermi_action._temporary_fermionfields)
+    temp1_f, it_temp1_f = get_temp(fermi_action._temporary_fermionfields)
+    #temp0_f = fermi_action._temporary_fermionfields[3]
+    #temp1_f = fermi_action._temporary_fermionfields[4]
+    temp0_g, it_temp0_g = get_temp(fermi_action._temporary_gaugefields)
+    #temp0_g = fermi_action._temporary_gaugefields[1]
 
     if hascloverterm
         D = fermi_action.diracoperator
@@ -189,6 +200,9 @@ function calc_UdSfdU_fromX!(
 
     end
 
+    unused!(fermi_action._temporary_fermionfields, it_temp0_f)
+    unused!(fermi_action._temporary_fermionfields, it_temp1_f)
+    unused!(fermi_action._temporary_gaugefields, it_temp0_g)
 
 end
 
@@ -294,6 +308,16 @@ function gauss_sampling_in_action!(
     gauss_distribution_fermion!(η)
 end
 
+function gauss_sampling_in_action!(
+    η::WilsonFermion_4D_accelerator,
+    U,
+    fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
+) where {Dim,Dirac,fermion,gauge}
+    #gauss_distribution_fermion!(η)
+    #gauss_distribution_fermion!(η, rand)
+    gauss_distribution_fermion!(η)
+end
+
 
 
 
@@ -307,9 +331,43 @@ function sample_pseudofermions!(
     ξ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
+
     mul!(ϕ, W', ξ)
+
     set_wing_fermion!(ϕ)
 end
+
+function sample_pseudofermions!(
+    ϕ::WilsonFermion_4D_accelerator,
+    U,
+    fermi_action::Wilsontype_FermiAction{Dim,Dirac,fermion,gauge},
+    ξ::WilsonFermion_4D_accelerator,
+) where {Dim,Dirac,fermion,gauge}
+    W = fermi_action.diracoperator(U)
+    ik = findfirst(x -> isnan(x), ξ.f)
+    if ik != nothing
+        display(ξ.f[ik])
+        error("ddξ")
+    end
+
+    ik = findfirst(x -> isnan(x), W.U[1].U)
+    if ik != nothing
+        println(ik)
+        display(W.U[ik])
+        error("ddW")
+    end
+
+    mul!(ϕ, W', ξ)
+    ik = findfirst(x -> isnan(x), ϕ.f)
+    if ik != nothing
+        println(ik)
+        display(ϕ.f[ik])
+        error("ddϕ")
+    end
+
+    set_wing_fermion!(ϕ)
+end
+
 
 function UdScloverdU(z, μ, X, Y, U, fermi_action::WilsonFermiAction{Dim,Dirac,
     fermion,gauge,hascloverterm}) where {Dim,Dirac,fermion,gauge,hascloverterm}

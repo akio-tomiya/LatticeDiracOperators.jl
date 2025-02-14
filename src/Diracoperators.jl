@@ -73,7 +73,7 @@ function get_temporaryvectors_forCG(A::T) where {T<:Dirac_operator}
     return A._temporary_fermion_forCG
 end
 
-function get_temporaryvectors(A::T,ith) where {T<:Dirac_operator}
+function get_temporaryvectors(A::T, ith) where {T<:Dirac_operator}
     return A._temporary_fermion[ith]
 end
 
@@ -114,7 +114,7 @@ function Dirac_operator(
     elseif parameters["Dirac_operator"] == "WilsonClover"
         @warn "not implemented completely!!"
         fasterversion = check_parameters(parameters, "faster version", false)
-        if fasterversion 
+        if fasterversion
             @warn "The faster version is not supported but now \"faster version\" is true. We ignore it. "
         end
         parameters["hasclover"] = true
@@ -178,10 +178,10 @@ function solve_DinvX!(
 ) where {T1<:AbstractFermionfields,T2<:Dirac_operator,T3<:AbstractFermionfields}
     #println("print $(A.verbose_print)")
     if A.method_CG == "bicg"
-        bicg(y, A, x; eps = A.eps_CG, maxsteps = A.MaxCGstep, verbose = A.verbose_print)#set_verbose(A.verbose_level)) 
+        bicg(y, A, x; eps=A.eps_CG, maxsteps=A.MaxCGstep, verbose=A.verbose_print)#set_verbose(A.verbose_level)) 
         set_wing_fermion!(y, A.boundarycondition)
     elseif A.method_CG == "bicgstab"
-        bicgstab(y, A, x; eps = A.eps_CG, maxsteps = A.MaxCGstep, verbose = A.verbose_print)
+        bicgstab(y, A, x; eps=A.eps_CG, maxsteps=A.MaxCGstep, verbose=A.verbose_print)
         set_wing_fermion!(y, A.boundarycondition)
     elseif A.method_CG == "preconditiond_bicgstab"
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
@@ -200,9 +200,9 @@ function solve_DinvX!(
             WW,
             bout,
             iseven;
-            eps = A.eps_CG,
-            maxsteps = A.MaxCGstep,
-            verbose = A.verbose_print,
+            eps=A.eps_CG,
+            maxsteps=A.MaxCGstep,
+            verbose=A.verbose_print,
         )
         Tx = A._temporary_fermi[6]
         set_wing_fermion!(y, A.boundarycondition, iseven)
@@ -231,9 +231,9 @@ function solve_DinvX!(
             y,
             A,
             x;
-            eps = A.parent.eps_CG,
-            maxsteps = A.parent.MaxCGstep,
-            verbose = A.parent.verbose_print,
+            eps=A.parent.eps_CG,
+            maxsteps=A.parent.MaxCGstep,
+            verbose=A.parent.verbose_print,
         )
     elseif A.parent.method_CG == "bicgstab"
         #println("Adag")
@@ -241,18 +241,18 @@ function solve_DinvX!(
             y,
             A,
             x;
-            eps = A.parent.eps_CG,
-            maxsteps = A.parent.MaxCGstep,
-            verbose = A.parent.verbose_print,
+            eps=A.parent.eps_CG,
+            maxsteps=A.parent.MaxCGstep,
+            verbose=A.parent.verbose_print,
         )
     elseif A.parent.method_CG == "preconditiond_bicgstab"
         bicgstab(
             y,
             A,
             x;
-            eps = A.parent.eps_CG,
-            maxsteps = A.parent.MaxCGstep,
-            verbose = A.parent.verbose_print,
+            eps=A.parent.eps_CG,
+            maxsteps=A.parent.MaxCGstep,
+            verbose=A.parent.verbose_print,
         )
         #=
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
@@ -292,9 +292,9 @@ function solve_DinvX!(
         y,
         A,
         x;
-        eps = A.dirac.eps_CG,
-        maxsteps = A.dirac.MaxCGstep,
-        verbose = A.dirac.verbose_print,
+        eps=A.dirac.eps_CG,
+        maxsteps=A.dirac.MaxCGstep,
+        verbose=A.dirac.verbose_print,
     )
     set_wing_fermion!(y, A.dirac.boundarycondition)
 end
@@ -317,10 +317,20 @@ function LinearAlgebra.mul!(
     x::AbstractFermionfields{NC,Dim},
 ) where {T<:DdagD_operator,NC,Dim} #y = A*x
     #temp = get_temporaryvectors(A.dirac,5)
-    temp = A.dirac._temporary_fermi[5]
+    temp, it_temp = get_temp(A.dirac._temporary_fermi)
+    #temp = A.dirac._temporary_fermi[5]
+
+
 
     mul!(temp, A.dirac, x)
+
+    if any(isnan, temp.f)
+        error("NaN detected in array temp!")
+    end
+
     mul!(y, A.dirac', temp)
+
+    unused!(A.dirac._temporary_fermi, it_temp)
 
     return
 end
@@ -347,7 +357,7 @@ function check_parameters(parameters, key, initial)
     return value
 end
 
-function check_important_parameters(parameters, key, sample = nothing)
+function check_important_parameters(parameters, key, sample=nothing)
     if sample == nothing
         errstring = ""
     else

@@ -161,7 +161,7 @@ end
 function test1_2D()
     NX = 4
     NT = 4
-    Nwing = 0
+    Nwing = 1
     Dim = 2
     NC = 3
 

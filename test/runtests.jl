@@ -4,6 +4,12 @@ using Test
 using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
+    @testset "Basic operations" begin
+        include("basic.jl")
+        # Write your tests here.
+        @test true
+    end
+
     @testset "Wilson HMC" begin
         println("Wilson HMC")
         include("wilsonhmc.jl")
@@ -18,9 +24,5 @@ using LinearAlgebra
     end
 
 
-    @testset "Basic operations" begin
-        include("basic.jl")
-    # Write your tests here.
-        @test true
-    end
+
 end
