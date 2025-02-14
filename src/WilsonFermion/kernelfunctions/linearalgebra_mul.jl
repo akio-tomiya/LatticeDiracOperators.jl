@@ -1,4 +1,5 @@
 #y = A*x
+#=
 function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{3,TF,NG},
     A::T,
@@ -12,6 +13,7 @@ function LinearAlgebra.mul!(
     end
 
 end
+=#
 
 #y = A'*x
 function LinearAlgebra.mul!(
@@ -28,6 +30,7 @@ function LinearAlgebra.mul!(
 
 end
 
+#=
 function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{3,TF,NG},
     A::T,
@@ -41,6 +44,7 @@ function LinearAlgebra.mul!(
     end
 
 end
+=#
 
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
@@ -78,37 +82,21 @@ function LinearAlgebra.mul!(
 ) where {T1<:WilsonFermion_4D_accelerator,T,Dim,fermion,T3<:WilsonFermion_4D_accelerator}
     clear_fermion!(y)
 
-    if any(isnan, y.f)
-        error("NaN detected in array y!")
-    end
+
 
     add_fermion!(y, A.parent.factor, x)
 
-    if any(isnan, x.f)
-        error("NaN detected in array x!")
-    end
-
-    if any(isnan, y.f)
-        error("NaN detected in array y!")
-    end
-
     for μ = 1:Dim
         temp1, it_temp1 = get_temp(A.parent._temporary_fermi)
-        if any(isnan, x.f)
-            error("NaN detected in array x!")
-        end
+
         mul!(temp1, A.parent.D[μ]', x)
         #mul!(A.parent._temporary_fermi[1], A.parent.D[μ]', x)
 
-        if any(isnan, temp1.f)
-            error("NaN detected in array temp1! $μ")
-        end
+
         #add_fermion!(y, -A.parent.factor * A.parent.κ, A.parent._temporary_fermi[1])
         add_fermion!(y, -A.parent.factor * A.parent.κ, temp1)
 
-        if any(isnan, y.f)
-            error("NaN detected in array y!")
-        end
+
         unused!(A.parent._temporary_fermi, it_temp1)
     end
 

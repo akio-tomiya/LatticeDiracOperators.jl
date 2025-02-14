@@ -33,9 +33,6 @@ function kernel_add_fermion!(b, r, c, α, a, NC, NG)
     for mu = 1:NG
         for ic = 1:NC
             c[ic, mu, b, r] += α * a[ic, mu, b, r]
-            if isnan(c[ic, mu, b, r])
-                error("nan! $α $(a[ic, mu, b, r]) $((ic,mu,b,r))")
-            end
         end
     end
 end
