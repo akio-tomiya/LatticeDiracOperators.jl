@@ -14,6 +14,12 @@ Treating pseudo-femrion fields with various lattice Dirac operators, fermion act
 This package is used in [LatticeQCD.jl](https://github.com/akio-tomiya/LatticeQCD.jl)
 and a code in a project [JuliaQCD](https://github.com/JuliaQCD/).
 
+
+## Q&A/Issues
+If you have questions and comments. Please use the issues section of this repository or use [Discussions in JuliaQCD](https://github.com/orgs/JuliaQCD/discussions/5).
+
+[In Japanese] 質問やコメントを日本語でしたい方は[JuliaQCDのディスカッションボード](https://github.com/orgs/JuliaQCD/discussions/6)に書き込みをしてください。
+
 # What this package can do:
 - Constructing actions and its derivative for Staggered Fermion with 1-8 tastes (with the use of the rational HMC technique)
 - Constructing actions and its derivative for Wilson Fermion
