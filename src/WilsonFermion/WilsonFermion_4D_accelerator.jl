@@ -40,6 +40,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
 
         fcpu = zeros(ComplexF64, NC, NG, blocksize, rsize)
         temp_volumecpu = zeros(ComplexF64, blocksize, rsize)
+        fshiftedcpu =zeros(ComplexF64, NC, NG, blocksize, rsize)
 
 
         #f = CUDA.CuArray(fcpu)
@@ -50,25 +51,29 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
                 if CUDA.has_cuda()
                     f = CUDA.CuArray(fcpu)
                     temp_volume = CUDA.CuArray(temp_volumecpu)
+                    fshifted = CUDA.CuArray(fshiftedcpu)
                     accdevise = :cuda
                 else
                     @warn "accelerator=\"cuda\" is set but there is no CUDA devise. CPU will be used"
                     f = fcpu
                     temp_volume = temp_volumecpu
+                    fshifted = fshiftedcpu
                     accdevise = :none
                 end
             else
                 f = fcpu
                 temp_volume = temp_volumecpu
+                fshifted = fshiftedcpu
                 accdevise = :none
             end
         else
             f = fcpu
             temp_volume = temp_volumecpu
+            fshifted = fshiftedcpu
             accdevise = :none
         end
 
-        fshifted = similar(f)
+        
         TF = typeof(f)
         TUv = typeof(temp_volume)
 
@@ -197,6 +202,8 @@ function shift_fermion(F::WilsonFermion_4D_accelerator, ν::T) where {T<:Integer
     return Shifted_fermionfields_4D_accelerator(F, shift)
 end
 
+const boundarycondition_default_accelerator = [1, 1, 1, -1]
+
 struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
     parent::T
     #parent::T
@@ -207,9 +214,10 @@ struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
     function Shifted_fermionfields_4D_accelerator(
         F,
         shift;
-        boundarycondition=boundarycondition_default,
+        boundarycondition=boundarycondition_default_accelerator,
     )
         NC = F.NC
+        
         shifted_fermion!(F, boundarycondition, shift)
         return new{NC,typeof(F)}(F, shift, NC)
     end

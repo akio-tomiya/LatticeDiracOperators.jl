@@ -89,7 +89,76 @@ function cudakernel_mul_xA_NC!(xout, x, A, NC)
 end
 
 function cudakernel_shifted_fermion!(f, fshifted, blockinfo, bc, shift, NC, NX, NY, NZ, NT)
+    
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
     kernel_shifted_fermion!(b,r,f, fshifted, blockinfo, bc, shift, NC, NX, NY, NZ, NT)
+    return 
+end
+
+function cudakernel_mul_1plusγ5x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ5x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1plusγ1x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ1x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1plusγ2x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ2x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1plusγ3x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ3x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1plusγ4x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ4x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1minusγ1x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ1x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1minusγ2x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ2x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1minusγ3x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ3x!(b,r,y, x, NC)
+end
+
+function cudakernel_mul_1minusγ4x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ4x!(b,r,y, x, NC)
+end
+
+function cudakernel_dot!(temp_volume, A, B, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_dot!(b, r, temp_volume, A, B, NC)
+end
+
+
+function cudakernel_substitute_fermion!(A, B, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_substitute_fermion!(b,r,A, B, NC)
 end

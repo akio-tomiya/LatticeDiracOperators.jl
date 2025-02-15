@@ -85,6 +85,9 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
 
     #inside_up = it_shifted > NT
     #inside_down = it_shifted < 1
+    #ix,iy,iz,it = 1,1,1,1
+
+    
     it_shifted = it + shift[4]
     iz_shifted = iz + shift[3]
     iy_shifted = iy + shift[2]
@@ -94,7 +97,7 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
     factor_y = ifelse(iy_shifted > NY || iy_shifted < 1, bc[2], 1)
     factor_x = ifelse(ix_shifted > NX || ix_shifted < 1, bc[1], 1)
 
-
+    
     bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
     for ig = 1:4
         for ic = 1:NC
@@ -105,6 +108,8 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
                                      f[ic, ig, bshifted, rshifted]
         end
     end
+    
+    return
 end
 
 function kernel_mul_1plusγ5x!(b, r, y, x, NC)
