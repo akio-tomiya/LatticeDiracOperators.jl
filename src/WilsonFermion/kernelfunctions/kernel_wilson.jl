@@ -7,7 +7,7 @@ import Gaugefields.AbstractGaugefields_module:
 import Gaugefields.AbstractGaugefields_module: shiftedindex
 
 function kernel_gauss_distribution_fermion!(b, r, x, σ, NC, NG)
-    for mu = 1:NG
+    @inbounds for mu = 1:NG
         for ic = 1:NC
             v1 = sqrt(-log(rand() + 1e-10))
             v2 = 2pi * rand()
@@ -21,7 +21,7 @@ function kernel_gauss_distribution_fermion!(b, r, x, σ, NC, NG)
 end
 
 function kernel_clear_fermion!(b, r, a, NC, NG)
-    for mu = 1:NG
+    @inbounds  for mu = 1:NG
         for ic = 1:NC
             a[ic, mu, b, r] = 0
         end
@@ -30,7 +30,7 @@ end
 
 #kernel_add_fermion!(b, r, c.f, α, a.f, NC, NG)
 function kernel_add_fermion!(b, r, c, α, a, NC, NG)
-    for mu = 1:NG
+    @inbounds for mu = 1:NG
         for ic = 1:NC
             c[ic, mu, b, r] += α * a[ic, mu, b, r]
         end
@@ -38,7 +38,7 @@ function kernel_add_fermion!(b, r, c, α, a, NC, NG)
 end
 
 function kernel_mul_yUx_NC3!(b, r, y, A, x, NG)
-    for ialpha = 1:NG
+    @inbounds for ialpha = 1:NG
         x1 = x[1, ialpha, b, r]
         x2 = x[2, ialpha, b, r]
         x3 = x[3, ialpha, b, r]
@@ -60,7 +60,7 @@ end
 
 
 function kernel_mul_yUdagx_NC3!(b, r, y, A, x, NG)
-    for ialpha = 1:NG
+    @inbounds for ialpha = 1:NG
         x1 = x[1, ialpha, b, r]
         x2 = x[2, ialpha, b, r]
         x3 = x[3, ialpha, b, r]
@@ -99,7 +99,7 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
 
     
     bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
-    for ig = 1:4
+    @inbounds for ig = 1:4
         for ic = 1:NC
             fshifted[ic, ig, b, r] = factor_x *
                                      factor_y *
@@ -114,7 +114,7 @@ end
 
 function kernel_mul_1plusγ5x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         y[ic, 1, b, r] = 0#-1*x[ic,ix,iy,iz,it,1]
         y[ic, 2, b, r] = 0#-1*x[ic,ix,iy,iz,it,2]
         y[ic, 3, b, r] = x[ic, 3, b, r]
@@ -126,7 +126,7 @@ end
 
 function kernel_mul_1plusγ1x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] - im * x[ic, 4, b, r]
         v2 = x[ic, 2, b, r] - im * x[ic, 3, b, r]
         v3 = x[ic, 3, b, r] + im * x[ic, 2, b, r]
@@ -141,7 +141,7 @@ end
 
 function kernel_mul_1minusγ1x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] + im * x[ic, 4, b, r]
         v2 = x[ic, 2, b, r] + im * x[ic, 3, b, r]
         v3 = x[ic, 3, b, r] - im * x[ic, 2, b, r]
@@ -158,7 +158,7 @@ end
 
 function kernel_mul_1plusγ2x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] - x[ic, 4, b, r]
         v2 = x[ic, 2, b, r] + x[ic, 3, b, r]
         v3 = x[ic, 3, b, r] + x[ic, 2, b, r]
@@ -173,7 +173,7 @@ end
 
 function kernel_mul_1minusγ2x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] + x[ic, 4, b, r]
         v2 = x[ic, 2, b, r] - x[ic, 3, b, r]
         v3 = x[ic, 3, b, r] - x[ic, 2, b, r]
@@ -190,7 +190,7 @@ end
 
 function kernel_mul_1plusγ3x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] - im * x[ic, 3, b, r]
         v2 = x[ic, 2, b, r] + im * x[ic, 4, b, r]
         v3 = x[ic, 3, b, r] + im * x[ic, 1, b, r]
@@ -205,7 +205,7 @@ end
 
 function kernel_mul_1minusγ3x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] + im * x[ic, 3, b, r]
         v2 = x[ic, 2, b, r] - im * x[ic, 4, b, r]
         v3 = x[ic, 3, b, r] - im * x[ic, 1, b, r]
@@ -221,7 +221,7 @@ end
 
 function kernel_mul_1plusγ4x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] - x[ic, 3, b, r]
         v2 = x[ic, 2, b, r] - x[ic, 4, b, r]
         v3 = x[ic, 3, b, r] - x[ic, 1, b, r]
@@ -236,7 +236,7 @@ end
 
 function kernel_mul_1minusγ4x!(b, r, y, x, NC)
 
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         v1 = x[ic, 1, b, r] + x[ic, 3, b, r]
         v2 = x[ic, 2, b, r] + x[ic, 4, b, r]
         v3 = x[ic, 3, b, r] + x[ic, 1, b, r]
@@ -251,7 +251,7 @@ end
 
 function kernel_dot!(b, r, temp_volume, A, B, NC)
     temp_volume[b, r] = 0
-    for α = 1:4
+    @inbounds for α = 1:4
         for ic = 1:NC
             temp_volume[b, r] += conj(A[ic, α, b, r]) * B[ic, α, b, r]
         end
@@ -259,7 +259,7 @@ function kernel_dot!(b, r, temp_volume, A, B, NC)
 end
 
 function kernel_substitute_fermion!(b, r, A, B, NC)
-    for α = 1:4
+    @inbounds for α = 1:4
         for ic = 1:NC
             A[ic, α, b, r] = B[ic, α, b, r]
         end
@@ -267,7 +267,7 @@ function kernel_substitute_fermion!(b, r, A, B, NC)
 end
 
 function kernel_axpby!(b, r, α, X, β, Y, NC)
-    for ig = 1:4
+    @inbounds for ig = 1:4
         for ic = 1:NC
             Y[ic, ig, b, r] =
                 α * X[ic, ig, b, r] +
@@ -277,7 +277,7 @@ function kernel_axpby!(b, r, α, X, β, Y, NC)
 end
 
 function kernel_mul_Ax!(b, r, xout, A, x, NC)
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         e1 = x[ic, 1, b, r]
         e2 = x[ic, 2, b, r]
         e3 = x[ic, 3, b, r]
@@ -295,7 +295,7 @@ function kernel_mul_Ax!(b, r, xout, A, x, NC)
 end
 
 function kernel_mul_yAx_NC3!(b, r, y, A, x)
-    for ialpha = 1:4
+    @inbounds for ialpha = 1:4
         x1 = x[1, ialpha, b, r]
         x2 = x[2, ialpha, b, r]
         x3 = x[3, ialpha, b, r]
@@ -317,7 +317,7 @@ function kernel_mul_yAx_NC3!(b, r, y, A, x)
 end
 
 function kernel_mul_ysx_NC!(b, r, y, A, x, NC)
-    for ialpha = 1:4
+    @inbounds for ialpha = 1:4
         for k1 = 1:NC
             y[k1, ialpha, b, r] =
                 A * x[k1, ialpha, b, r]
@@ -326,7 +326,7 @@ function kernel_mul_ysx_NC!(b, r, y, A, x, NC)
 end
 
 function kernel_mul_uxy_NC!(b, r, u, x, y, NC, NG)
-    for ik = 1:NG
+    @inbounds for ik = 1:NG
         for ib = 1:NC
             for ia = 1:NC
                 c = x[ia, ik, b, r] * y[ib, ik, b, r]
@@ -337,7 +337,7 @@ function kernel_mul_uxy_NC!(b, r, u, x, y, NC, NG)
 end
 
 function kernel_mul_uxydag_NC!(b, r, u, x, y, NC, NG)
-    for ik = 1:NG
+    @inbounds for ik = 1:NG
         for ib = 1:NC
             for ia = 1:NC
                 c = x[ia, ik, b, r] * conj(y[ib, ik, b, r])
@@ -348,7 +348,7 @@ function kernel_mul_uxydag_NC!(b, r, u, x, y, NC, NG)
 end
 
 function kernel_mul_yxA_NC3!(b, r, y, x, A, NG)
-    for ialpha = 1:NG
+    @inbounds for ialpha = 1:NG
         x1 = x[1, ialpha, b, r]
         x2 = x[2, ialpha, b, r]
         x3 = x[3, ialpha, b, r]
@@ -368,7 +368,7 @@ function kernel_mul_yxA_NC3!(b, r, y, x, A, NG)
 end
 
 function kernel_mul_yxdagAdag_NC3!(b, r, y, x, A, NG)
-    for ialpha = 1:NG
+    @inbounds for ialpha = 1:NG
         x1 = conj(x[1, ialpha, b, r])
         x2 = conj(x[2, ialpha, b, r])
         x3 = conj(x[3, ialpha, b, r])
@@ -388,7 +388,7 @@ function kernel_mul_yxdagAdag_NC3!(b, r, y, x, A, NG)
 end
 
 function kernel_mul_xA_NC!(b, r, xout, x, A, NC)
-    for ic = 1:NC
+    @inbounds for ic = 1:NC
         e1 = x[ic, 1, b, r]
         e2 = x[ic, 2, b, r]
         e3 = x[ic, 3, b, r]

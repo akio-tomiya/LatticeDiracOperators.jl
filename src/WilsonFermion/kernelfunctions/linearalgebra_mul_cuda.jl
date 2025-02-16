@@ -43,10 +43,15 @@ function LinearAlgebra.mul!(
     A::TA,
     x::WilsonFermion_4D_accelerator{NC,TF,NG},
 ) where {TA<:AbstractMatrix,NC,TF <: CUDA.CuArray,NG}
-    Af 
+    #Afb = zero(A)
+    #Afb .= A
+    Af = CUDA.CuArray(A)
+    #println(typeof(Af))
+    #println(typeof(Afb))
+    #error("d")
 
     CUDA.@sync begin
-        CUDA.@cuda threads = xout.blockinfo.blocksize blocks = xout.blockinfo.rsize  cudakernel_mul_Ax!(xout.f, A, x.f, NC)
+        CUDA.@cuda threads = xout.blockinfo.blocksize blocks = xout.blockinfo.rsize  cudakernel_mul_Ax!(xout.f, Af, x.f, NC)
     end
 
 end
@@ -169,9 +174,10 @@ function LinearAlgebra.mul!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG},
     A::TA,
 ) where {TA<:AbstractMatrix,NC,TF <: CUDA.CuArray,NG}
+    Af = CUDA.CuArray(A)
 
     CUDA.@sync begin
-        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize  cudakernel_mul_xA_NC!(xout.f, x.f, A, NC)
+        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize  cudakernel_mul_xA_NC!(xout.f, x.f, Af, NC)
     end
 
 
