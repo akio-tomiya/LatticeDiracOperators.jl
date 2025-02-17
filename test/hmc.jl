@@ -239,17 +239,3 @@ function test1_2D_NC(NC)
     end
 
 end
-
-println("2D HMC ")
-println("NC = 1")
-NC = 1
-test1_2D_NC(NC)
-println("NC = 2")
-NC = 2
-test1_2D_NC(NC)
-println("NC = 3")
-NC = 3
-test1_2D_NC(NC)
-
-println("4D HMC ")
-test1_4D()
