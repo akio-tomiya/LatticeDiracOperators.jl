@@ -167,8 +167,9 @@ function test1()
 
     show(gauge_action)
 
-
-    x = Initialize_pseudofermion_fields(U[1], "Wilson", nowing=true)
+    noshiftfield = true
+    #noshiftfield = false
+    x = Initialize_pseudofermion_fields(U[1], "Wilson", nowing=true, noshiftfield=noshiftfield)
 
 
     params = Dict()

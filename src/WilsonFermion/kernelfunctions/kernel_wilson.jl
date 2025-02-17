@@ -21,7 +21,7 @@ function kernel_gauss_distribution_fermion!(b, r, x, σ, NC, NG)
 end
 
 function kernel_clear_fermion!(b, r, a, NC, NG)
-    @inbounds  for mu = 1:NG
+    @inbounds for mu = 1:NG
         for ic = 1:NC
             a[ic, mu, b, r] = 0
         end
@@ -80,6 +80,19 @@ function kernel_mul_yUdagx_NC3!(b, r, y, A, x, NG)
     end
 end
 
+function kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+    ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
+    it_shifted = it + shift[4]
+    iz_shifted = iz + shift[3]
+    iy_shifted = iy + shift[2]
+    ix_shifted = ix + shift[1]
+    factor_t = ifelse(it_shifted > NT || it_shifted < 1, bc[4], 1)
+    factor_z = ifelse(iz_shifted > NZ || iz_shifted < 1, bc[3], 1)
+    factor_y = ifelse(iy_shifted > NY || iy_shifted < 1, bc[2], 1)
+    factor_x = ifelse(ix_shifted > NX || ix_shifted < 1, bc[1], 1)
+    return factor_x * factor_y * factor_z * factor_t
+end
+
 function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX, NY, NZ, NT)
     ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
 
@@ -87,7 +100,7 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
     #inside_down = it_shifted < 1
     #ix,iy,iz,it = 1,1,1,1
 
-    
+
     it_shifted = it + shift[4]
     iz_shifted = iz + shift[3]
     iy_shifted = iy + shift[2]
@@ -97,7 +110,7 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
     factor_y = ifelse(iy_shifted > NY || iy_shifted < 1, bc[2], 1)
     factor_x = ifelse(ix_shifted > NX || ix_shifted < 1, bc[1], 1)
 
-    
+
     bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
     @inbounds for ig = 1:4
         for ic = 1:NC
@@ -108,7 +121,7 @@ function kernel_shifted_fermion!(b, r, f, fshifted, blockinfo, bc, shift, NC, NX
                                      f[ic, ig, bshifted, rshifted]
         end
     end
-    
+
     return
 end
 
@@ -119,6 +132,20 @@ function kernel_mul_1plusγ5x!(b, r, y, x, NC)
         y[ic, 2, b, r] = 0#-1*x[ic,ix,iy,iz,it,2]
         y[ic, 3, b, r] = x[ic, 3, b, r]
         y[ic, 4, b, r] = x[ic, 4, b, r]
+    end
+
+end
+
+
+function kernel_mul_1plusγ5x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        y[ic, 1, b, r] = 0#-1*x[ic,ix,iy,iz,it,1]
+        y[ic, 2, b, r] = 0#-1*x[ic,ix,iy,iz,it,2]
+        y[ic, 3, b, r] = x[ic, 3, bshifted, rshifted] * factor
+        y[ic, 4, b, r] = x[ic, 4, bshifted, rshifted] * factor
     end
 
 end
@@ -139,6 +166,25 @@ function kernel_mul_1plusγ1x!(b, r, y, x, NC)
 
 end
 
+
+function kernel_mul_1plusγ1x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] - im * x[ic, 4, bshifted, rshifted] * factor
+        v2 = x[ic, 2, bshifted, rshifted] - im * x[ic, 3, bshifted, rshifted] * factor
+        v3 = x[ic, 3, bshifted, rshifted] + im * x[ic, 2, bshifted, rshifted] * factor
+        v4 = x[ic, 4, bshifted, rshifted] + im * x[ic, 1, bshifted, rshifted] * factor
+        y[ic, 1, b, r] = v1
+        y[ic, 2, b, r] = v2
+        y[ic, 3, b, r] = v3
+        y[ic, 4, b, r] = v4
+    end
+
+end
+
+
 function kernel_mul_1minusγ1x!(b, r, y, x, NC)
 
     @inbounds for ic = 1:NC
@@ -154,7 +200,22 @@ function kernel_mul_1minusγ1x!(b, r, y, x, NC)
 
 end
 
+function kernel_mul_1minusγ1x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
 
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] + im * x[ic, 4, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] + im * x[ic, 3, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] - im * x[ic, 2, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] - im * x[ic, 1, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
 
 function kernel_mul_1plusγ2x!(b, r, y, x, NC)
 
@@ -171,6 +232,26 @@ function kernel_mul_1plusγ2x!(b, r, y, x, NC)
 
 end
 
+
+function kernel_mul_1plusγ2x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] - x[ic, 4, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] + x[ic, 3, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] + x[ic, 2, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] - x[ic, 1, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
+
+
 function kernel_mul_1minusγ2x!(b, r, y, x, NC)
 
     @inbounds for ic = 1:NC
@@ -185,6 +266,25 @@ function kernel_mul_1minusγ2x!(b, r, y, x, NC)
     end
 
 end
+
+function kernel_mul_1minusγ2x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] + x[ic, 4, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] - x[ic, 3, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] - x[ic, 2, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] + x[ic, 1, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
+
+
 
 
 
@@ -203,6 +303,24 @@ function kernel_mul_1plusγ3x!(b, r, y, x, NC)
 
 end
 
+function kernel_mul_1plusγ3x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] - im * x[ic, 3, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] + im * x[ic, 4, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] + im * x[ic, 1, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] - im * x[ic, 2, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
+
+
 function kernel_mul_1minusγ3x!(b, r, y, x, NC)
 
     @inbounds for ic = 1:NC
@@ -218,6 +336,24 @@ function kernel_mul_1minusγ3x!(b, r, y, x, NC)
 
 end
 
+function kernel_mul_1minusγ3x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] + im * x[ic, 3, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] - im * x[ic, 4, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] - im * x[ic, 1, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] + im * x[ic, 2, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
+
+
 
 function kernel_mul_1plusγ4x!(b, r, y, x, NC)
 
@@ -230,6 +366,23 @@ function kernel_mul_1plusγ4x!(b, r, y, x, NC)
         y[ic, 2, b, r] = v2
         y[ic, 3, b, r] = v3
         y[ic, 4, b, r] = v4
+    end
+
+end
+
+function kernel_mul_1plusγ4x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] - x[ic, 3, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] - x[ic, 4, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] - x[ic, 1, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] - x[ic, 2, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
     end
 
 end
@@ -248,6 +401,24 @@ function kernel_mul_1minusγ4x!(b, r, y, x, NC)
     end
 
 end
+
+function kernel_mul_1minusγ4x_shifted!(b, r, y, x, shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ic = 1:NC
+        v1 = x[ic, 1, bshifted, rshifted] + x[ic, 3, bshifted, rshifted]
+        v2 = x[ic, 2, bshifted, rshifted] + x[ic, 4, bshifted, rshifted]
+        v3 = x[ic, 3, bshifted, rshifted] + x[ic, 1, bshifted, rshifted]
+        v4 = x[ic, 4, bshifted, rshifted] + x[ic, 2, bshifted, rshifted]
+        y[ic, 1, b, r] = v1 * factor
+        y[ic, 2, b, r] = v2 * factor
+        y[ic, 3, b, r] = v3 * factor
+        y[ic, 4, b, r] = v4 * factor
+    end
+
+end
+
 
 function kernel_dot!(b, r, temp_volume, A, B, NC)
     temp_volume[b, r] = 0
@@ -316,6 +487,33 @@ function kernel_mul_yAx_NC3!(b, r, y, A, x)
     end
 end
 
+function kernel_mul_yAx_NC3_shifted!(b, r, y, A, x, shift, blockinfo, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+
+    @inbounds for ialpha = 1:4
+        x1 = x[1, ialpha, bshifted, rshifted] * factor
+        x2 = x[2, ialpha, bshifted, rshifted] * factor
+        x3 = x[3, ialpha, bshifted, rshifted] * factor
+
+        y[1, ialpha, b, r] =
+            A[1, 1, b, r] * x1 +
+            A[1, 2, b, r] * x2 +
+            A[1, 3, b, r] * x3
+        y[2, ialpha, b, r] =
+            A[2, 1, b, r] * x1 +
+            A[2, 2, b, r] * x2 +
+            A[2, 3, b, r] * x3
+        y[3, ialpha, b, r] =
+            A[3, 1, b, r] * x1 +
+            A[3, 2, b, r] * x2 +
+            A[3, 3, b, r] * x3
+        # =#
+    end
+end
+
+
 function kernel_mul_ysx_NC!(b, r, y, A, x, NC)
     @inbounds for ialpha = 1:4
         for k1 = 1:NC
@@ -372,6 +570,29 @@ function kernel_mul_yxdagAdag_NC3!(b, r, y, x, A, NG)
         x1 = conj(x[1, ialpha, b, r])
         x2 = conj(x[2, ialpha, b, r])
         x3 = conj(x[3, ialpha, b, r])
+        y[1, ialpha, b, r] =
+            x1 * conj(A[1, 1, b, r]) +
+            x2 * conj(A[1, 2, b, r]) +
+            x3 * conj(A[1, 3, b, r])
+        y[2, ialpha, b, r] =
+            x1 * conj(A[2, 1, b, r]) +
+            x2 * conj(A[2, 2, b, r]) +
+            x3 * conj(A[2, 3, b, r])
+        y[3, ialpha, b, r] =
+            x1 * conj(A[3, 1, b, r]) +
+            x2 * conj(A[3, 2, b, r]) +
+            x3 * conj(A[3, 3, b, r])
+    end
+end
+
+function kernel_mul_yxdagAdagshifted_NC3!(b, r, y, x, A, NG, shift, blockinfo, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ialpha = 1:NG
+        x1 = conj(x[1, ialpha, bshifted, rshifted]) * factor
+        x2 = conj(x[2, ialpha, bshifted, rshifted]) * factor
+        x3 = conj(x[3, ialpha, bshifted, rshifted]) * factor
         y[1, ialpha, b, r] =
             x1 * conj(A[1, 1, b, r]) +
             x2 * conj(A[1, 2, b, r]) +
