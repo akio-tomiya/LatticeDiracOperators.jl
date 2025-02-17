@@ -218,14 +218,12 @@ function test1_2D_NC(NC)
     show(gauge_action)
 
     x = Initialize_pseudofermion_fields(U[1], "staggered")
-    println(typeof(x), "type!!!!!!!!")
     params = Dict()
     params["Dirac_operator"] = "staggered"
     params["mass"] = 0.1
     params["eps_CG"] = 1.0e-8
     params["verbose_level"] = 2
     D = Dirac_operator(U, x, params)
-    println(typeof(D), "type!!!!!!!!")
 
     Nf = 2
     for Nf in [4, 2, 1]#[8,4,2]

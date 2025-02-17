@@ -60,7 +60,10 @@ import .Dirac_operators:
     γ5D,
     convert_to_normalvector,
     save_fermionfield,
-    load_fermionfield!
+    load_fermionfield!,
+    substitute_fermion!
+
+export substitute_fermion!
 
 export Initialize_pseudofermion_fields,
     Dirac_operator, gauss_distribution_fermion!, cg, bicg

@@ -1,3 +1,6 @@
+import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
+
+
 include("./WilsoncloverFermion.jl")
 
 abstract type Wilson_Dirac_operators{Dim} <: Dirac_operator{Dim} end
@@ -6,7 +9,7 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <:
        Wilson_Dirac_operators{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
     boundarycondition::Vector{Int8}
-    _temporary_fermi::Vector{fermion}
+    _temporary_fermi::Temporalfields{fermion}#  Vector{fermion}
     γ::Array{ComplexF64,3}
     rplusγ::Array{ComplexF64,3}
     rminusγ::Array{ComplexF64,3}
@@ -20,12 +23,12 @@ struct Wilson_Dirac_operator{Dim,T,fermion} <:
     method_CG::String
     cloverterm::Union{Nothing,WilsonClover}
     verbose_print::Verbose_print
-    _temporary_fermion_forCG::Vector{fermion}
+    _temporary_fermion_forCG::Temporalfields{fermion}#Vector{fermion}
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
 
-has_cloverterm(D::Wilson_Dirac_operator) = ifelse(typeof(D.cloverterm) == Nothing,false,true)
+has_cloverterm(D::Wilson_Dirac_operator) = ifelse(typeof(D.cloverterm) == Nothing, false, true)
 
 
 struct Wilson_Dirac_operator_evenodd{Dim,T,fermion} <:
@@ -60,6 +63,9 @@ end
 
 
 include("./WilsonFermion_4D.jl")
+include("./WilsonFermion_4D_accelerator.jl")
+
+
 
 include("./WilsonFermion_4D_wing.jl")
 include("./WilsonFermion_4D_nowing.jl")
@@ -90,9 +96,9 @@ function Wilson_Dirac_operator(
     hasclover = check_parameters(parameters, "hasclover", false)
     if hasclover
         @assert Dim == 4 "Dimension should be 4 if you want to use Clover terms!"
-        cSW =  check_parameters(parameters, "cSW", 1.5612)
-        NV = length(x)÷ (NC*4)
-        cloverterm = WilsonClover(cSW,Dim,NV,U,κ)
+        cSW = check_parameters(parameters, "cSW", 1.5612)
+        NV = length(x) ÷ (NC * 4)
+        cloverterm = WilsonClover(cSW, Dim, NV, U, κ)
         num += 6
         #error("notsupported")
     else
@@ -100,10 +106,10 @@ function Wilson_Dirac_operator(
     end
 
 
-    
-    #num = 7
-    _temporary_fermi = Array{xtype,1}(undef, num)
 
+    #num = 7
+    #_temporary_fermi = Array{xtype,1}(undef, num)
+    _temporary_fermi = Temporalfields(x; num)
 
     if Dim == 4
         boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
@@ -133,16 +139,17 @@ function Wilson_Dirac_operator(
 
 
 
-    for i = 1:num
-        _temporary_fermi[i] = similar(x)
-    end
+    #for i = 1:num
+    #    _temporary_fermi[i] = similar(x)
+    #end
 
-    numcg = check_parameters(parameters, "numtempvec_CG", 7)
+    numcg = check_parameters(parameters, "numtempvec_CG", 12)
     #numcg = 7
-    _temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
-    for i = 1:numcg
-        _temporary_fermion_forCG[i] = similar(x)
-    end
+    _temporary_fermion_forCG = Temporalfields(x; num=numcg)
+    #_temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
+    #for i = 1:numcg
+    #    _temporary_fermion_forCG[i] = similar(x)
+    #end
 
 
     eps_CG = check_parameters(parameters, "eps_CG", default_eps_CG)
@@ -150,14 +157,14 @@ function Wilson_Dirac_operator(
     MaxCGstep = check_parameters(parameters, "MaxCGstep", default_MaxCGstep)
 
     verbose_level = check_parameters(parameters, "verbose_level", 2)
-    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
+    verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
 
 
-    for i = 1:num
-        _temporary_fermi[i] = similar(x)
-    end
+    #for i = 1:num
+    #    _temporary_fermi[i] = similar(x)
+    #end
 
 
 
@@ -231,10 +238,10 @@ end
 
 function Initialize_WilsonFermion(
     u::AbstractGaugefields{NC,Dim};
-    nowing = false,
+    nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_WilsonFermion(NC, NN..., nowing = nowing)
+    return Initialize_WilsonFermion(NC, NN..., nowing=nowing)
 end
 
 function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
@@ -242,7 +249,7 @@ function Initialize_4DWilsonFermion(u::AbstractGaugefields{NC,Dim}) where {NC,Di
     return WilsonFermion_4D_wing{NC}(NN...)
 end
 
-function Initialize_WilsonFermion(NC, NN...; nowing = false)
+function Initialize_WilsonFermion(NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
         if nowing
@@ -299,7 +306,7 @@ function LinearAlgebra.mul!(
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Wilson_operator,T3<:AbstractFermionfields}
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
-    
+
     Wdagx!(y, A.parent.U, x, A.parent)
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
@@ -532,9 +539,13 @@ include("./WilsontypeFermion.jl")
 
 function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     #temp = temps[4]
     #temp1 = temps[1]cc
@@ -584,10 +595,10 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         #println("xout ",sum(abs.(xout.f)))
         #println(sum(abs.(x.f)))
         #println(sum(abs.(xout.f)))
-        
-        cloverterm_σμν!(xout,A.cloverterm,x,temp,temp2)
+
+        cloverterm_σμν!(xout, A.cloverterm, x, temp, temp2)
         #println("after: ",dot(xout,xout))
-        
+
         #clear_fermion!(xout) #debug
         #cloverterm!(xout,A.cloverterm,x)
         #println(sum(abs.(xout.f)))
@@ -599,14 +610,24 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
     #display(xout)
     #    exit()
+
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
+
     return
 end
 
 
 function D4x!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     clear_fermion!(xout)
     set_wing_fermion!(x)
@@ -628,6 +649,11 @@ function D4x!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGa
 
     end
     set_wing_fermion!(xout)
+
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
 end
 
 function D4dagx!(
@@ -637,9 +663,13 @@ function D4dagx!(
     A,
     Dim,
 ) where {T1,T2,G<:AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     clear_fermion!(xout)
     set_wing_fermion!(x)
@@ -661,12 +691,21 @@ function D4dagx!(
 
     end
     set_wing_fermion!(xout)
+
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
 end
 
-function Dx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+function Dx!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:AbstractGaugefields,TA<:Wilson_Dirac_operators}
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     clear_fermion!(temp)
     #clear!(temp1)
@@ -691,15 +730,24 @@ function Dx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGau
     clear_fermion!(xout)
     add_fermion!(xout, 1 / (2 * A.κ), x, -1, temp)
 
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
+
     #display(xout)
     #    exit()
     return
 end
 
 function Ddagx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     clear_fermion!(temp)
     #clear!(temp1)
@@ -726,14 +774,22 @@ function Ddagx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:Abstract
 
     #display(xout)
     #    exit()
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
     return
 end
 
 function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields} # Tx, W = (1 - T)x
     #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4]#temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
     #temp = temps[4]
     #temp1 = temps[1]
@@ -780,22 +836,29 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
     #display(xout)
     #    exit()
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
     return
 end
 
 function Wdagx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     if A.cloverterm != nothing
-        Wdagx_clover!(xout,U,x,A,Dim)
+        Wdagx_clover!(xout, U, x, A, Dim)
     else
-        Wdagx_noclover!(xout,U,x,A,Dim)
+        Wdagx_noclover!(xout, U, x, A, Dim)
     end
 end
 
 function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4] #temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4] #temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
 
     clear_fermion!(temp)
     #set_wing_fermion!(x)
@@ -830,6 +893,10 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
     add_fermion!(xout, 1, x, -1, temp)
     set_wing_fermion!(xout, A.boundarycondition)
 
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
     #display(xout)
     #    exit()
     return
@@ -837,14 +904,19 @@ end
 
 function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    temp = A._temporary_fermi[4] #temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
+    #temp = A._temporary_fermi[4] #temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
+
 
     clear_fermion!(temp)
     set_wing_fermion!(x, A.boundarycondition)
     x5 = A._temporary_fermi[5]
-    mul_γ5x!(x5,x)
+    mul_γ5x!(x5, x)
     #set_wing_fermion!(x5)
     set_wing_fermion!(x5, A.boundarycondition)
 
@@ -880,7 +952,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     clear_fermion!(temp1)
     add_fermion!(temp1, 1, x5, -1, temp)
     set_wing_fermion!(temp1, A.boundarycondition)
-    cloverterm_σμν!(temp1,A.cloverterm,x5,temp,temp2)
+    cloverterm_σμν!(temp1, A.cloverterm, x5, temp, temp2)
     #println("before ",dot(temp1,temp1))
     #println("x5 ",dot(x5,x5))
     #clear_fermion!(temp1)
@@ -896,8 +968,13 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     #cloverterm!(temp1,A.cloverterm,x5)
     #add_fermion!(xout, 1, x, -1, temp)
     #mul_γ5x!(xout,temp)
-    mul_γ5x!(xout,temp1)
+    mul_γ5x!(xout, temp1)
     set_wing_fermion!(xout, A.boundarycondition)
+
+
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
 
     #display(xout)
     #    exit()
@@ -944,6 +1021,8 @@ struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
         return new{Dim,T,fermion,TF}(D)
     end
 
-    
+
 
 end
+
+include("./kernelfunctions/linearalgebra_mul.jl")

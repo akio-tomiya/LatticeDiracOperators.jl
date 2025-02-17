@@ -1,15 +1,18 @@
+import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
+
+
 struct Staggered_Dirac_operator{Dim,T,fermion} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
     boundarycondition::Vector{Int8}
     mass::Float64
-    _temporary_fermi::Vector{fermion}
+    _temporary_fermi::Temporalfields{fermion}#Vector{fermion}
     eps_CG::Float64
     MaxCGstep::Int64
     verbose_level::Int8
     method_CG::String
     verbose_print::Verbose_print
-    _temporary_fermion_forCG::Vector{fermion}
+    _temporary_fermion_forCG::Temporalfields{fermion}#Vector{fermion}
     #verbose::Union{Verbose_1,Verbose_2,Verbose_3}
 end
 
@@ -25,7 +28,8 @@ function Staggered_Dirac_operator(
 ) where {NC,Dim}
     xtype = typeof(x)
     num = 6
-    _temporary_fermi = Array{xtype,1}(undef, num)
+    _temporary_fermi = Temporalfields(x; num)
+    #_temporary_fermi = Array{xtype,1}(undef, num)
 
     @assert haskey(parameters, "mass") "parameters should have the keyword mass"
     mass = parameters["mass"]
@@ -44,15 +48,16 @@ function Staggered_Dirac_operator(
     method_CG = check_parameters(parameters, "method_CG", "bicg")
 
 
-    for i = 1:num
-        _temporary_fermi[i] = similar(x)
-    end
+    #for i = 1:num
+    #    _temporary_fermi[i] = similar(x)
+    #end
 
-    numcg = 7
-    _temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
-    for i = 1:numcg
-        _temporary_fermion_forCG[i] = similar(x)
-    end
+    numcg = 8
+    _temporary_fermion_forCG = Temporalfields(x; num=numcg)
+    #_temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
+    #for i = 1:numcg
+    #    _temporary_fermion_forCG[i] = similar(x)
+    #end
 
     #verbose_print = Verbose_print(verbose_level)
     verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))
@@ -163,13 +168,22 @@ function LinearAlgebra.mul!(
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Staggered_Dirac_operator,T3<:AbstractFermionfields}
 
-    @assert typeof(A._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A._temporary_fermi[1])) should be type of x: $(typeof(x))"
+    #@assert typeof(A._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A._temporary_fermi[1])) should be type of x: $(typeof(x))"
+
     temps = A._temporary_fermi
-    temp = temps[4]
-    Dx!(temp, A.U, x, [temps[1], temps[2], temps[3]], A.boundarycondition)
+    temp, it_temp = get_temp(temps)
+    tempvec, its_tempvec = get_temp(temps, 3)
+    @assert typeof(temp) == typeof(x) "type of A._temporary_fermi[1] $(typeof(temp)) should be type of x: $(typeof(x))"
+
+    #temp = temps[4]
+    #Dx!(temp, A.U, x, [tempvec[1], tempvec[2], tempvec[3]], A.boundarycondition)
+    Dx!(temp, A.U, x, tempvec, A.boundarycondition)
     clear_fermion!(y)
     add_fermion!(y, A.mass, x, 1, temp)
     set_wing_fermion!(y, A.boundarycondition)
+
+    unused!(temps, it_temp)
+    unused!(temps, its_tempvec)
 
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 end
@@ -182,11 +196,16 @@ function LinearAlgebra.mul!(
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
     temps = A.parent._temporary_fermi
-    temp = temps[4]
-    Dx!(temp, A.parent.U, x, [temps[1], temps[2], temps[3]], A.parent.boundarycondition)
+    temp, it_temp = get_temp(temps)
+    tempvec, its_temp = get_temp(temps, 3)
+    #temp = temps[4]
+    #Dx!(temp, A.parent.U, x, [temps[1], temps[2], temps[3]], A.parent.boundarycondition)
+    Dx!(temp, A.parent.U, x, tempvec, A.parent.boundarycondition)
     clear_fermion!(y)
     add_fermion!(y, A.parent.mass, x, -1, temp)
     set_wing_fermion!(y, A.parent.boundarycondition)
+    unused!(temps, its_temp)
+    unused!(temps, it_temp)
     #println(y[1,1,1,1,1,1])
     return
 end
@@ -196,16 +215,27 @@ function LinearAlgebra.mul!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:DdagD_Staggered_operator,T3<:AbstractFermionfields}
-    @assert typeof(A.dirac._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A.dirac._temporary_fermi[1])) should be type of x: $(typeof(x))"
+    #@assert typeof(A.dirac._temporary_fermi[1]) == typeof(x) "type of A._temporary_fermi[1] $(typeof(A.dirac._temporary_fermi[1])) should be type of x: $(typeof(x))"
     temps = A.dirac._temporary_fermi
-    temp = temps[5]
-    temp2 = temps[6]
-    Dx!(temp, A.dirac.U, x, [temps[1], temps[2], temps[3]], A.dirac.boundarycondition)
-    Dx!(temp2, A.dirac.U, temp, [temps[1], temps[2], temps[3]], A.dirac.boundarycondition)
+    temp, it_temp = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
+    tempvec, its_tempvec = get_temp(temps, 3)
+    @assert typeof(temp) == typeof(x) "type of A._temporary_fermi[1] $(typeof(temmp)) should be type of x: $(typeof(x))"
+
+    #temp = temps[5]
+    #temp2 = temps[6]
+    #Dx!(temp, A.dirac.U, x, [temps[1], temps[2], temps[3]], A.dirac.boundarycondition)
+    #Dx!(temp2, A.dirac.U, temp, [temps[1], temps[2], temps[3]], A.dirac.boundarycondition)
+    Dx!(temp, A.dirac.U, x, tempvec, A.dirac.boundarycondition)
+    Dx!(temp2, A.dirac.U, temp, tempvec, A.dirac.boundarycondition)
 
     clear_fermion!(y)
     add_fermion!(y, A.dirac.mass^2, x, -1, temp2)
     set_wing_fermion!(y, A.dirac.boundarycondition)
+
+    unused!(temps, it_temp)
+    unused!(temps, it_temp2)
+    unused!(temps, its_tempvec)
 
     #error("xout")
     return
