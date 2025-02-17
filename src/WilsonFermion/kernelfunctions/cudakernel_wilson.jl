@@ -46,11 +46,17 @@ function cudakernel_mul_yAx_NC3!(y, A, x)
     kernel_mul_yAx_NC3!(b,r,y, A, x)
 end
 
-function cudakernel_mul_yAx_NC3!(y, A, x)
+function cudakernel_mul_yAx_NC3_shifted!(y, A, x, shift, blockinfo, bc, NX, NY, NZ, NT)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
-    kernel_mul_yAx_NC3!(b,r,y, A, x)
+    kernel_mul_yAx_NC3_shifted!(b, r, y, A, x, shift, blockinfo, bc, NX, NY, NZ, NT)
 end
+
+#function cudakernel_mul_yAx_NC3!(y, A, x)
+#    b = Int64(CUDA.threadIdx().x)
+#    r = Int64(CUDA.blockIdx().x)
+#    kernel_mul_yAx_NC3!(b,r,y, A, x)
+#end
 
 function cudakernel_mul_ysx_NC!(y, A, x, NC)
     b = Int64(CUDA.threadIdx().x)
@@ -81,6 +87,13 @@ function cudakernel_mul_yxdagAdag_NC3!(y, x, A, NG)
     r = Int64(CUDA.blockIdx().x)
     kernel_mul_yxdagAdag_NC3!(b,r,y, x, A, NG)
 end
+
+function cudakernel_mul_yxdagAdagshifted_NC3!(y, x, A, NG,shift,blockinfo,bc,NX,NY,NZ,NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_yxdagAdagshifted_NC3!(b, r, y, x, A, NG,shift,blockinfo,bc,NX,NY,NZ,NT)
+end
+
 
 function cudakernel_mul_xA_NC!(xout, x, A, NC)
     b = Int64(CUDA.threadIdx().x)
@@ -161,4 +174,59 @@ function cudakernel_substitute_fermion!(A, B, NC)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
     kernel_substitute_fermion!(b,r,A, B, NC)
+end
+
+
+function cudakernel_mul_1plusγ5x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ5x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1plusγ1x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ1x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1plusγ2x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ2x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1plusγ3x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ3x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1plusγ4x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1plusγ4x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1minusγ1x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ1x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1minusγ2x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ2x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1minusγ3x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ3x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+end
+
+function cudakernel_mul_1minusγ4x_shifted!(y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ4x_shifted!(b,r,y, x,shift, blockinfo, NC, bc, NX, NY, NZ, NT)
 end

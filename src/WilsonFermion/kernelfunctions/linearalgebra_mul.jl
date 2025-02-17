@@ -307,7 +307,8 @@ function LinearAlgebra.mul!(
 
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
-            kernel_mul_yxdagAdagshifted_NC3!(b, r, y.f, x.parent.parent.f, A.parent.U, NG, x.parent.shift, x.parent.parent.blockinfo, x.parent.bc, NX, NY, NZ, NT)
+            kernel_mul_yxdagAdagshifted_NC3!(b, r, y.f, x.parent.parent.f, A.parent.U, NG, x.parent.shift, 
+                x.parent.parent.blockinfo, x.parent.bc, NX, NY, NZ, NT)
         end
     end
 end

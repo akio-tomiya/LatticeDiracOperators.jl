@@ -51,6 +51,15 @@ function shifted_fermion!(
 
 end
 
+function shifted_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    boundarycondition,
+    shift,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}
+
+end
+
+
 
 
 function mul_1plusγ5x!(
@@ -172,6 +181,26 @@ function mul_1plusγ5x!(
 
 end
 
+function mul_1plusγ5x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ5x_shifted!(y.f,
+        x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
+
+end
+
+
+
 function mul_1plusγ1x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     x::Shifted_fermionfields_4D_accelerator,
@@ -182,8 +211,22 @@ function mul_1plusγ1x!(
         CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ1x!(y.f, x.parent.fshifted, NC)
     end
 
+end
 
+function mul_1plusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ1x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
 
 end
 
@@ -201,6 +244,24 @@ function mul_1plusγ2x!(
 
 end
 
+function mul_1plusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ2x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
+end
+
+
 
 function mul_1plusγ3x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -214,6 +275,24 @@ function mul_1plusγ3x!(
 
 end
 
+function mul_1plusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ3x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
+end
+
+
 function mul_1plusγ4x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     x::Shifted_fermionfields_4D_accelerator,
@@ -224,6 +303,23 @@ function mul_1plusγ4x!(
     end
 
 
+
+end
+
+function mul_1plusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ4x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
 
 end
 
@@ -242,6 +338,24 @@ function mul_1minusγ1x!(
 
 end
 
+function mul_1minusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ1x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
+end
+
+
 function mul_1minusγ2x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     x::Shifted_fermionfields_4D_accelerator,
@@ -251,6 +365,23 @@ function mul_1minusγ2x!(
         CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ2x!(y.f, x.parent.fshifted, NC)
     end
 
+
+end
+
+function mul_1minusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ2x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
 
 end
 
@@ -268,6 +399,23 @@ function mul_1minusγ3x!(
 
 end
 
+function mul_1minusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ3x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
+end
+
 function mul_1minusγ4x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     x::Shifted_fermionfields_4D_accelerator,
@@ -276,6 +424,23 @@ function mul_1minusγ4x!(
     CUDA.@sync begin
         CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ4x!(y.f, x.parent.fshifted, NC)
     end
+end
+
+function mul_1minusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1minusγ4x_shifted!(y.f,
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+    end
+
 end
 
 
