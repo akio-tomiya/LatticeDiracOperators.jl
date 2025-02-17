@@ -1,0 +1,238 @@
+WARNING: could not import AbstractGaugefields_module.setvalue! into Main
+
+[2752559] signal 2: Interrupt
+in expression starting at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/run/gputest/wilsondslash.jl:144
+unknown function (ip: 0x7d4856e91115)
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+#wait#731 at ./condition.jl:130
+wait at ./condition.jl:125 [inlined]
+take! at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:53
+synchronization_worker at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:119
+unknown function (ip: 0x7d48174a1885)
+jlcapi_synchronization_worker_13634 at /home/yuki/.julia/compiled/v1.11/CUDA/oWw5k_WsuMK.so (unknown line)
+unknown function (ip: 0x7d4856e94ac2)
+unknown function (ip: 0x7d4856f2684f)
+unknown function (ip: (nil))
+unknown function (ip: 0x7d4856e91115)
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+#wait#731 at ./condition.jl:130
+wait at ./condition.jl:125 [inlined]
+take! at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:53
+synchronization_worker at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:119
+unknown function (ip: 0x7d48174a1885)
+jlcapi_synchronization_worker_13634 at /home/yuki/.julia/compiled/v1.11/CUDA/oWw5k_WsuMK.so (unknown line)
+unknown function (ip: 0x7d4856e94ac2)
+unknown function (ip: 0x7d4856f2684f)
+unknown function (ip: (nil))
+unknown function (ip: 0x7d4856e91115)
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+#wait#731 at ./condition.jl:130
+wait at ./condition.jl:125 [inlined]
+take! at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:53
+synchronization_worker at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:119
+unknown function (ip: 0x7d48174a1885)
+jlcapi_synchronization_worker_13634 at /home/yuki/.julia/compiled/v1.11/CUDA/oWw5k_WsuMK.so (unknown line)
+unknown function (ip: 0x7d4856e94ac2)
+unknown function (ip: 0x7d4856f2684f)
+unknown function (ip: (nil))
+unknown function (ip: 0x7d4856e91115)
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+#wait#731 at ./condition.jl:130
+wait at ./condition.jl:125 [inlined]
+take! at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:53
+synchronization_worker at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:119
+unknown function (ip: 0x7d48174a1885)
+jlcapi_synchronization_worker_13634 at /home/yuki/.julia/compiled/v1.11/CUDA/oWw5k_WsuMK.so (unknown line)
+unknown function (ip: 0x7d4856e94ac2)
+unknown function (ip: 0x7d4856f2684f)
+unknown function (ip: (nil))
+unknown function (ip: 0x7d4856e91115)
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/scheduler.c:584
+poptask at ./task.jl:1012
+wait at ./task.jl:1021
+#wait#731 at ./condition.jl:130
+wait at ./condition.jl:125 [inlined]
+put! at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:40
+nonblocking_synchronize at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:168
+#synchronize#1003 at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:200
+synchronize at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:194 [inlined]
+synchronize at /home/yuki/.julia/packages/CUDA/1kIOw/lib/cudadrv/synchronization.jl:194 [inlined]
+macro expansion at /home/yuki/.julia/packages/CUDA/1kIOw/src/utilities.jl:36 [inlined]
+shifted_fermion! at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/kernelfunctions/Wilson_cuda.jl:47
+_#47 at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_4D_accelerator.jl:221 [inlined]
+Shifted_fermionfields_4D_accelerator at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_4D_accelerator.jl:214 [inlined]
+shift_fermion at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_4D_accelerator.jl:202 [inlined]
+apply_Dirac_1storder_2! at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_faster.jl:436
+mul! at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_faster.jl:323
+mul! at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/WilsonFermion/WilsonFermion_faster.jl:286
+#bicg#1 at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/cgmethods.jl:74
+bicg at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/cgmethods.jl:31 [inlined]
+solve_DinvX! at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/src/Diracoperators.jl:181
+unknown function (ip: 0x7d481749d93d)
+macro expansion at ./timing.jl:581 [inlined]
+test1 at /home/yuki/LatticeDiracOperators.jl/cuda/LatticeDiracOperators.jl/run/gputest/wilsondslash.jl:111
+unknown function (ip: 0x7d4855ab97ff)
+jl_apply at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/julia.h:2157 [inlined]
+do_call at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/interpreter.c:126
+eval_value at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/interpreter.c:223
+eval_stmt_value at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/interpreter.c:174 [inlined]
+eval_body at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/interpreter.c:663
+jl_interpret_toplevel_thunk at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/interpreter.c:821
+jl_toplevel_eval_flex at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/toplevel.c:943
+jl_toplevel_eval_flex at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/toplevel.c:886
+ijl_toplevel_eval_in at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/toplevel.c:994
+eval at ./boot.jl:430 [inlined]
+include_string at ./loading.jl:2734
+_include at ./loading.jl:2794
+include at ./Base.jl:557
+jfptr_include_46888.1 at /home/yuki/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+exec_options at ./client.jl:323
+_start at ./client.jl:531
+jfptr__start_73609.1 at /home/yuki/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/julia.h:2157 [inlined]
+true_main at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/jlapi.c:900
+jl_repl_entrypoint at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/src/jlapi.c:1059
+main at /cache/build/builder-demeter6-3/julialang/julia-release-1-dot-11/cli/loader_exe.c:58
+unknown function (ip: 0x7d4856e29d8f)
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8)
+unknown function (ip: (nil))
+Allocations: 59482289 (Pool: 59479867; Big: 2422); GC: 797
+┌ Warning: CUDA runtime library `libcublasLt.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcublasLt.so.12`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/1kIOw/src/initialization.jl:219
+┌ Warning: CUDA runtime library `libnvJitLink.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libnvJitLink.so.12`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/1kIOw/src/initialization.jl:219
+┌ Warning: CUDA runtime library `libcusparse.so.12` was loaded from a system path, `/usr/local/cuda/lib64/libcusparse.so.12`.
+│ This may cause errors.
+│ 
+│ If you're running under a profiler, this situation is expected. Otherwise,
+│ ensure that your library path environment variable (e.g., `PATH` on Windows
+│ or `LD_LIBRARY_PATH` on Linux) does not include CUDA library paths.
+│ 
+│ In any other case, please file an issue.
+└ @ CUDA ~/.julia/packages/CUDA/1kIOw/src/initialization.jl:219
+Test for 1/D for Wilson CUDA
+Julia Version 1.11.3
+Commit d63adeda50d (2025-01-21 19:42 UTC)
+Build Info:
+  Official https://julialang.org/ release
+Platform Info:
+  OS: Linux (x86_64-linux-gnu)
+  CPU: 64 × AMD EPYC 7713 64-Core Processor
+  WORD_SIZE: 64
+  LLVM: libLLVM-16.0.6 (ORCJIT, znver3)
+Threads: 1 default, 0 interactive, 1 GC (on 64 virtual cores)
+Environment:
+  LD_LIBRARY_PATH = /opt/intel/oneapi/tcm/1.2/lib:/opt/intel/oneapi/umf/0.9/lib:/opt/intel/oneapi/tbb/2022.0/env/../lib/intel64/gcc4.8:/opt/intel/oneapi/pti/0.10/lib:/opt/intel/oneapi/mpi/2021.14/opt/mpi/libfabric/lib:/opt/intel/oneapi/mpi/2021.14/lib:/opt/intel/oneapi/mkl/2025.0/lib:/opt/intel/oneapi/ippcp/2025.0/lib/:/opt/intel/oneapi/ipp/2022.0/lib:/opt/intel/oneapi/dnnl/2025.0/lib:/opt/intel/oneapi/debugger/2025.0/opt/debugger/lib:/opt/intel/oneapi/dal/2025.0/lib:/opt/intel/oneapi/compiler/2025.0/opt/compiler/lib:/opt/intel/oneapi/compiler/2025.0/lib:/opt/intel/oneapi/ccl/2021.14/lib/:/usr/local/cuda/lib64
+Parameters
+const blocks = (4, 4, 4, 8)
+const cuda = true
+const numtrj_in = 10
+const MDsteps_in = 0
+
+const βin = 6.0
+const NXin = 32
+const NYin = 32
+const NZin = 32
+const NTin = 32
+const κin = 0.141139
+
+--------------------------------------
+bicg method
+1-th eps: 66.05087781043393
+2-th eps: 29.31634703907639
+3-th eps: 15.253791627513223
+4-th eps: 8.603961994541283
+5-th eps: 5.166615324505666
+6-th eps: 3.273029193150369
+7-th eps: 2.1642052810142776
+8-th eps: 1.4746762269855087
+9-th eps: 1.0317325153695902
+10-th eps: 0.7346026536798472
+11-th eps: 0.5298453498724363
+12-th eps: 0.3859023462925337
+13-th eps: 0.28377073414899917
+14-th eps: 0.21017401315221856
+15-th eps: 0.15688148320634118
+16-th eps: 0.11790577165067272
+17-th eps: 0.08912125696385789
+18-th eps: 0.06764117690870021
+19-th eps: 0.051530971194537326
+20-th eps: 0.03935850639315415
+21-th eps: 0.030129324825873927
+22-th eps: 0.02312023159648778
+23-th eps: 0.017784373016587945
+24-th eps: 0.013711353837396623
+25-th eps: 0.010596474883300837
+26-th eps: 0.008202888343133753
+27-th eps: 0.006352324624342888
+28-th eps: 0.004923146472226161
+29-th eps: 0.0038198981277647
+30-th eps: 0.0029655719983208394
+31-th eps: 0.0023039374957693707
+32-th eps: 0.0017922134289148379
+33-th eps: 0.001394620169449174
+34-th eps: 0.0010860068756298816
+35-th eps: 0.0008463387702468207
+36-th eps: 0.0006594541861613811
+37-th eps: 0.0005139670363696843
+38-th eps: 0.00040088739467739715
+39-th eps: 0.00031270433603770837
+40-th eps: 0.0002441434769446648
+41-th eps: 0.00019052306232015685
+42-th eps: 0.00014867266120238373
+43-th eps: 0.00011601166978397061
+44-th eps: 9.060798929969331e-5
+45-th eps: 7.074136227509426e-5
+46-th eps: 5.527950385065515e-5
+47-th eps: 4.318157539175468e-5
+48-th eps: 3.373434072826458e-5
+49-th eps: 2.633768706621513e-5
+50-th eps: 2.0598262469267127e-5
+51-th eps: 1.6089201225416776e-5
+52-th eps: 1.2566580170545377e-5
+53-th eps: 9.81600645612543e-6
+54-th eps: 7.665495222230125e-6
+55-th eps: 5.994952610424753e-6
+56-th eps: 4.687756272516501e-6
+57-th eps: 3.665051715927716e-6
+58-th eps: 2.8618077107807353e-6
+59-th eps: 2.235170160373963e-6
+60-th eps: 1.7491131074541915e-6
+61-th eps: 1.3642093677675044e-6
+62-th eps: 1.066361969331603e-6
+63-th eps: 8.364693094449249e-7
+64-th eps: 6.527480262162586e-7
+65-th eps: 5.086329122693309e-7

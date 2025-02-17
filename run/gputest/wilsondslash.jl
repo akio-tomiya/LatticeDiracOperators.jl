@@ -23,9 +23,9 @@ const numtrj_in = 10 # parse(Int64, ARGS[6])
 const MDsteps_in = 0 # parse(Int64, ARGS[7])
 
 const βin = 6.0
-const NXin = 16
-const NYin = 16
-const NZin = 16
+const NXin = 16*2
+const NYin = 16*2
+const NZin = 16*2
 const NTin = 32
 const κin = 0.141139
 

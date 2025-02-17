@@ -146,10 +146,10 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, fermi_action, η) 
 end
 
 function test1()
-    NX = 8
-    NY = 8
-    NZ = 8
-    NT = 8
+    NX = 12
+    NY = 12
+    NZ = 12
+    NT = 12
     Nwing = 0
     Dim = 4
     NC = 3
