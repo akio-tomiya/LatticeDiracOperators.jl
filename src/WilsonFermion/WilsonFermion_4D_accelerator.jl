@@ -3,7 +3,7 @@ import Gaugefields.AbstractGaugefields_module:
 
 include("./kernelfunctions/kernel_wilson.jl")
 
-struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
+struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{NC}
     f::TF
     NC::Int64
     NX::Int64
@@ -13,7 +13,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
     NG::Int64
     NDW::Int64
     Dirac_operator::String
-    fshifted::TF
+    fshifted::TFshifted
     blockinfo::Blockindices
     accelerator::String
     temp_volume::TUv
@@ -42,6 +42,8 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
         temp_volumecpu = zeros(ComplexF64, blocksize, rsize)
         fshiftedcpu =zeros(ComplexF64, NC, NG, blocksize, rsize)
 
+        nocopy = false
+
 
         #f = CUDA.CuArray(fcpu)
         if accelerator == "cuda"
@@ -51,33 +53,50 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv} <: WilsonFermion_4D{NC}
                 if CUDA.has_cuda()
                     f = CUDA.CuArray(fcpu)
                     temp_volume = CUDA.CuArray(temp_volumecpu)
-                    fshifted = CUDA.CuArray(fshiftedcpu)
+                    if nocopy   
+                        fshifted = nothing
+                    else
+                        fshifted = CUDA.CuArray(fshiftedcpu)
+                    end
                     accdevise = :cuda
                 else
                     @warn "accelerator=\"cuda\" is set but there is no CUDA devise. CPU will be used"
                     f = fcpu
                     temp_volume = temp_volumecpu
-                    fshifted = fshiftedcpu
+                    if nocopy   
+                        fshifted = nothing
+                    else
+                        fshifted = fshiftedcpu
+                    end
                     accdevise = :none
                 end
             else
                 f = fcpu
                 temp_volume = temp_volumecpu
-                fshifted = fshiftedcpu
+                if nocopy   
+                    fshifted = nothing
+                else
+                    fshifted = fshiftedcpu
+                end
                 accdevise = :none
             end
         else
             f = fcpu
             temp_volume = temp_volumecpu
-            fshifted = fshiftedcpu
+            if nocopy   
+                fshifted = nothing
+            else
+                fshifted = fshiftedcpu
+            end
             accdevise = :none
         end
 
         
         TF = typeof(f)
         TUv = typeof(temp_volume)
+        TFshifted = typeof(fshifted)
 
-        return new{NC,TF,NG,TUv}(f, NC, NX, NY, NZ, NT, NG, NDW, Dirac_operator, fshifted,
+        return new{NC,TF,NG,TUv,TFshifted}(f, NC, NX, NY, NZ, NT, NG, NDW, Dirac_operator, fshifted,
             blockinfo, accelerator, temp_volume)
 
 
