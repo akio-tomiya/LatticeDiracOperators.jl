@@ -447,8 +447,37 @@ function kernel_axpby!(b, r, α, X, β, Y, NC)
     end
 end
 
+function kernel_axpby_NC3NG4!(b, r, α, X, β, Y)
+    @inbounds for ig = 1:4
+        for ic = 1:3
+            Y[ic, ig, b, r] =
+                α * X[ic, ig, b, r] +
+                β * Y[ic, ig, b, r]
+        end
+    end
+end
+
+
 function kernel_mul_Ax!(b, r, xout, A, x, NC)
     @inbounds for ic = 1:NC
+        e1 = x[ic, 1, b, r]
+        e2 = x[ic, 2, b, r]
+        e3 = x[ic, 3, b, r]
+        e4 = x[ic, 4, b, r]
+
+        xout[ic, 1, b, r] =
+            A[1, 1] * e1 + A[1, 2] * e2 + A[1, 3] * e3 + A[1, 4] * e4
+        xout[ic, 2, b, r] =
+            A[2, 1] * e1 + A[2, 2] * e2 + A[2, 3] * e3 + A[2, 4] * e4
+        xout[ic, 3, b, r] =
+            A[3, 1] * e1 + A[3, 2] * e2 + A[3, 3] * e3 + A[3, 4] * e4
+        xout[ic, 4, b, r] =
+            A[4, 1] * e1 + A[4, 2] * e2 + A[4, 3] * e3 + A[4, 4] * e4
+    end
+end
+
+function kernel_mul_Ax_NC3NG4!(b, r, xout, A, x)
+    @inbounds for ic = 1:3
         e1 = x[ic, 1, b, r]
         e2 = x[ic, 2, b, r]
         e3 = x[ic, 3, b, r]
@@ -523,10 +552,31 @@ function kernel_mul_ysx_NC!(b, r, y, A, x, NC)
     end
 end
 
+function kernel_mul_ysx_NC3NG4!(b, r, y, A, x)
+    @inbounds for ialpha = 1:4
+        for k1 = 1:3
+            y[k1, ialpha, b, r] =
+                A * x[k1, ialpha, b, r]
+        end
+    end
+end
+
+
 function kernel_mul_uxy_NC!(b, r, u, x, y, NC, NG)
     @inbounds for ik = 1:NG
         for ib = 1:NC
             for ia = 1:NC
+                c = x[ia, ik, b, r] * y[ib, ik, b, r]
+                u[ia, ib, b, r] += c
+            end
+        end
+    end
+end
+
+function kernel_mul_uxy_NC3NG4!(b, r, u, x, y)
+    @inbounds for ik = 1:4
+        for ib = 1:3
+            for ia = 1:3
                 c = x[ia, ik, b, r] * y[ib, ik, b, r]
                 u[ia, ib, b, r] += c
             end
@@ -544,6 +594,18 @@ function kernel_mul_uxydag_NC!(b, r, u, x, y, NC, NG)
         end
     end
 end
+
+function kernel_mul_uxydag_NC3NG4!(b, r, u, x, y)
+    @inbounds for ik = 1:4
+        for ib = 1:3
+            for ia = 1:3
+                c = x[ia, ik, b, r] * conj(y[ib, ik, b, r])
+                u[ia, ib, b, r] += c
+            end
+        end
+    end
+end
+
 
 function kernel_mul_yxA_NC3!(b, r, y, x, A, NG)
     @inbounds for ialpha = 1:NG
@@ -610,6 +672,25 @@ end
 
 function kernel_mul_xA_NC!(b, r, xout, x, A, NC)
     @inbounds for ic = 1:NC
+        e1 = x[ic, 1, b, r]
+        e2 = x[ic, 2, b, r]
+        e3 = x[ic, 3, b, r]
+        e4 = x[ic, 4, b, r]
+
+        xout[ic, 1, b, r] =
+            A[1, 1] * e1 + A[2, 1] * e2 + A[3, 1] * e3 + A[4, 1] * e4
+        xout[ic, 2, b, r] =
+            A[1, 2] * e1 + A[2, 2] * e2 + A[3, 2] * e3 + A[4, 2] * e4
+        xout[ic, 3, b, r] =
+            A[1, 3] * e1 + A[2, 3] * e2 + A[3, 3] * e3 + A[4, 3] * e4
+        xout[ic, 4, b, r] =
+            A[1, 4] * e1 + A[2, 4] * e2 + A[3, 4] * e3 + A[4, 4] * e4
+    end
+
+end
+
+function kernel_mul_xA_NC3!(b, r, xout, x, A)
+    @inbounds for ic = 1:3
         e1 = x[ic, 1, b, r]
         e2 = x[ic, 2, b, r]
         e3 = x[ic, 3, b, r]

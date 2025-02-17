@@ -27,7 +27,6 @@ function LinearAlgebra.mul!(
             kernel_mul_yUdagx_NC3!(b, r, y.f, A.parent.U, x.f, NG)
         end
     end
-
 end
 
 #=
@@ -62,6 +61,21 @@ function LinearAlgebra.axpby!(
     return Y
 end
 
+function LinearAlgebra.axpby!(
+    α::Number,
+    X::WilsonFermion_4D_accelerator{3,TF,4},
+    β::Number,
+    Y::WilsonFermion_4D_accelerator{3,TF,4},
+) where {TF}
+
+    for r = 1:X.blockinfo.rsize
+        for b = 1:X.blockinfo.blocksize
+            kernel_axpby_NC3NG4!(b, r, α, X.f, β, Y.f)
+        end
+    end
+    return Y
+end
+
 function LinearAlgebra.mul!(
     xout::WilsonFermion_4D_accelerator{NC,TF,NG},
     A::TA,
@@ -76,13 +90,24 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
+    xout::WilsonFermion_4D_accelerator{3,TF,4},
+    A::TA,
+    x::WilsonFermion_4D_accelerator{3,TF,4},
+) where {TA<:AbstractMatrix,TF}
+
+    for r = 1:xout.blockinfo.rsize
+        for b = 1:xout.blockinfo.blocksize
+            kernel_mul_Ax_NC3NG4!(b, r, xout.f, A, x.f)
+        end
+    end
+end
+
+function LinearAlgebra.mul!(
     y::T1,
     A::Adjoint_Wilson_operator_faster{Wilson_Dirac_operator_faster{Dim,T,fermion}},
     x::T3,
 ) where {T1<:WilsonFermion_4D_accelerator,T,Dim,fermion,T3<:WilsonFermion_4D_accelerator}
     clear_fermion!(y)
-
-
 
     add_fermion!(y, A.parent.factor, x)
 
@@ -217,8 +242,19 @@ function LinearAlgebra.mul!(
             kernel_mul_ysx_NC!(b, r, y.f, A, x.f, NC)
         end
     end
+end
 
-
+function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_accelerator{3,TF,4},
+    A::T,
+    x::WilsonFermion_4D_accelerator{4,TF,4},
+) where {T<:Number,TF}
+    #@assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_ysx_NC3NG4!(b, r, y.f, A, x.f)
+        end
+    end
 end
 
 function LinearAlgebra.mul!(
@@ -235,14 +271,32 @@ function LinearAlgebra.mul!(
         #    println(sum(abs.(u.U)))
     end
 
-
     for r = 1:x.blockinfo.rsize
         for b = 1:x.blockinfo.blocksize
             kernel_mul_uxy_NC!(b, r, u.U, x.f, y.f, NC, NG)
         end
     end
+end
+
+function LinearAlgebra.mul!(
+    u::T1,
+    x::WilsonFermion_4D_accelerator{3,TF,4},
+    y::WilsonFermion_4D_accelerator{3,TF,4}, ; clear=true
+) where {T1<:Gaugefields_4D_accelerator,TF}
 
 
+    #clear_U!(u)
+    if clear
+        clear_U!(u)
+    else
+        #    println(sum(abs.(u.U)))
+    end
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_uxy_NC3NG4!(b, r, u.U, x.f, y.f)
+        end
+    end
 end
 
 function LinearAlgebra.mul!(
@@ -263,6 +317,30 @@ function LinearAlgebra.mul!(
     for r = 1:x.blockinfo.rsize
         for b = 1:x.blockinfo.blocksize
             kernel_mul_uxydag_NC!(b, r, u.U, x.f, y.parent.f, NC, NG)
+        end
+    end
+
+
+end
+
+function LinearAlgebra.mul!(
+    u::T1,
+    x::WilsonFermion_4D_accelerator{3,TF,4},
+    y::Adjoint_fermionfields, ; clear=true
+) where {T1<:Gaugefields_4D_accelerator,TF}
+
+
+    #clear_U!(u)
+    if clear
+        clear_U!(u)
+    else
+        #    println(sum(abs.(u.U)))
+    end
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_uxydag_NC3NG4!(b, r, u.U, x.f, y.parent.f)
         end
     end
 
@@ -307,7 +385,7 @@ function LinearAlgebra.mul!(
 
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
-            kernel_mul_yxdagAdagshifted_NC3!(b, r, y.f, x.parent.parent.f, A.parent.U, NG, x.parent.shift, 
+            kernel_mul_yxdagAdagshifted_NC3!(b, r, y.f, x.parent.parent.f, A.parent.U, NG, x.parent.shift,
                 x.parent.parent.blockinfo, x.parent.bc, NX, NY, NZ, NT)
         end
     end
@@ -325,6 +403,17 @@ function LinearAlgebra.mul!(
             kernel_mul_xA_NC!(b, r, xout.f, x.f, A, NC)
         end
     end
-
-
 end
+
+function LinearAlgebra.mul!(
+    xout::WilsonFermion_4D_accelerator{3,TF,NG},
+    x::WilsonFermion_4D_accelerator{3,TF,NG},
+    A::TA,
+) where {TA<:AbstractMatrix,TF,NG}
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_xA_NC3!(b, r, xout.f, x.f, A)
+        end
+    end
+end
+
