@@ -533,3 +533,44 @@ function substitute_fermion!(
 end
 
 
+function substitute_fermion!(
+    A::AbstractFermionfields_4D{NC},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}
+    bcpu = Array(B.f)
+
+    blockinfo = B.blockinfo
+    for r = 1:blockinfo.rsize
+        for b = 1:blockinfo.blocksize
+            ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
+            for ig=1:NG
+                for ic=1:NC
+                    A[ic,ix, iy, iz, it,ig] = bcpu[ic, ig, b, r]
+                end
+            end
+        end
+    end
+
+end
+
+function substitute_fermion!(
+    A::WilsonFermion_4D_accelerator{NC,TF,NG},
+    B::AbstractFermionfields_4D{NC},
+) where {NC,TF,NG}
+    acpu = Array(A.f)
+
+    blockinfo = A.blockinfo
+    for r = 1:blockinfo.rsize
+        for b = 1:blockinfo.blocksize
+            ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
+            for ig=1:NG
+                for ic=1:NC
+                    acpu[ic, ig, b, r] = B[ic,ix, iy, iz, it,ig] 
+                end
+            end
+        end
+    end
+    A.f .= acpu
+end
+
+
