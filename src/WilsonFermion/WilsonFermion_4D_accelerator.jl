@@ -36,7 +36,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
         if haskey(kwargs, :noshiftfield)
             nocopy = kwargs[:noshiftfield]
         else
-            nocopy = true
+            nocopy = false
         end
 
 
