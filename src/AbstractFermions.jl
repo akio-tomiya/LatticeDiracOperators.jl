@@ -173,7 +173,7 @@ function Initialize_pseudofermion_fields(
     u::AbstractGaugefields{NC,Dim},
     Dirac_operator::String;
     L5=2,
-    nowing=false
+    nowing=false, kwargs...
 ) where {NC,Dim}
     mpi = u.mpi
     if mpi
@@ -206,7 +206,7 @@ function Initialize_pseudofermion_fields(
                         u.NZ,
                         u.NT,
                         u.PEs,
-                        nowing=nowing,
+                        nowing=nowing
                     )
                 else
                     x = DomainwallFermion_5D_wing_mpi(
@@ -216,7 +216,7 @@ function Initialize_pseudofermion_fields(
                         u.NY,
                         u.NZ,
                         u.NT,
-                        u.PEs,
+                        u.PEs
                     )
                 end
             elseif Dirac_operator == "MobiusDomainwall"
@@ -230,7 +230,7 @@ function Initialize_pseudofermion_fields(
                         u.NZ,
                         u.NT,
                         u.PEs,
-                        nowing=nowing,
+                        nowing=nowing
                     )
                 else
                     x = MobiusDomainwallFermion_5D_wing_mpi(
@@ -240,7 +240,7 @@ function Initialize_pseudofermion_fields(
                         u.NY,
                         u.NZ,
                         u.NT,
-                        u.PEs,
+                        u.PEs
                     )
                 end
             else
@@ -256,7 +256,7 @@ function Initialize_pseudofermion_fields(
             if Dirac_operator == "staggered"
                 x = Initialize_StaggeredFermion(u, nowing=nowing)
             elseif Dirac_operator == "Wilson"
-                x = Initialize_WilsonFermion(u, nowing=nowing)
+                x = Initialize_WilsonFermion(u, nowing=nowing; kwargs...)
             elseif Dirac_operator == "Domainwall"
                 #@warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u, L5, nowing=nowing)

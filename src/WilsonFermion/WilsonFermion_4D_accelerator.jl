@@ -17,6 +17,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
     blockinfo::Blockindices
     accelerator::String
     temp_volume::TUv
+    nocopy::Bool
 
 
     function WilsonFermion_4D_accelerator(
@@ -26,11 +27,18 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
         NZ::T,
         NT::T,
         blocks;
-        accelerator="none") where {T<:Integer}
+        accelerator="none", kwargs...) where {T<:Integer}
 
         L = [NX, NY, NZ, NT]
         NDW = 0
         NG = 4
+
+        if haskey(kwargs, :noshiftfield)
+            nocopy = kwargs[:noshiftfield]
+        else
+            nocopy = false
+        end
+
 
         blockinfo = Blockindices(L, blocks)#Blockindices(Tuple(blocks),Tuple(blocks_s),Tuple(blocknumbers),Tuple(blocknumbers_s),blocksize,rsize)
         blocksize = blockinfo.blocksize
@@ -40,9 +48,9 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
 
         fcpu = zeros(ComplexF64, NC, NG, blocksize, rsize)
         temp_volumecpu = zeros(ComplexF64, blocksize, rsize)
-        fshiftedcpu =zeros(ComplexF64, NC, NG, blocksize, rsize)
+        fshiftedcpu = zeros(ComplexF64, NC, NG, blocksize, rsize)
 
-        nocopy = false
+
 
 
         #f = CUDA.CuArray(fcpu)
@@ -53,7 +61,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
                 if CUDA.has_cuda()
                     f = CUDA.CuArray(fcpu)
                     temp_volume = CUDA.CuArray(temp_volumecpu)
-                    if nocopy   
+                    if nocopy
                         fshifted = nothing
                     else
                         fshifted = CUDA.CuArray(fshiftedcpu)
@@ -63,7 +71,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
                     @warn "accelerator=\"cuda\" is set but there is no CUDA devise. CPU will be used"
                     f = fcpu
                     temp_volume = temp_volumecpu
-                    if nocopy   
+                    if nocopy
                         fshifted = nothing
                     else
                         fshifted = fshiftedcpu
@@ -73,7 +81,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
             else
                 f = fcpu
                 temp_volume = temp_volumecpu
-                if nocopy   
+                if nocopy
                     fshifted = nothing
                 else
                     fshifted = fshiftedcpu
@@ -83,7 +91,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
         else
             f = fcpu
             temp_volume = temp_volumecpu
-            if nocopy   
+            if nocopy
                 fshifted = nothing
             else
                 fshifted = fshiftedcpu
@@ -91,13 +99,13 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
             accdevise = :none
         end
 
-        
+
         TF = typeof(f)
         TUv = typeof(temp_volume)
         TFshifted = typeof(fshifted)
 
         return new{NC,TF,NG,TUv,TFshifted}(f, NC, NX, NY, NZ, NT, NG, NDW, Dirac_operator, fshifted,
-            blockinfo, accelerator, temp_volume)
+            blockinfo, accelerator, temp_volume, nocopy)
 
 
     end
@@ -118,7 +126,7 @@ end
 
 function Initialize_WilsonFermion(
     u::Gaugefields_4D_accelerator;
-    nowing=false,
+    nowing=false, kwargs...
 )
     NX = u.NX
     NY = u.NY
@@ -132,14 +140,14 @@ function Initialize_WilsonFermion(
         NZ,
         NT,
         u.blockinfo.blocks;
-        accelerator=u.accelerator)
+        accelerator=u.accelerator, kwargs...)
 
     return x
 end
 
 function Base.similar(x::T) where {T<:WilsonFermion_4D_accelerator}
     return WilsonFermion_4D_accelerator(
-        x.NC, x.NX, x.NY, x.NZ, x.NT, x.blockinfo.blocks; accelerator=x.accelerator)
+        x.NC, x.NX, x.NY, x.NZ, x.NT, x.blockinfo.blocks; accelerator=x.accelerator, noshiftfield=x.nocopy)
 end
 
 
@@ -228,6 +236,7 @@ struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
     #parent::T
     shift::NTuple{4,Int8}
     NC::Int64
+    bc::NTuple{4,Int8}
 
     #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
     function Shifted_fermionfields_4D_accelerator(
@@ -236,9 +245,10 @@ struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
         boundarycondition=boundarycondition_default_accelerator,
     )
         NC = F.NC
-        
+        bc = Tuple(boundarycondition)
+
         shifted_fermion!(F, boundarycondition, shift)
-        return new{NC,typeof(F)}(F, shift, NC)
+        return new{NC,typeof(F)}(F, shift, NC, bc)
     end
 end
 
@@ -259,7 +269,13 @@ function shifted_fermion!(
             kernel_shifted_fermion!(b, r, x.f, x.fshifted, x.blockinfo, bc, shift, NC, NX, NY, NZ, NT)
         end
     end
+end
 
+function shifted_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    boundarycondition,
+    shift,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}
 
 end
 
@@ -409,6 +425,23 @@ function mul_1plusγ5x!(
 
 end
 
+function mul_1plusγ5x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1plusγ5x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
 function mul_1plusγ1x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     x::Shifted_fermionfields_4D_accelerator,
@@ -418,6 +451,23 @@ function mul_1plusγ1x!(
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
             kernel_mul_1plusγ1x!(b, r, y.f, x.parent.fshifted, NC)
+        end
+    end
+
+end
+
+function mul_1plusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1plusγ1x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
         end
     end
 
@@ -437,6 +487,24 @@ function mul_1plusγ2x!(
 
 end
 
+function mul_1plusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1plusγ2x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
+
 
 function mul_1plusγ3x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -446,6 +514,23 @@ function mul_1plusγ3x!(
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
             kernel_mul_1plusγ3x!(b, r, y.f, x.parent.fshifted, NC)
+        end
+    end
+
+end
+
+
+function mul_1plusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1plusγ3x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
         end
     end
 
@@ -465,6 +550,24 @@ function mul_1plusγ4x!(
 
 end
 
+function mul_1plusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1plusγ4x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
+
 
 
 function mul_1minusγ1x!(
@@ -476,6 +579,23 @@ function mul_1minusγ1x!(
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
             kernel_mul_1minusγ1x!(b, r, y.f, x.parent.fshifted, NC)
+        end
+    end
+
+end
+
+function mul_1minusγ1x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1minusγ1x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
         end
     end
 
@@ -495,6 +615,24 @@ function mul_1minusγ2x!(
 
 end
 
+function mul_1minusγ2x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1minusγ2x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
+
 
 function mul_1minusγ3x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -505,6 +643,23 @@ function mul_1minusγ3x!(
     for r = 1:y.blockinfo.rsize
         for b = 1:y.blockinfo.blocksize
             kernel_mul_1minusγ3x!(b, r, y.f, x.parent.fshifted, NC)
+        end
+    end
+
+end
+
+function mul_1minusγ3x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1minusγ3x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
         end
     end
 
@@ -523,6 +678,25 @@ function mul_1minusγ4x!(
     end
 
 end
+
+function mul_1minusγ4x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::Shifted_fermionfields_4D_accelerator,
+) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
+
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_1minusγ4x_shifted!(b, r, y.f, x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
 
 function LinearAlgebra.dot(
     A::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -562,9 +736,9 @@ function substitute_fermion!(
     for r = 1:blockinfo.rsize
         for b = 1:blockinfo.blocksize
             ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
-            for ig=1:NG
-                for ic=1:NC
-                    A[ic,ix, iy, iz, it,ig] = bcpu[ic, ig, b, r]
+            for ig = 1:NG
+                for ic = 1:NC
+                    A[ic, ix, iy, iz, it, ig] = bcpu[ic, ig, b, r]
                 end
             end
         end
@@ -582,9 +756,9 @@ function substitute_fermion!(
     for r = 1:blockinfo.rsize
         for b = 1:blockinfo.blocksize
             ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
-            for ig=1:NG
-                for ic=1:NC
-                    acpu[ic, ig, b, r] = B[ic,ix, iy, iz, it,ig] 
+            for ig = 1:NG
+                for ic = 1:NC
+                    acpu[ic, ig, b, r] = B[ic, ix, iy, iz, it, ig]
                 end
             end
         end

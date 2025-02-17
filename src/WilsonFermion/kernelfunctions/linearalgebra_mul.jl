@@ -186,6 +186,25 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_accelerator{3,TF,NG,TUv,TFshifted},
+    A::T,
+    x::T3,
+) where {T<:Gaugefields_4D_accelerator,T3<:Shifted_fermionfields_4D_accelerator,TF,NG,TUv,TFshifted<:Nothing}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_yAx_NC3_shifted!(b, r, y.f, A.U, x.parent.f, x.shift, x.parent.blockinfo, x.bc, NX, NY, NZ, NT)
+        end
+    end
+
+end
+
+function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},
     A::T,
     x::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -275,6 +294,24 @@ function LinearAlgebra.mul!(
         end
     end
 end
+
+function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_accelerator{3,TF,NG,TUv,TFshifted},
+    x::Adjoint_fermionfields{Ts},
+    A::Adjoint_Gaugefields{T},
+) where {T<:Gaugefields_4D_accelerator,TF,NG,Ts<:Shifted_fermionfields_4D_accelerator,TUv,TFshifted<:Nothing}
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+
+    for r = 1:y.blockinfo.rsize
+        for b = 1:y.blockinfo.blocksize
+            kernel_mul_yxdagAdagshifted_NC3!(b, r, y.f, x.parent.parent.f, A.parent.U, NG, x.parent.shift, x.parent.parent.blockinfo, x.parent.bc, NX, NY, NZ, NT)
+        end
+    end
+end
+
 
 
 function LinearAlgebra.mul!(
