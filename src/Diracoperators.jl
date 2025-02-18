@@ -1,5 +1,7 @@
 module Dirac_operators
 
+import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
+
 import Gaugefields:
     AbstractGaugefields,
     Abstractfields,
@@ -46,8 +48,11 @@ function Base.size(D::Operator)
 end
 
 function Base.size(D::Dirac_operator)
-    x = get_temporaryvectors_forCG(D)[1]
+    temps = get_temporaryvectors_forCG(D)
+    x, it_x = get_temp(temps)
+    #x = get_temporaryvectors_forCG(D)[1]
     NN = length(x)
+    unused!(temps, it_x)
     return (NN, NN)
 end
 
@@ -384,8 +389,11 @@ end
 function construct_sparsematrix(D::Operator) # D_ij = e_i D e_j
     NN, _ = size(D)
     mat_D = spzeros(ComplexF64, NN, NN)
-    temp1 = get_temporaryvectors_forCG(D)[1]
-    temp2 = get_temporaryvectors_forCG(D)[2]
+    temps = get_temporaryvectors_forCG(D)
+    temp1, it_temp1 = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
+    #temp1 = get_temporaryvectors_forCG(D)[1]
+    #temp2 = get_temporaryvectors_forCG(D)[2]
 
     for j = 1:NN
         clear_fermion!(temp1)
@@ -396,6 +404,8 @@ function construct_sparsematrix(D::Operator) # D_ij = e_i D e_j
             mat_D[i, j] = temp2[i]
         end
     end
+    unused!(temps, it_temp1)
+    unused!(temps, it_temp2)
     return mat_D
 end
 
