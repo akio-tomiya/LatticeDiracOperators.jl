@@ -644,9 +644,6 @@ function cg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     p = deepcopy(res)
     =#
 
-    if any(isnan, x.f)
-        error("NaN detected in array x!")
-    end
 
     res, it_res = get_temp(temps)
     #res = temps[1]

@@ -9,14 +9,14 @@ struct D5DW_Domainwall_operator{Dim,T,fermion,wilsonfermion} <:
         Wilson_Dirac_operator_faster{Dim,T,wilsonfermion},
     }
     mass::Float64
-    _temporary_fermi::Array{fermion,1}
+    _temporary_fermi::Temporalfields{fermion}# Array{fermion,1}
     L5::Int64
     eps_CG::Float64
     MaxCGstep::Int64
     verbose_level::Int8
     method_CG::String
     verbose_print::Verbose_print
-    _temporary_fermion_forCG::Vector{fermion}
+    _temporary_fermion_forCG::Temporalfields{fermion}# Vector{fermion}
     boundarycondition::Vector{Int8}
 
 end
@@ -69,16 +69,19 @@ function D5DW_Domainwall_operator(
 
     xtype = typeof(x)
     num = 2
-    _temporary_fermi = Array{xtype,1}(undef, num)
-    for i = 1:num
-        _temporary_fermi[i] = similar(x)
-    end
+    _temporary_fermi = Temporalfields(x; num)
+    #num = 2
+    #_temporary_fermi = Array{xtype,1}(undef, num)
+    #for i = 1:num
+    #    _temporary_fermi[i] = similar(x)
+    #end
 
     numcg = 7
-    _temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
-    for i = 1:numcg
-        _temporary_fermion_forCG[i] = similar(x)
-    end
+    _temporary_fermion_forCG = Temporalfields(x; num=numcg)
+    #_temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
+    #for i = 1:numcg
+    #    _temporary_fermion_forCG[i] = similar(x)
+    #end
 
 
     eps_CG = check_parameters(parameters, "eps_CG", default_eps_CG)
@@ -87,7 +90,7 @@ function D5DW_Domainwall_operator(
 
     verbose_level = check_parameters(parameters, "verbose_level", 2)
     #verbose_print = Verbose_print(verbose_level)
-    verbose_print = Verbose_print(verbose_level,myid=get_myrank(x))
+    verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
     #println("xtype ",xtype)
@@ -197,9 +200,9 @@ function Domainwall_Dirac_operator(
     )
 end
 
-function get_temporaryvectors(A::T,ith) where {T<:Domainwall_Dirac_operator}
-    n = length(A.D5DW._temporary_fermi) 
-    i  =ifelse(n < ith,n,ith)
+function get_temporaryvectors(A::T, ith) where {T<:Domainwall_Dirac_operator}
+    n = length(A.D5DW._temporary_fermi)
+    i = ifelse(n < ith, n, ith)
     return A.D5DW._temporary_fermi[i]
 end
 
@@ -350,10 +353,13 @@ function LinearAlgebra.mul!(
     T2<:D5DWdagD5DW_Wilson_operator,
     T3<:AbstractFermionfields,
 }
-    temp = A.dirac._temporary_fermi[1]
+    temps = A.dirac._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    #temp = A.dirac._temporary_fermi[1]
     mul!(temp, A.dirac, x)
     mul!(y, A.dirac', temp)
 
+    unused!(temps, it_temp)
     return
 end
 
@@ -398,17 +404,21 @@ function LinearAlgebra.mul!(
         = [D5DW(m=1)^+]^(-1) D5DW(m)^+
     y = A^+*x = [D5DW(m=1)^+]^(-1) D5DW(m)^+*x
     =#
-    mul!(A.parent.D5DW_PV._temporary_fermi[1], A.parent.D5DW', x)
+    temps = A.parent.D5DW_PV._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+    #mul!(A.parent.D5DW_PV._temporary_fermi[1], A.parent.D5DW', x)
+    mul!(temp1, A.parent.D5DW', x)
     bicg(
         y,
         A.parent.D5DW_PV',
-        A.parent.D5DW_PV._temporary_fermi[1],
-        eps = A.parent.eps_CG,
-        maxsteps = A.parent.MaxCGstep,
-        verbose = A.parent.verbose_print,
+        temp1,#A.parent.D5DW_PV._temporary_fermi[1],
+        eps=A.parent.eps_CG,
+        maxsteps=A.parent.MaxCGstep,
+        verbose=A.parent.verbose_print,
     )
     #maxsteps = 10000)
     #verbose = Verbose_3()) 
+    unused!(temps, it_temp1)
 
     return
 end
@@ -421,22 +431,25 @@ function LinearAlgebra.mul!(
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #y = A*x = D5DW(m)*D5DW(m=1))^(-1)*x
     #println("x ",x.w[1][1,1,1,1])
+    #temp = A.D5DW_PV._temporary_fermi
+    temps = A.D5DW_PV._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
     bicg(
-        A.D5DW_PV._temporary_fermi[1],
+        temp1,#A.D5DW_PV._temporary_fermi[1],
         A.D5DW_PV,
         x,
-        eps = A.eps_CG,
-        maxsteps = A.MaxCGstep,
-        verbose = A.verbose_print,
+        eps=A.eps_CG,
+        maxsteps=A.MaxCGstep,
+        verbose=A.verbose_print,
     )
-    mul!(y, A.D5DW, A.D5DW_PV._temporary_fermi[1])
+    mul!(y, A.D5DW, temp1)#A.D5DW_PV._temporary_fermi[1])
     #println("y ",y.w[1][1,1,1,1])
 
     #bicg(A.D5DW._temporary_fermi[1],A.D5DW,y,
     #eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = A.verbose_print)
     #mul!(A.D5DW._temporary_fermi[2],A.D5DW_PV,A.D5DW._temporary_fermi[1])
     #println("tmp2 ",A.D5DW._temporary_fermi[2].w[1][1,1,1,1])
-
+    unused!(temps, it_temp1)
 
     #error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
     #D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporary_fermi) 
@@ -452,18 +465,18 @@ include("./DomainwallFermion_3d_wing.jl")
 function Initialize_DomainwallFermion(
     u::AbstractGaugefields{NC,Dim},
     L5;
-    nowing = false,
+    nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_DomainwallFermion(L5, NC, NN..., nowing = nowing)
+    return Initialize_DomainwallFermion(L5, NC, NN..., nowing=nowing)
 end
 
 
-function Initialize_DomainwallFermion(L5, NC, NN...; nowing = false)
+function Initialize_DomainwallFermion(L5, NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
         if nowing
-            fermion = DomainwallFermion_5D(L5, NC, NN..., nowing = nowing)
+            fermion = DomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
         else
             fermion = DomainwallFermion_5D_wing(L5, NC, NN...)
         end
@@ -483,27 +496,30 @@ function bicg(
     x,
     A::Domainwall_Dirac_operator,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #A^-1 = D5DW(m=1)*DsDW(m)^-1
     #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
     #println("b ",b.w[1][1,1,1,1])
+    temps = A.D5DW._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
     bicg(
-        A.D5DW._temporary_fermi[1],
+        temp1,#A.D5DW._temporary_fermi[1],
         A.D5DW,
         b;
-        eps = eps,
-        maxsteps = maxsteps,
-        verbose = verbose,
+        eps=eps,
+        maxsteps=maxsteps,
+        verbose=verbose,
     )
 
     #mul!(x,A.D5DW,A.D5DW._temporary_fermi[1])
     #println("x ",x.w[1][1,1,1,1])
 
-    mul!(x, A.D5DW_PV, A.D5DW._temporary_fermi[1])
+    mul!(x, A.D5DW_PV, temp1)#A.D5DW._temporary_fermi[1])
+    unused!(temps, it_temp1)
 end
 
 
@@ -512,23 +528,27 @@ function bicg(
     x,
     A::Adjoint_Domainwall_operator,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1)^(-1)
     #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
     #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+
     #x = A'^-1*b =D5DW(m)^+^-1 D5DW(m=1)^+*b
-    mul!(A.parent.D5DW._temporary_fermi[1], A.parent.D5DW_PV', b)
+    temps = A.parent.D5DW._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+    #mul!(A.parent.D5DW._temporary_fermi[1], A.parent.D5DW_PV', b)
+    mul!(temp1, A.parent.D5DW_PV', b)
     bicg(
         x,
         A.parent.D5DW',
-        A.parent.D5DW._temporary_fermi[1];
-        eps = eps,
-        maxsteps = maxsteps,
-        verbose = verbose,
+        temp1,#A.parent.D5DW._temporary_fermi[1];
+        eps=eps,
+        maxsteps=maxsteps,
+        verbose=verbose,
     )
+    unused!(temps, it_temp1)
 
 end
 
@@ -536,23 +556,26 @@ function bicgstab(
     x,
     A::Domainwall_Dirac_operator,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1))^(-1)
     #A^-1 = D5DW(m=1)*DsDW(m)^-1
     #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
+    temps = A.D5DW._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
 
     bicgstab(
-        A.D5DW._temporary_fermi[1],
+        temp1,##A.D5DW._temporary_fermi[1],
         A.D5DW,
         b;
-        eps = eps,
-        maxsteps = maxsteps,
-        verbose = verbose,
+        eps=eps,
+        maxsteps=maxsteps,
+        verbose=verbose,
     )
-    mul!(x, A.D5DW_PV, A.D5DW._temporary_fermi[1])
+    mul!(x, A.D5DW_PV, temp1)#A.D5DW._temporary_fermi[1])
+    unused!(temps, it_temp1)
 end
 
 
@@ -561,23 +584,26 @@ function bicgstab(
     x,
     A::Adjoint_Domainwall_operator,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 ) #A*x = b -> x = A^-1*b
     #A = D5DW(m)*D5DW(m=1)^(-1)
     #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
     #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+
     #x = A'^-1*b =D5DW(m)^+^-1 D5DW(m=1)^+*b
-    mul!(A.parent.D5DW._temporary_fermi[1], A.parent.D5DW_PV', b)
+    temps = A.parent.D5DW._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+    mul!(temp1, A.parent.D5DW_PV', b)
     bicgstab(
         x,
         A.parent.D5DW',
-        A.parent.D5DW._temporary_fermi[1];
-        eps = eps,
-        maxsteps = maxsteps,
-        verbose = verbose,
+        temp1,#A.parent.D5DW._temporary_fermi[1];
+        eps=eps,
+        maxsteps=maxsteps,
+        verbose=verbose,
     )
+    unused!(temps, it_temp1)
 
 end
 
@@ -587,13 +613,19 @@ function LinearAlgebra.mul!(
     x::AbstractFermionfields{NC,Dim},
 ) where {T<:DdagD_Domainwall_operator,NC,Dim} #y = A*x
     #temp = get_temporaryvectors(A.dirac,5)
+    temps = A.dirac.D5DW._temporary_fermi
+    temp2, it_temp2 = get_temp(temps)
 
-    solve_DinvX!(A.dirac.D5DW._temporary_fermi[2],A.dirac.D5DW_PV,x)
+    #solve_DinvX!(A.dirac.D5DW._temporary_fermi[2], A.dirac.D5DW_PV, x)
+    solve_DinvX!(temp2, A.dirac.D5DW_PV, x)
     DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
-    mul!(A.dirac.D5DW._temporary_fermi[2], DdagD , A.dirac.D5DW._temporary_fermi[2]) 
-    solve_DinvX!(y,A.dirac.D5DW_PV',A.dirac.D5DW._temporary_fermi[2])
+    #mul!(A.dirac.D5DW._temporary_fermi[2], DdagD, A.dirac.D5DW._temporary_fermi[2])
+    mul!(temp2, DdagD, temp2)
+    #solve_DinvX!(y, A.dirac.D5DW_PV', A.dirac.D5DW._temporary_fermi[2])
+    solve_DinvX!(y, A.dirac.D5DW_PV', temp2)
 
-        #=
+    unused!(temps, it_temp2)
+    #=
     solve_DinvX!(A.dirac.D5DW._temporary_fermi[1],A.dirac.D5DW_PV,x)
     DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
     mul!(A.dirac.D5DW_PV._temporary_fermi[2], DdagD , A.dirac.D5DW_PV._temporary_fermi[1]) 
@@ -606,9 +638,9 @@ function cg(
     x,
     A::DdagD_Domainwall_operator,
     b;
-    eps = 1e-10,
-    maxsteps = 1000,
-    verbose = Verbose_print(2),
+    eps=1e-10,
+    maxsteps=1000,
+    verbose=Verbose_print(2),
 )
     #=
     A^-1 = ( (D5DW(m)*D5DW(m=1))^(-1))^+ D5DW(m)*D5DW(m=1))^(-1) )^-1
@@ -616,24 +648,33 @@ function cg(
       = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1) )^-1 D5DW(m=1)^+
     x = A^-1*b = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
     =#
-    mul!(A.dirac.D5DW_PV._temporary_fermi[1], A.dirac.D5DW_PV', b) #D5DW(m=1)^+*b
 
-    temp = A.dirac.D5DW_PV._temporary_fermi[1]
+    temps = A.dirac.D5DW_PV._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+
+
+    mul!(temp1, A.dirac.D5DW_PV', b) #D5DW(m=1)^+*b
+    temp = temp1#A.dirac.D5DW_PV._temporary_fermi[1]
     DdagD = D5DWdagD5DW_Wilson_operator(A.dirac.D5DW)
     #println("d5d tm ",temp[1,1,1,1,1,1,1])
+
+    temps2 = A.dirac.D5DW._temporary_fermi
+    temp2, it_temp2 = get_temp(temps2)
     cg(
-        A.dirac.D5DW._temporary_fermi[2],
+        temp2,#A.dirac.D5DW._temporary_fermi[2],
         DdagD,#A.DdagD,
         temp;
-        eps = eps,
-        maxsteps = maxsteps,
-        verbose = verbose,
+        eps=eps,
+        maxsteps=maxsteps,
+        verbose=verbose,
     ) #(  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
 
+    unused!(temps, it_temp1)
+    unused!(temps2, it_temp2)
     #mul!(A.dirac.D5DW_PV._temporary_fermi[1], DdagD, A.dirac.D5DW._temporary_fermi[2])
     #println("d5d ",A.dirac.D5DW_PV._temporary_fermi[1][1,1,1,1,1,1,1])
     #error("d")
-    
+
     mul!(x, A.dirac.D5DW_PV, A.dirac.D5DW._temporary_fermi[2])
     return
 
