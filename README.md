@@ -698,7 +698,8 @@ function test1()
     nn = CovNeuralnet(U)
     ρ = [0.1]
     layername = ["plaquette"]
-    st = STOUT_Layer(layername,ρ,L)
+    #st = STOUT_Layer(layername,ρ,L)
+    st = STOUT_Layer(layername, ρ, U)
     push!(nn,st)
     #push!(nn,st)
 
