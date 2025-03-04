@@ -52,7 +52,7 @@ function Staggered_Dirac_operator(
     #    _temporary_fermi[i] = similar(x)
     #end
 
-    numcg = 8
+    numcg = 8 * 4
     _temporary_fermion_forCG = Temporalfields(x; num=numcg)
     #_temporary_fermion_forCG = Array{xtype,1}(undef, numcg)
     #for i = 1:numcg

@@ -78,9 +78,9 @@ function get_temporaryvectors_forCG(A::T) where {T<:Dirac_operator}
     return A._temporary_fermion_forCG
 end
 
-function get_temporaryvectors(A::T, ith) where {T<:Dirac_operator}
-    return A._temporary_fermion[ith]
-end
+#function get_temporaryvectors(A::T, ith) where {T<:Dirac_operator}
+#    return A._temporary_fermion[ith]
+#end
 
 function get_temporaryvectors_forCG(A::T) where {T<:Adjoint_Dirac_operator}
     return A.parent._temporary_fermion_forCG

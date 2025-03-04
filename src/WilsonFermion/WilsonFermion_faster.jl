@@ -137,7 +137,7 @@ function Wilson_Dirac_operator_faster(
 
     factor = check_parameters(parameters, "factor", 1)#1/2κ)
 
-    numcg = check_parameters(parameters, "numtempvec_CG", 10)
+    numcg = check_parameters(parameters, "numtempvec_CG", 12)
     #numcg = 7
     _temporary_fermion_forCG = Temporalfields(x; num=numcg)#Array{xtype,1}(undef, numcg)
     #for i = 1:numcg

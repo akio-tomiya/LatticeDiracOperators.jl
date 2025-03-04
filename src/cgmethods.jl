@@ -63,6 +63,11 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
 
     rnorm = real(res ⋅ res)
     if rnorm < eps
+        unused!(temps, it_res)
+        unused!(temps, it_temp1)
+        unused!(temps, it_p)
+        unused!(temps, it_q)
+        unused!(temps, it_s)
         return
     end
     #println(rnorm)
@@ -632,6 +637,7 @@ end
 function cg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     temps = get_temporaryvectors_forCG(A)
 
+
     println_verbose_level3(verbose, "--------------------------------------")
     println_verbose_level3(verbose, "cg method")
 
@@ -668,6 +674,10 @@ function cg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     #println(rnorm)
 
     if rnorm < eps
+        unused!(temps, it_res)
+        unused!(temps, it_temp1)
+        unused!(temps, it_q)
+        unused!(temps, it_p)
         return
     end
 
