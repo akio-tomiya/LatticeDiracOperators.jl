@@ -4,6 +4,13 @@ using Test
 using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
+    @testset "Domainwall" begin
+        println("Domainwall")
+        include("domainwalltest.jl")
+        @test true
+    end
+
+
     @testset "Staggered HMC" begin
         println("Staggered HMC")
         include("hmc.jl")
