@@ -92,6 +92,37 @@ struct DomainwallFermion_5D_mpi{NC,WilsonFermion} <:
 
 end
 
+@inline function setvalue!(
+    x::DomainwallFermion_5D_mpi{NC,WilsonFermion},
+    v,
+    i1,
+    i2,
+    i3,
+    i4,
+    i5,
+    i6,
+    i7,
+) where {NC,WilsonFermion}
+    @inbounds setvalue!(x.w[i7],v,i1,
+    i2,
+    i3,
+    i4,
+    i5,
+    i6)
+end
+
+@inline function getvalue(
+    x::DomainwallFermion_5D_mpi{NC,WilsonFermion},
+    i1,
+    i2,
+    i3,
+    i4,
+    i5,
+    i6,
+    i7
+) where {NC,WilsonFermion}
+    @inbounds return getvalue(x.w[i7],i1,i2,i3,i4,i5,i6)
+end
 
 
 

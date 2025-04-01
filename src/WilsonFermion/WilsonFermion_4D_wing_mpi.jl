@@ -1028,7 +1028,7 @@ function add_fermion!(
     α::Number,
     a::T1,
     iseven::Bool,
-) where {NC,NDW,T1<:Abstractfermion,T2<:Abstractfermion}#c += alpha*a + beta*b
+) where {NC,NDW,T1<:Abstractfermion}#c += alpha*a + beta*b
 
 
     NT = c.NT
