@@ -103,11 +103,13 @@ function get_myrank_xyzt(myrank, PEs)
     return myrank_x, myrank_y, myrank_z, myrank_t
 end
 
+#=
 function get_myrank(myrank_xyzt, PEs)
     @inbounds return (
         ((myrank_xyzt[4]) * PEs[3] + myrank_xyzt[3]) * PEs[2] + myrank_xyzt[2]
     ) * PEs[1] + myrank_xyzt[1]
 end
+=#
 
 function Base.setindex!(
     x::WilsonFermion_4D_mpi{NC,NDW},
@@ -1735,7 +1737,7 @@ function apply_γ5!(x::WilsonFermion_4D_mpi{NC}) where {NC}
 
 end
 
-function apply_σ!(x::WilsonFermion_4D_mpi{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_mpi{NC};factor=1) where {NC,μ,ν}
+function apply_σ!(x::WilsonFermion_4D_mpi{NC}, σ::σμν{μ,ν}, b::WilsonFermion_4D_mpi{NC}; factor=1) where {NC,μ,ν}
     n1, n6, n2, n3, n4, n5 = size(a.f)
     @inbounds for i5 = 1:n5
         #it = i5+NDW
@@ -1749,8 +1751,8 @@ function apply_σ!(x::WilsonFermion_4D_mpi{NC},σ::σμν{μ,ν},b::WilsonFermio
                         value = σ.σ[i6]
                         iβ = σ.indices[i6]
                         @simd for i1 = 1:NC
-                            x.f[i1, i6, i2, i3, i4, i5] += factor*value*b.f[i1, iβ, i2, i3, i4, i5] 
-                                #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
+                            x.f[i1, i6, i2, i3, i4, i5] += factor * value * b.f[i1, iβ, i2, i3, i4, i5]
+                            #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
                         end
                     end
                 end

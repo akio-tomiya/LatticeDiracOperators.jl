@@ -173,7 +173,7 @@ function Initialize_pseudofermion_fields(
     u::AbstractGaugefields{NC,Dim},
     Dirac_operator::String;
     L5=2,
-    nowing=false, kwargs...
+    nowing=true, kwargs...
 ) where {NC,Dim}
     mpi = u.mpi
     if mpi
@@ -220,7 +220,7 @@ function Initialize_pseudofermion_fields(
                     )
                 end
             elseif Dirac_operator == "MobiusDomainwall"
-                @warn "MobiusDomainwall fermion is not well tested!!"
+                #@warn "MobiusDomainwall fermion is not well tested!!"
                 if nowing
                     x = MobiusDomainwallFermion_5D_mpi(
                         L5,
@@ -261,7 +261,7 @@ function Initialize_pseudofermion_fields(
                 #@warn "Domainwall fermion is not well tested!!"
                 x = Initialize_DomainwallFermion(u, L5, nowing=nowing)
             elseif Dirac_operator == "MobiusDomainwall"
-                @warn "MobiusDomainwall fermion is not well tested!!"
+                #@warn "MobiusDomainwall fermion is not well tested!!"
                 x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
