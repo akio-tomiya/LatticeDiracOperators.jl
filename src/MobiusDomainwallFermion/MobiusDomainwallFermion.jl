@@ -603,7 +603,8 @@ function bicgstab(
     temp, it_temp = get_temp(temps)
 
     bicgstab(
-        A.D5DW._temporary_fermi[1],
+        temp,
+        #A.D5DW._temporary_fermi[1],
         A.D5DW,
         b;
         eps=eps,
@@ -664,19 +665,20 @@ function cg(
       = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1) )^-1 D5DW(m=1)^+
     x = A^-1*b = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
     =#
-    temps = A.parent.D5DW._temporary_fermi
+    temps = A.dirac.D5DW_PV._temporary_fermi
     temp, it_temp = get_temp(temps)
     #mul!(A.dirac.D5DW_PV._temporary_fermi[1], A.dirac.D5DW_PV', b) #D5DW(m=1)^+*b
     mul!(temp, A.dirac.D5DW_PV', b) #D5DW(m=1)^+*b
 
 
     #temp = A.dirac.D5DW_PV._temporary_fermi[1]
-    temp2, it_temp2 = get_temp(temps)
+    temps2 = A.dirac.D5DW._temporary_fermi
+    temp2, it_temp2 = get_temp(temps2)
     cg(
-        temp,
+        temp2,
         #A.dirac.D5DW._temporary_fermi[1],
         A.DdagD,
-        temp2;
+        temp;
         #temp;
         eps=eps,
         maxsteps=maxsteps,
