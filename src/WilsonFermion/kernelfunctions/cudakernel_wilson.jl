@@ -102,7 +102,7 @@ function cudakernel_mul_uxydag_NC!(u, x, y, NC, NG)
     kernel_mul_uxydag_NC!(b, r, u, x, y, NC, NG)
 end
 
-function cudakernel_mul_uxydag_NC!(u, x, y)
+function cudakernel_mul_uxydag_NC3NG4!(u, x, y)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
     kernel_mul_uxydag_NC3NG4!(b, r, u, x, y)
