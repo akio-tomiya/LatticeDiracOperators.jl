@@ -25,7 +25,7 @@ end
 function cudakernel_mul_yUx_NC3!(y, A, x, NG)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
-    cudakernel_mul_yUx_NC3!(b, r, y, A, x, NG)
+    kernel_mul_yUx_NC3!(b, r, y, A, x, NG)
 end
 
 function cudakernel_axpby!(α, X, β, Y, NC)
@@ -52,10 +52,10 @@ function cudakernel_mul_Ax_NC3NG4!(xout, A, x)
     kernel_mul_Ax_NC3NG4!(b, r, xout, A, x)
 end
 
-function cudakernel_mul_xA_NC3NG4!(xout, x,A)
+function cudakernel_mul_xA_NC3NG4!(xout, x, A)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
-    kernel_mul_xA_NC3!(b, r, xout, x,A)
+    kernel_mul_xA_NC3!(b, r, xout, x, A)
 end
 
 
