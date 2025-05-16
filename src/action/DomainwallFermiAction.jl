@@ -7,8 +7,11 @@ struct DomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
     hascovnet::Bool
     covneuralnet::Union{Nothing,CovNeuralnet{Dim}}
     diracoperator::Dirac
-    _temporary_fermionfields::Vector{fermion}
-    _temporary_gaugefields::Vector{gauge}
+    #_temporary_fermionfields::Vector{fermion}
+    #_temporary_gaugefields::Vector{gauge}
+    _temporary_fermionfields::Temporalfields{fermion}#Vector{fermion}
+    _temporary_gaugefields::Temporalfields{gauge}#Vector{gauge}
+
 
     function DomainwallFermiAction(
         D::Dirac_operator{Dim},
@@ -19,18 +22,20 @@ struct DomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
         temps = get_temporaryvectors(D)
         x = temps[1]
         xtype = typeof(x)
-        _temporary_fermionfields = Array{xtype,1}(undef, num)
-        for i = 1:num
-            _temporary_fermionfields[i] = similar(x)
-        end
+        _temporary_fermionfields = Temporalfields(x; num)
+        #_temporary_fermionfields = Array{xtype,1}(undef, num)
+        #for i = 1:num
+        #    _temporary_fermionfields[i] = similar(x)
+        #end
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)
         numU = 2
-        _temporary_gaugefields = Array{Utype,1}(undef, numU)
-        for i = 1:numU
-            _temporary_gaugefields[i] = similar(Utemp)
-        end
+        _temporary_gaugefields = Temporalfields(Utemp; num=numU)
+        #_temporary_gaugefields = Array{Utype,1}(undef, numU)
+        #for i = 1:numU
+        #    _temporary_gaugefields[i] = similar(Utemp)
+        #end
 
 
         return new{Dim,typeof(D),xtype,Utype}(
@@ -50,9 +55,12 @@ function evaluate_FermiAction(
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
-    η = fermi_action._temporary_fermionfields[1]
+    #η = fermi_action._temporary_fermionfields[1]
+    temps = fermi_action._temporary_fermionfields
+    η, it_η = get_temp(temps)
     solve_DinvX!(η, W', ϕ)
     Sf = dot(η, η)
+    unused!(temps, it_η)
     return real(Sf)
 end
 
@@ -67,10 +75,15 @@ function calc_UdSfdU!(
     Q = D5DWdagD5DW_Wilson_operator(QD5DW)
     D5_PV = fermi_action.diracoperator.D5DW_PV(U)
 
-    temps_dw = fermi_action._temporary_fermionfields[1]
+    #temps_dw = fermi_action._temporary_fermionfields[1]
+    temps = fermi_action._temporary_fermionfields
+    temps_dw, it_temps_dw = get_temp(temps)#fermi_action._temporary_fermionfields[1]
 
-    X = fermi_action._temporary_fermionfields[6]
-    Y = fermi_action._temporary_fermionfields[5]
+    X, it_X = get_temp(temps)
+    Y, it_Y = get_temp(temps)
+
+    #X = fermi_action._temporary_fermionfields[6]
+    #Y = fermi_action._temporary_fermionfields[5]
 
 
     mul!(temps_dw, D5_PV', ϕ)
@@ -85,6 +98,10 @@ function calc_UdSfdU!(
 
     #println("----aa--")
     set_wing_U!(UdSfdU)
+
+    unused!(temps, it_temps_dw)
+    unused!(temps, it_X)
+    unused!(temps, it_Y)
 end
 
 function calc_UdSfdU_fromX!(
@@ -94,16 +111,24 @@ function calc_UdSfdU_fromX!(
     fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge},
     U,
     X;
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator.D5DW(U)
-    temps_dw = fermi_action._temporary_fermionfields[2]
+    temps = fermi_action._temporary_fermionfields
+    temps_dw, it_temps_dw = get_temp(temps)#fermi_action._temporary_fermionfields[2]
+
+    #temps_dw = fermi_action._temporary_fermionfields[2]
     mul!(temps_dw, W, X)
     clear_fermion!(Y)
     add_fermion!(Y, -1, ϕ, 1, temps_dw)
     set_wing_fermion!(Y)
 
-    temp0_g = fermi_action._temporary_gaugefields[1]
+    unused!(temps, it_temps_dw)
+
+    #temp0_g = fermi_action._temporary_gaugefields[1]
+    temps_g = fermi_action._temporary_gaugefields
+    temp0_g, it_temp0_g = get_temp(temps_g)# = fermi_action._temporary_gaugefields[1]
+
 
     κ = 1 / 2
     Dwilson = W.wilsonoperator
@@ -131,14 +156,19 @@ function calc_UdSfdU_fromX!(
         irange = 1:L5
     end
 
+    temp0_f5, it_temp0_f5 = get_temp(temps)
+    temp1_f5, it_temp1_f5 = get_temp(temps)
+
 
 
 
     #    for i5=1:X.L5
     for i5 in irange
 
-        temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
-        temp1_f = fermi_action._temporary_fermionfields[2].w[i5] #F_field
+        temp0_f = temp0_f5.w[i5]
+        temp1_f = temp1_f5.w[i5]
+        #temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
+        #temp1_f = fermi_action._temporary_fermionfields[2].w[i5] #F_field
 
         for μ = 1:Dim
             #!  Construct U(x,mu)*P1
@@ -193,6 +223,10 @@ function calc_UdSfdU_fromX!(
 
     end
 
+    unused!(temps, it_temp0_f5)
+    unused!(temps, it_temp1_f5)
+    unused!(temps_g, it_temp0_g)
+
 
 end
 
@@ -203,18 +237,21 @@ function calc_p_UdSfdU!(
     fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge}
     #println("------dd")
     QD5DW = fermi_action.diracoperator.D5DW(U)
     Q = D5DWdagD5DW_Wilson_operator(QD5DW)
     D5_PV = fermi_action.diracoperator.D5DW_PV(U)
 
-    temps_dw = fermi_action._temporary_fermionfields[1]
+    #temps_dw = fermi_action._temporary_fermionfields[1]
+    temps = fermi_action._temporary_fermionfields
+    temps_dw, it_temps_dw = get_temp(temps)
 
-    X = fermi_action._temporary_fermionfields[end]
-    Y = fermi_action._temporary_fermionfields[end-1]
-
+    #X = fermi_action._temporary_fermionfields[end]
+    #Y = fermi_action._temporary_fermionfields[end-1]
+    X, it_X = get_temp(temps)
+    Y, it_Y = get_temp(temps)
 
     mul!(temps_dw, D5_PV', ϕ)
 
@@ -223,9 +260,12 @@ function calc_p_UdSfdU!(
 
     #set_wing_fermion!(ϕ)
 
-    calc_p_UdSfdU_fromX!(p, Y, ϕ, fermi_action, U, X, coeff = coeff)
+    calc_p_UdSfdU_fromX!(p, Y, ϕ, fermi_action, U, X, coeff=coeff)
     #println("----aa--")
     #set_wing_U!(UdSfdU)
+    unused!(temps, it_temps_dw)
+    unused!(temps, it_X)
+    unused!(temps, it_Y)
 end
 
 function calc_p_UdSfdU_fromX!(
@@ -235,25 +275,35 @@ function calc_p_UdSfdU_fromX!(
     fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge},
     U,
     X;
-    coeff = 1,
+    coeff=1,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator.D5DW(U)
-    temps_dw = fermi_action._temporary_fermionfields[1]
+    #temps_dw = fermi_action._temporary_fermionfields[1]
+    temps = fermi_action._temporary_fermionfields
+    temps_dw, it_temps_dw = get_temp(temps)#fermi_action._temporary_fermionfields[1]
+
     mul!(temps_dw, W, X)
     clear_fermion!(Y)
     add_fermion!(Y, -1, ϕ, 1, temps_dw)
     set_wing_fermion!(Y)
 
+    unused!(temps, it_temps_dw)
 
-
-    temp0_g = fermi_action._temporary_gaugefields[1]
+    temps_g = fermi_action._temporary_gaugefields
+    #temp0_g = fermi_action._temporary_gaugefields[1]
+    temp0_g, it_temp0_g = get_temp(temps_g)
+    temp0_f5, it_temp0_f5 = get_temp(temps)
+    temp1_f5, it_temp1_f5 = get_temp(temps)
+    #temp0_g = fermi_action._temporary_gaugefields[1]
 
     κ = 1 / 2
     Dwilson = W.wilsonoperator
     for i5 = 1:X.L5
 
-        temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
-        temp1_f = fermi_action._temporary_fermionfields[2].w[i5] #F_field
+        #temp0_f = fermi_action._temporary_fermionfields[1].w[i5] #F_field
+        #temp1_f = fermi_action._temporary_fermionfields[2].w[i5] #F_field
+        temp0_f = temp0_f5.w[i5]
+        temp1_f = temp1_f5.w[i5]
 
         for μ = 1:Dim
             #!  Construct U(x,mu)*P1
@@ -300,6 +350,10 @@ function calc_p_UdSfdU_fromX!(
             Traceless_antihermitian_add!(p[μ], coeff, temp0_g)
         end
     end
+
+    unused!(temps, it_temp0_f5)
+    unused!(temps, it_temp1_f5)
+    unused!(temps_g, it_temp0_g)
 
 
 
