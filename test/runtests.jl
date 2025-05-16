@@ -9,6 +9,12 @@ using LinearAlgebra
         include("domainwalltest.jl")
         @test true
     end
+    #@testset "MobiusDomainwall" begin
+    #    println("MobiusDomainwall")
+    #    include("hmcmobiusdomain.jl")
+    #    @test true
+    #end
+
 
 
     @testset "Staggered HMC" begin
