@@ -17,6 +17,7 @@ struct MobiusDomainwallFermion_5D{NC,WilsonFermion} <:
     Dirac_operator::String
     NWilson::Int64
     nowing::Bool
+    
 
     function MobiusDomainwallFermion_5D(
         L5,
@@ -44,13 +45,71 @@ struct MobiusDomainwallFermion_5D{NC,WilsonFermion} <:
         return new{NC,xtype}(w, NC, NX, NY, NZ, NT, L5, Dirac_operator, NWilson, nowing)
     end
 
+    function MobiusDomainwallFermion_5D(
+        u::AbstractGaugefields{NC,4},
+        L5::T,
+        ;nowing=false, kwargs...
+    ) where {T<:Integer,NC}
+
+        x = Initialize_WilsonFermion(u;nowing,kwargs...)
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+        #if nowing
+        #    x = WilsonFermion_4D_nowing(NC, NX, NY, NZ, NT)
+        #else
+        #    x = WilsonFermion_4D_wing(NC, NX, NY, NZ, NT)
+        #end
+        xtype = typeof(x)
+        w = Array{xtype,1}(undef, L5)
+        w[1] = x
+        for i = 2:L5
+            w[i] = similar(x)
+        end
+        #println(w[2][1,1,1,1,1,1])
+        NWilson = length(x)
+        Dirac_operator = "MobiusDomainwall"
+        return new{NC,xtype}(w, NC, NX, NY, NZ, NT, L5, Dirac_operator, NWilson, nowing)
+    end
+
+    function MobiusDomainwallFermion_5D(
+        w::Array{WilsonFermion,1},
+        NC::T,
+        NX::T,
+        NY::T,
+        NZ::T,
+        NT::T,
+        L5::T,
+        Dirac_operator::String,
+        NWilson::Int64,
+        nowing::Bool
+    ) where {T<:Integer,WilsonFermion}
+        x = similar(w[1])
+        w1 = Array{WilsonFermion,1}(undef, L5)
+        w1[1] = x
+        for i = 2:L5
+            w1[i] = similar(x)
+        end
+        
+        return new{NC,WilsonFermion}(w1, NC, NX, NY, NZ, NT, L5, Dirac_operator, NWilson, nowing)
+    end
 end
 
+#=
 function Base.similar(
     x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
 ) where {NC,WilsonFermion}
     return MobiusDomainwallFermion_5D(x.L5, NC, x.NX, x.NY, x.NZ, x.NT, nowing=x.nowing)
 end
+=#
+
+function Base.similar(
+    x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
+) where {NC,WilsonFermion}
+    return MobiusDomainwallFermion_5D(x.w, NC, x.NX, x.NY, x.NZ, x.NT, x.L5, x.Dirac_operator, x.NWilson, x.nowing)
+end
+
 
 function apply_R!(
     xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},

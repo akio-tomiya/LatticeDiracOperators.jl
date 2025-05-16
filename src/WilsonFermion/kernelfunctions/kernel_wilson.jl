@@ -37,6 +37,14 @@ function kernel_add_fermion!(b, r, c, α, a, NC, NG)
     end
 end
 
+function kernel_add_fermion!(b, r, c, α, a, β, B,NC, NG)
+    @inbounds for mu = 1:NG
+        for ic = 1:NC
+            c[ic, mu, b, r] += α * a[ic, mu, b, r] + β * B[ic, mu, b, r]
+        end
+    end
+end
+
 function kernel_mul_yUx_NC3!(b, r, y, A, x, NG)
     @inbounds for ialpha = 1:NG
         x1 = x[1, ialpha, b, r]
@@ -132,6 +140,17 @@ function kernel_mul_1plusγ5x!(b, r, y, x, NC)
         y[ic, 2, b, r] = 0#-1*x[ic,ix,iy,iz,it,2]
         y[ic, 3, b, r] = x[ic, 3, b, r]
         y[ic, 4, b, r] = x[ic, 4, b, r]
+    end
+
+end
+
+function kernel_mul_1minusγ5x!(b, r, y, x, NC)
+
+    @inbounds for ic = 1:NC
+        y[ic, 1, b, r] = x[ic, 1, b, r]
+        y[ic, 2, b, r] = x[ic, 2, b, r]
+        y[ic, 3, b, r] = 0#x[ic, 3, b, r]
+        y[ic, 4, b, r] = 0#x[ic, 4, b, r]
     end
 
 end

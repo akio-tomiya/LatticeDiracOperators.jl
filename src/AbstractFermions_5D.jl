@@ -62,6 +62,10 @@ function substitute_fermion!(
     b::AbstractFermionfields_5D{NC},
 ) where {NC}
     L5 = length(a.w)
+    for iL = 1:L5
+        substitute_fermion!(a.w[iL], b.w[iL])
+    end
+    #=
     n1, n2, n3, n4, n5, n6 = size(a.w[1].f)
     for iL = 1:L5
         @inbounds for i6 = 1:n6
@@ -79,6 +83,7 @@ function substitute_fermion!(
             end
         end
     end
+    =#
 end
 
 function clear_fermion!(a::Vector{<:AbstractFermionfields_5D{NC}}) where {NC}
@@ -89,8 +94,10 @@ end
 
 function clear_fermion!(a::AbstractFermionfields_5D{NC}) where {NC}
     L5 = length(a.w)
-    n1, n2, n3, n4, n5, n6 = size(a.w[1].f)
+    #n1, n2, n3, n4, n5, n6 = size(a.w[1].f)
     for iL = 1:L5
+        clear_fermion!(a.w[iL])
+        #=
         @inbounds for i6 = 1:n6
             for i5 = 1:n5
                 for i4 = 1:n4
@@ -104,6 +111,7 @@ function clear_fermion!(a::AbstractFermionfields_5D{NC}) where {NC}
                 end
             end
         end
+        =#
     end
 end
 

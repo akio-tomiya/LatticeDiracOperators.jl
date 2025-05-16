@@ -496,18 +496,19 @@ function Initialize_MobiusDomainwallFermion(
     nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_MobiusDomainwallFermion(L5, NC, NN..., nowing=nowing)
+    return Initialize_MobiusDomainwallFermion(u,L5, NC, NN..., nowing=nowing)
 end
 
 
-function Initialize_MobiusDomainwallFermion(L5, NC, NN...; nowing=false)
+function Initialize_MobiusDomainwallFermion(u,L5, NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
-        if nowing
-            fermion = MobiusDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
-        else
-            fermion = MobiusDomainwallFermion_5D_wing(L5, NC, NN...)
-        end
+        fermion = MobiusDomainwallFermion_5D(u,L5,;nowing=nowing)
+        #if nowing
+        #    fermion = MobiusDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
+        #else
+        #    fermion = MobiusDomainwallFermion_5D_wing(L5, NC, NN...)
+        #end
         #fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
         #fermion = WilsonFermion_4D_wing{NC}(NN...)
         #fermion = WilsonFermion_4D_wing(NC,NN...)
