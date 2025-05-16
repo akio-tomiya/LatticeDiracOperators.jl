@@ -700,12 +700,18 @@ function D4x!(
     A::T,
     Dim,
 ) where {T1,T2,G<:AbstractGaugefields,T<:Wilson_Dirac_operator_faster}
+    temps = A._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+
     clear_fermion!(xout)
     for μ = 1:Dim
-        mul!(A._temporary_fermi[1], A.D[μ], x)
-        add_fermion!(xout, 0.5, A._temporary_fermi[1])
+        #mul!(A._temporary_fermi[1], A.D[μ], x)
+        #add_fermion!(xout, 0.5, A._temporary_fermi[1])
+        mul!(temp1, A.D[μ], x)
+        add_fermion!(xout, 0.5, temp1)
     end
     set_wing_fermion!(xout)
+    unused!(temps, it_temp1)
 end
 
 function D4dagx!(
@@ -715,10 +721,15 @@ function D4dagx!(
     A::T,
     Dim,
 ) where {T1,T2,G<:AbstractGaugefields,T<:Wilson_Dirac_operator_faster}
+    temps = A._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
     clear_fermion!(xout)
     for μ = 1:Dim
-        mul!(A._temporary_fermi[1], A.D[μ]', x)
-        add_fermion!(xout, 0.5, A._temporary_fermi[1])
+        #mul!(A._temporary_fermi[1], A.D[μ]', x)
+        #add_fermion!(xout, 0.5, A._temporary_fermi[1])
+        mul!(temp1, A.D[μ]', x)
+        add_fermion!(xout, 0.5, temp1)
     end
     set_wing_fermion!(xout)
+    unused!(temps, it_temp1)
 end
