@@ -52,6 +52,13 @@ function cudakernel_mul_Ax_NC3NG4!(xout, A, x)
     kernel_mul_Ax_NC3NG4!(b, r, xout, A, x)
 end
 
+function cudakernel_mul_xA_NC3NG4!(xout, x,A)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_xA_NC3!(b, r, xout, x,A)
+end
+
+
 
 function cudakernel_mul_yAx_NC3!(y, A, x)
     b = Int64(CUDA.threadIdx().x)
