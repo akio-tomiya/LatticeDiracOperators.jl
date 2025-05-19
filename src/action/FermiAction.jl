@@ -4,6 +4,7 @@ include("./StaggeredFermiAction.jl")
 include("./WilsonFermiAction.jl")
 include("./DomainwallFermiAction.jl")
 include("./MobiusDomainwallFermiAction.jl")
+include("./GeneralizedDomainwallFermiAction.jl")
 include("./WilsontypeFermiAction.jl")
 
 function FermiAction(
@@ -27,6 +28,8 @@ function FermiAction(
         return DomainwallFermiAction(D, hascovnet, covneuralnet)
     elseif diractype <: MobiusDomainwall_Dirac_operator
         return MobiusDomainwallFermiAction(D, hascovnet, covneuralnet)
+    elseif diractype <: GeneralizedDomainwall_Dirac_operator
+        return GeneralizedDomainwallFermiAction(D, hascovnet, covneuralnet)
     elseif diractype <: Wilson_GeneralDirac_operator
         return Wilson_GeneralDirac_FermiAction(
             D,

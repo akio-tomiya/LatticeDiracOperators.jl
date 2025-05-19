@@ -45,7 +45,7 @@ struct σμν{μ,ν}
     σ::NTuple{4,ComplexF64}
     indices::NTuple{4,Int64}
 
-    function σμν(μ, ν)
+    function σμν(μ,ν)  
         if μ < ν
             facμν = 1
             μ0 = μ
@@ -58,38 +58,38 @@ struct σμν{μ,ν}
 
         if μ0 == 1 && ν0 == 2
             ϵ = facμν
-            σ = (-ϵ, ϵ, -ϵ, ϵ)
-            indices = (1, 2, 3, 4)
+            σ = (-ϵ,ϵ,-ϵ,ϵ)
+            indices = (1,2,3,4)
         elseif μ0 == 1 && ν0 == 3
             ϵ = facμν
-            σ = (-im * ϵ, im * ϵ, -im * ϵ, im * ϵ)
-            indices = (2, 1, 4, 3)
+            σ = (-im*ϵ,im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
         elseif μ0 == 1 && ν0 == 4
             ϵ = facμν
-            σ = (-ϵ, -ϵ, ϵ, ϵ)
-            indices = (2, 1, 4, 3)
+            σ = (-ϵ,-ϵ,ϵ,ϵ)
+            indices = (2,1,4,3)
         elseif μ0 == 2 && ν0 == 3
             ϵ = facμν
-            σ = (-ϵ, -ϵ, -ϵ, -ϵ)
-            indices = (2, 1, 4, 3)
+            σ = (-ϵ,-ϵ,-ϵ,-ϵ)
+            indices = (2,1,4,3)
         elseif μ0 == 2 && ν0 == 4
             ϵ = facμν
-            σ = (im * ϵ, -im * ϵ, -im * ϵ, im * ϵ)
-            indices = (2, 1, 4, 3)
+            σ = (im*ϵ,-im*ϵ,-im*ϵ,im*ϵ)
+            indices = (2,1,4,3)
         elseif μ0 == 3 && ν0 == 4
             ϵ = facμν
-            σ = (-ϵ, ϵ, ϵ, -ϵ)
-            indices = (1, 2, 3, 4)
+            σ = (-ϵ,ϵ,ϵ,-ϵ)
+            indices = (1,2,3,4)
         else
             error("""something is wrong in σμν
                 μ,ν : $μ $ν
                 """)
         end
-        return new{μ,ν}(σ, indices)
+        return new{μ,ν}(σ,indices)
     end
     #=
 
-
+    
 
     function σμν(μ,ν)        
         if μ == 2 && ν == 3
@@ -145,7 +145,6 @@ abstract type Shifted_fermionfields{NC,Dim} <: Abstractfermion end
 const default_boundaryconditions = (nothing, [1, -1], nothing, [1, 1, 1, -1])
 
 include("./AbstractFermions_4D.jl")
-
 include("./AbstractFermions_5D.jl")
 include("./AbstractFermions_2D.jl")
 include("./AbstractFermions_3D.jl")
@@ -159,13 +158,7 @@ function __init__()
         include("./DomainwallFermion/DomainwallFermion_5d_mpi.jl")
     end
 
-    @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
-        include("./WilsonFermion/kernelfunctions/Wilson_cuda.jl")
-        include("./WilsonFermion/kernelfunctions/linearalgebra_mul_cuda.jl")
-    end
 end
-
-
 
 
 
@@ -206,7 +199,7 @@ function Initialize_pseudofermion_fields(
                         u.NZ,
                         u.NT,
                         u.PEs,
-                        nowing=nowing
+                        nowing = nowing,
                     )
                 else
                     x = DomainwallFermion_5D_wing_mpi(
@@ -216,7 +209,7 @@ function Initialize_pseudofermion_fields(
                         u.NY,
                         u.NZ,
                         u.NT,
-                        u.PEs
+                        u.PEs,
                     )
                 end
             elseif Dirac_operator == "MobiusDomainwall"
@@ -230,7 +223,7 @@ function Initialize_pseudofermion_fields(
                         u.NZ,
                         u.NT,
                         u.PEs,
-                        nowing=nowing
+                        nowing = nowing,
                     )
                 else
                     x = MobiusDomainwallFermion_5D_wing_mpi(
@@ -240,7 +233,7 @@ function Initialize_pseudofermion_fields(
                         u.NY,
                         u.NZ,
                         u.NT,
-                        u.PEs
+                        u.PEs,
                     )
                 end
             else
@@ -254,15 +247,19 @@ function Initialize_pseudofermion_fields(
     else
         if Dim == 4
             if Dirac_operator == "staggered"
-                x = Initialize_StaggeredFermion(u, nowing=nowing)
+                x = Initialize_StaggeredFermion(u, nowing = nowing)
             elseif Dirac_operator == "Wilson"
-                x = Initialize_WilsonFermion(u, nowing=nowing; kwargs...)
+                x = Initialize_WilsonFermion(u, nowing = nowing)
             elseif Dirac_operator == "Domainwall"
                 #@warn "Domainwall fermion is not well tested!!"
-                x = Initialize_DomainwallFermion(u, L5, nowing=nowing)
+                x = Initialize_DomainwallFermion(u, L5, nowing = nowing)
             elseif Dirac_operator == "MobiusDomainwall"
                 #@warn "MobiusDomainwall fermion is not well tested!!"
-                x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing)
+                x = Initialize_MobiusDomainwallFermion(u, L5, nowing = nowing)
+            elseif Dirac_operator == "GeneralizedDomainwall"
+                #@warn "GeneralizedDomainwall fermion is not well tested!!"
+                x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing = nowing)
+
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -277,6 +274,9 @@ function Initialize_pseudofermion_fields(
             elseif Dirac_operator == "MobiusDomainwall"
                 @warn "MobiusDomainwall fermion is not well tested!!"
                 x = Initialize_MobiusDomainwallFermion(u, L5)
+            elseif Dirac_operator == "GeneralizedDomainwall"
+                @warn "GeneralizedDomainwall fermion is not tested!!"
+                x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing = nowing)
             else
                 error("Dirac_operator = $Dirac_operator is not supported")
             end
@@ -401,6 +401,6 @@ function apply_σμν!(a::T1,μ,ν,b::T2) where {T1<:Abstractfermion,T2<:Abstrac
 end
 =#
 
-function apply_σ!(a::T1, σ::σμν{μ,ν}, b::T2; factor=1) where {μ,ν,T1<:Abstractfermion,T2<:Abstractfermion}
+function apply_σ!(a::T1,σ::σμν{μ,ν},b::T2;factor=1) where {μ,ν,T1<:Abstractfermion,T2<:Abstractfermion}
     error("apply_σ! is not implemented in type a:$(typeof(a)),b:$(typeof(b))")
 end

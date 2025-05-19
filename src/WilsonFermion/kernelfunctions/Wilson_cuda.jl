@@ -1,6 +1,19 @@
 include("./cudakernel_wilson.jl")
 
 function gauss_distribution_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    randomfunc,
+     σ
+) where {NC,TF <: CUDA.CuArray,NG}
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_gauss_distribution_fermion!( x.f,
+        σ, NC, NG)
+    end
+    return
+end
+
+function gauss_distribution_fermion!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG}
 ) where {NC,TF <: CUDA.CuArray,NG}
 
@@ -18,6 +31,36 @@ function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG}) where {NC,TF 
         CUDA.@cuda threads = a.blockinfo.blocksize blocks = a.blockinfo.rsize cudakernel_clear_fermion!(a.f, NC, NG)
     end
 end
+
+#=
+function add_fermion!(
+    c:::WilsonFermion_4D_accelerator{NC,TF,NG},
+    α::Number,
+    a::T1,
+    β::Number,
+    B::T2,
+) where {NC,T1<:WilsonFermion_4D_accelerator,T2<:Abstractfermion,TF<:CUDA.CuArray,NG}#c += alpha*a + beta*b
+    CUDA.@sync begin
+        CUDA.@cuda threads = c.blockinfo.blocksize blocks = c.blockinfo.rsize cudakernel_add_fermion!(c.f, α, a.f,  β, B.f,NC, NG)
+    end
+end
+=#
+
+function add_fermion!(
+    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    α::Number,
+    a::T1,
+    β::Number,
+    B::T1,
+) where {NC,T1<:WilsonFermion_4D_accelerator,TF<:CUDA.CuArray,NG}#c += alpha*a 
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = c.blockinfo.blocksize blocks = c.blockinfo.rsize cudakernel_add_fermion!(c.f, α, a.f,β, B.f, NC, NG)
+    end
+
+end
+
+
 
 function add_fermion!(
     c::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -119,6 +162,18 @@ function mul_1plusγ4x!(
 
 end
 
+
+function mul_1minusγ5x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
+
+    CUDA.@sync begin
+        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_mul_1minusγ5x!(y.f, x.f, NC)
+    end
+
+
+end
 
 
 function mul_1minusγ1x!(

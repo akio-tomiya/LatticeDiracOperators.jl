@@ -165,6 +165,22 @@ function gauss_distribution_fermion!(
     return
 end
 
+function gauss_distribution_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    randomfunc,
+     σ
+) where {NC,TF,NG}
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_gauss_distribution_fermion!(b, r, x.f,
+                σ, NC, NG)
+        end
+    end
+
+    return
+end
+
 function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG}) where {NC,TF,NG}
 
     for r = 1:a.blockinfo.rsize
@@ -174,6 +190,38 @@ function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG}) where {NC,TF,
     end
 
 end
+
+#=
+function add_fermion!(
+    c:::WilsonFermion_4D_accelerator{NC,TF,NG},
+    α::Number,
+    a::T1,
+    β::Number,
+    B::T2,
+) where {NC,T1<:WilsonFermion_4D_accelerator,T2<:Abstractfermion,TF,NG}#c += alpha*a + beta*b
+    for r = 1:c.blockinfo.rsize
+        for b = 1:c.blockinfo.blocksize
+            kernel_add_fermion!(b, r, c.f, α, a.f, β, B.f,NC, NG)
+        end
+    end
+end
+=#
+
+function add_fermion!(
+    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    α::Number,
+    a::T1,
+    β::Number,
+    B::T1
+) where {NC,T1<:WilsonFermion_4D_accelerator,TF,NG}#c += alpha*a 
+    for r = 1:c.blockinfo.rsize
+        for b = 1:c.blockinfo.blocksize
+            kernel_add_fermion!(b, r, c.f, α, a.f,β, B.f, NC, NG)
+        end
+    end
+
+end
+
 
 function add_fermion!(
     c::WilsonFermion_4D_accelerator{NC,TF,NG},
@@ -352,6 +400,19 @@ function mul_1plusγ4x!(
 end
 
 
+function mul_1minusγ5x!(
+    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+) where {NC,TF,NG}#(1+gamma_5)/2
+
+
+    for r = 1:x.blockinfo.rsize
+        for b = 1:x.blockinfo.blocksize
+            kernel_mul_1minusγ5x!(b, r, y.f, x.f, NC)
+        end
+    end
+
+end
 
 function mul_1minusγ1x!(
     y::WilsonFermion_4D_accelerator{NC,TF,NG},

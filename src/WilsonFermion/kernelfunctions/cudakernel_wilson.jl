@@ -10,6 +10,12 @@ function cudakernel_clear_fermion!(a, NC, NG)
     kernel_clear_fermion!(b, r, a, NC, NG)
 end
 
+function cudakernel_add_fermion!(c, α, a,  β, B,NC, NG)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_add_fermion!(b, r, c, α, a,  β, B,NC, NG)
+end
+
 function cudakernel_add_fermion!(c, α, a, NC, NG)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
@@ -177,6 +183,12 @@ function cudakernel_mul_1plusγ4x!(y, x, NC)
     b = Int64(CUDA.threadIdx().x)
     r = Int64(CUDA.blockIdx().x)
     kernel_mul_1plusγ4x!(b, r, y, x, NC)
+end
+
+function cudakernel_mul_1minusγ5x!(y, x, NC)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_1minusγ5x!(b, r, y, x, NC)
 end
 
 function cudakernel_mul_1minusγ1x!(y, x, NC)
