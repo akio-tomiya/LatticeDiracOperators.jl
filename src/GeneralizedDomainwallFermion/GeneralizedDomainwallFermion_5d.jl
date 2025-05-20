@@ -19,6 +19,35 @@ struct GeneralizedDomainwallFermion_5D{NC,WilsonFermion} <:
     nowing::Bool
 
     function GeneralizedDomainwallFermion_5D(
+        u::AbstractGaugefields{NC,4},
+        L5::T,
+        ;nowing=false, kwargs...
+    ) where {T<:Integer,NC}
+
+        x = Initialize_WilsonFermion(u;nowing,kwargs...)
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+        #if nowing
+        #    x = WilsonFermion_4D_nowing(NC, NX, NY, NZ, NT)
+        #else
+        #    x = WilsonFermion_4D_wing(NC, NX, NY, NZ, NT)
+        #end
+        xtype = typeof(x)
+        w = Array{xtype,1}(undef, L5)
+        w[1] = x
+        for i = 2:L5
+            w[i] = similar(x)
+        end
+        #println(w[2][1,1,1,1,1,1])
+        NWilson = length(x)
+        Dirac_operator = "GeneralizedDomainwall"
+        return new{NC,xtype}(w, NC, NX, NY, NZ, NT, L5, Dirac_operator, NWilson, nowing)
+    end
+
+
+    function GeneralizedDomainwallFermion_5D(
         L5,
         NC::T,
         NX::T,

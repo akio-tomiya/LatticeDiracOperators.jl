@@ -67,7 +67,7 @@ function D5DW_GeneralizedDomainwall_operator(
     fasterversion = check_parameters(parameters, "faster version", false)
     if fasterversion
         wilsonoperator = Wilson_Dirac_operator_faster(U, x_wilson, parameters_wilson)
-        println("faster version incorporated!")
+        #println("faster version incorporated!")
     else
         wilsonoperator = Wilson_Dirac_operator(U, x_wilson, parameters_wilson)
     end
@@ -506,18 +506,20 @@ function Initialize_GeneralizedDomainwallFermion(
     nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_GeneralizedDomainwallFermion(L5, NC, NN..., nowing=nowing)
+    return Initialize_GeneralizedDomainwallFermion(u,L5, NC, NN..., nowing=nowing)
 end
 
 
-function Initialize_GeneralizedDomainwallFermion(L5, NC, NN...; nowing=false)
+function Initialize_GeneralizedDomainwallFermion(u,L5, NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
-        if nowing
-            fermion = GeneralizedDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
-        else
-            fermion = GeneralizedDomainwallFermion_5D_wing(L5, NC, NN...)
-        end
+        fermion = GeneralizedDomainwallFermion_5D(u,L5,;nowing=nowing)
+
+        #if nowing
+        #    fermion = GeneralizedDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
+        #else
+        #    fermion = GeneralizedDomainwallFermion_5D_wing(L5, NC, NN...)
+        #end
         #fermion = DomainwallFermion_5D_wing(L5,NC,NN...) 
         #fermion = WilsonFermion_4D_wing{NC}(NN...)
         #fermion = WilsonFermion_4D_wing(NC,NN...)
