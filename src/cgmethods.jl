@@ -1135,3 +1135,89 @@ function shiftedbicg_2003(σ, A, b; maxsteps=3000, eps=1e-15, verboselevel=2)
 
 
 end
+
+
+
+
+function gmres(x, A, b; eps = 1e-5, maxsteps = 1000, restart=50, verbose = Verbose_print(2))
+    println_verbose_level3(verbose, "--------------------------------------")
+    println_verbose_level3(verbose, "GMRES method")
+
+    n = length(b)
+    temps = get_temporaryvectors_forCG(A)
+    r = temps[1]
+    Ax = temps[2]
+    substitute_fermion!(r, b)
+    mul!(Ax, A, x)
+    add!(r, -1, Ax)
+
+    beta = real(r ⋅ r)
+    if beta < eps
+        return
+    end
+
+    V = [similar(x) for _ in 1:(restart + 1)]
+    H = zeros(ComplexF64, restart + 1, restart)
+
+    y = zeros(eltype(dot(x, x)), restart)  # 초기화 추가
+
+    for iter_outer = 1:maxsteps
+        V[1] = deepcopy(r)
+        add!(0, V[1], 1/beta, V[1] )  
+
+
+        s = zeros(Float64, restart + 1)
+        s[1] = beta
+
+        for j = 1:restart
+            w = temps[3]
+            mul!(w, A, V[j])
+
+            for i = 1:j
+                H[i,j] = dot(V[i], w)
+                add!( w, -H[i,j], V[i])
+            end
+
+            H[j+1,j] = norm(w)
+            if H[j+1,j] != 0
+                V[j+1] = similar(w)
+                add!( 1, V[j+1], 1.0 / H[j+1,j], w)
+            end
+
+            y = H[1:j+1, 1:j] \ s[1:j+1]
+            rnorm = norm(s[1:j+1] - H[1:j+1, 1:j]*y)
+            # println( "$(iter_outer)-$(j)-th eps: $(rnorm)")
+
+            if rnorm < eps
+                temp_x = similar(x)
+                for k = 1:j
+                    add!(temp_x, y[k], V[k])
+                end
+                add!(x, 1, temp_x)
+                println( "Converged at $(iter_outer)-$(j)-th step. eps: $(rnorm^2)")
+                # println_verbose_level3(verbose, "--------------------------------------")
+                return
+            end
+        end
+
+        temp_x = similar(x)
+        for k = 1:restart
+            add!(temp_x, y[k], V[k])
+        end
+        add!(x, 1, temp_x)
+
+        mul!(Ax, A, x)
+        substitute_fermion!(r, b)
+        add!(r, -1, Ax)
+        beta = norm(r)
+        if beta < eps
+            # println( "Converged after restart at outer step $(iter_outer). eps: $(beta^2)")
+            return
+        end
+    end
+
+    error("""
+    GMRES did not converge within maxsteps=$(maxsteps).
+    Residual: $(beta^2)
+    Consider increasing maxsteps or adjusting restart parameter.""")
+end

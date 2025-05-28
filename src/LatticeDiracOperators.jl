@@ -89,4 +89,5 @@ export setindex_global!
 export uniform_distribution_fermion!, γ5D
 export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
+export gmres
 end
