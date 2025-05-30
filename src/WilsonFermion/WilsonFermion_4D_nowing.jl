@@ -46,7 +46,8 @@ const boundarycondition_default = [1, 1, 1, -1]
 
 
 
-function shift_fermion(F::WilsonFermion_4D_nowing{NC}, ν::T) where {T<:Integer,NC}
+function shift_fermion(F::WilsonFermion_4D_nowing{NC}, ν::T;
+    boundarycondition=boundarycondition_default) where {T<:Integer,NC}
     if ν == 1
         shift = (1, 0, 0, 0)
     elseif ν == 2
@@ -65,15 +66,17 @@ function shift_fermion(F::WilsonFermion_4D_nowing{NC}, ν::T) where {T<:Integer,
         shift = (0, 0, 0, -1)
     end
 
-    return Shifted_fermionfields_4D_nowing(F, shift)
+    return Shifted_fermionfields_4D_nowing(F, shift;
+        boundarycondition)
 end
 
 
 function shift_fermion(
     F::TF,
-    shift::NTuple{Dim,T},
+    shift::NTuple{Dim,T};
+    boundarycondition=boundarycondition_default
 ) where {Dim,T<:Integer,TF<:WilsonFermion_4D_nowing}
-    return Shifted_fermionfields_4D_nowing(F, shift)
+    return Shifted_fermionfields_4D_nowing(F, shift; boundarycondition)
 end
 
 
@@ -309,7 +312,8 @@ function WWx!(
     xout::T,
     U::Array{G,1},
     x::T,
-    A,
+    A;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D_nowing,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
@@ -322,9 +326,9 @@ function WWx!(
 
 
     #Tx!(temp,U,x,A) 
-    Toex!(temp, U, x, A, iseven) #Toe
+    Toex!(temp, U, x, A, iseven; boundarycondition) #Toe
     #Tx!(temp2,U,temp,A) 
-    Toex!(temp2, U, temp, A, isodd) #Teo
+    Toex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
 
     #set_nowing_fermion!(temp,A.boundarycondition)
     #add_fermion!(xout,1,x,-1,temp2)
@@ -343,7 +347,8 @@ function WWdagx!(
     xout::T,
     U::Array{G,1},
     x::T,
-    A,
+    A;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D_nowing,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
@@ -353,9 +358,9 @@ function WWdagx!(
     clear_fermion!(xout)
 
     #Tx!(temp,U,x,A) 
-    Tdagoex!(temp, U, x, A, iseven) #Toe
+    Tdagoex!(temp, U, x, A, iseven; boundarycondition) #Toe
     #Tx!(temp2,U,temp,A) 
-    Tdagoex!(temp2, U, temp, A, isodd) #Teo
+    Tdagoex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
 
     #set_nowing_fermion!(temp,A.boundarycondition)
     #add_fermion!(xout,1,x,-1,temp2)
@@ -692,7 +697,7 @@ end
 function LinearAlgebra.mul!(
     xout::WilsonFermion_4D_nowing{NC},
     x::WilsonFermion_4D_nowing{NC},
-    A::σμν{μ,ν}   ,
+    A::σμν{μ,ν},
 ) where {μ,ν,NC}
     NX = x.NX
     NY = x.NY
@@ -708,9 +713,9 @@ function LinearAlgebra.mul!(
             for iz = 1:NZ
                 for iy = 1:NY
                     @inbounds for ix = 1:NX
-                        @simd for iα=1:4
+                        @simd for iα = 1:4
                             iβ = A.indices[iα]
-                            xout[ic, ix, iy, iz, it, iα] = A.σ[iα]*x[ic, ix, iy, iz, it,  iβ]
+                            xout[ic, ix, iy, iz, it, iα] = A.σ[iα] * x[ic, ix, iy, iz, it, iβ]
                         end
                     end
                 end
@@ -1217,7 +1222,7 @@ function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing{NC}) where {NC}
                             v = σ * randn() + im * σ * randn()
 
                             #setvalue!(x,v,ic,ialpha,ix,iy,iz,it)
-                            x[ic, ix, iy, iz, it,ialpha] = v# σ*randn()+im*σ*randn()
+                            x[ic, ix, iy, iz, it, ialpha] = v# σ*randn()+im*σ*randn()
                         end
                     end
                 end
@@ -1281,12 +1286,12 @@ function gauss_distribution_fermion!(
     return
 end
 
-function apply_σ!(a::WilsonFermion_4D_nowing{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_nowing{NC};factor=1) where {NC,μ,ν}
+function apply_σ!(a::WilsonFermion_4D_nowing{NC}, σ::σμν{μ,ν}, b::WilsonFermion_4D_nowing{NC}; factor=1) where {NC,μ,ν}
     NX = a.NX
     NY = a.NY
     NZ = a.NZ
     NT = a.NT
-    @inbounds for iα=1:4
+    @inbounds for iα = 1:4
         value = σ.σ[iα]
         iβ = σ.indices[iα]
         for it = 1:NT
@@ -1294,7 +1299,7 @@ function apply_σ!(a::WilsonFermion_4D_nowing{NC},σ::σμν{μ,ν},b::WilsonFer
                 for iy = 1:NY
                     for ix = 1:NX
                         @simd for ic = 1:NC
-                            a[ic, ix, iy, iz, it, iα] += factor*value*b[ic, ix, iy, iz, it, iβ] 
+                            a[ic, ix, iy, iz, it, iα] += factor * value * b[ic, ix, iy, iz, it, iβ]
                         end
                     end
                 end
@@ -1304,57 +1309,57 @@ function apply_σ!(a::WilsonFermion_4D_nowing{NC},σ::σμν{μ,ν},b::WilsonFer
 end
 
 
-function cloverterm!(vec::WilsonFermion_4D_nowing{NC},cloverterm,x::WilsonFermion_4D_nowing{NC}) where {NC}
+function cloverterm!(vec::WilsonFermion_4D_nowing{NC}, cloverterm, x::WilsonFermion_4D_nowing{NC}) where {NC}
     NT = x.NT
     NZ = x.NZ
     NY = x.NY
     NX = x.NX
     CloverFμν = cloverterm.CloverFμν
 
-    i  =0
-    @inbounds for it=1:NT
-        for iz=1:NZ
-            for iy=1:NY
-                for ix=1:NX
+    i = 0
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                for ix = 1:NX
                     i += 1
-                    for k1=1:NC
-                        for k2=1:NC
+                    for k1 = 1:NC
+                        for k2 = 1:NC
 
-                            c1 = x[k2,ix,iy,iz,it,1]
-                            c2 = x[k2,ix,iy,iz,it,2]
-                            c3 = x[k2,ix,iy,iz,it,3]
-                            c4 = x[k2,ix,iy,iz,it,4]
+                            c1 = x[k2, ix, iy, iz, it, 1]
+                            c2 = x[k2, ix, iy, iz, it, 2]
+                            c3 = x[k2, ix, iy, iz, it, 3]
+                            c4 = x[k2, ix, iy, iz, it, 4]
 
-                            vec[k1,ix,iy,iz,it,1] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(-   c1) + 
-                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(-im*c2) + 
-                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(-   c2) + 
-                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c2) + 
-                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*( im*c2) + 
-                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(-   c1)
-                                                     #   println("$ix $iy $iz $it $k1 $k2 $(vec[k1,ix,iy,iz,it,1] )")
-                            
-                            
+                            vec[k1, ix, iy, iz, it, 1] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (-c1) +
+                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (-im * c2) +
+                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (-c2) +
+                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c2) +
+                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (im * c2) +
+                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (-c1)
+                            #   println("$ix $iy $iz $it $k1 $k2 $(vec[k1,ix,iy,iz,it,1] )")
 
-                            vec[k1,ix,iy,iz,it,2] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   c2) + 
-                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(im*c1) + 
-                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(-   c1) + 
-                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c1) + 
-                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(-im*c1) + 
-                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(   c2)
 
-                            vec[k1,ix,iy,iz,it,3] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   -c3) + 
-                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(-im*c4) + 
-                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(   c4) + 
-                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c4) + 
-                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(-im*c4) + 
-                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*(   c3)
 
-                            vec[k1,ix,iy,iz,it,4] += CloverFμν[1][k1,k2,ix,iy,iz,it]*(   c4) + 
-                                                        + CloverFμν[2][k1,k2,ix,iy,iz,it]*(im*c3) + 
-                                                        + CloverFμν[3][k1,k2,ix,iy,iz,it]*(   c3) + 
-                                                        + CloverFμν[4][k1,k2,ix,iy,iz,it]*(-   c3) + 
-                                                        + CloverFμν[5][k1,k2,ix,iy,iz,it]*(im*c3) + 
-                                                        + CloverFμν[6][k1,k2,ix,iy,iz,it]*( -  c4)
+                            vec[k1, ix, iy, iz, it, 2] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (c2) +
+                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (im * c1) +
+                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (-c1) +
+                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c1) +
+                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (-im * c1) +
+                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (c2)
+
+                            vec[k1, ix, iy, iz, it, 3] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (-c3) +
+                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (-im * c4) +
+                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (c4) +
+                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c4) +
+                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (-im * c4) +
+                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (c3)
+
+                            vec[k1, ix, iy, iz, it, 4] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (c4) +
+                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (im * c3) +
+                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (c3) +
+                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c3) +
+                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (im * c3) +
+                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (-c4)
 
 
                         end

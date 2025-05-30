@@ -84,7 +84,8 @@ function Toex!(
     U::Array{G,1},
     x::T,
     A,
-    iseven,
+    iseven;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
     #temp = A._temporary_fermi[4]#temps[4]
     temp1 = A._temporary_fermi[1] #temps[1]
@@ -104,7 +105,7 @@ function Toex!(
     #set_wing_fermion!(x)
     for ν = 1:4
 
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         #println(xplus)
 
 
@@ -121,7 +122,7 @@ function Toex!(
 
 
 
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
 
@@ -148,7 +149,8 @@ function Tdagoex!(
     U::Array{G,1},
     x::T,
     A,
-    iseven,
+    iseven;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
     #temp = A._temporary_fermi[4]#temps[4]
     temp1 = A._temporary_fermi[1] #temps[1]
@@ -168,7 +170,7 @@ function Tdagoex!(
     #set_wing_fermion!(x)
     for ν = 1:4
 
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         #println(xplus)
 
 
@@ -185,7 +187,7 @@ function Tdagoex!(
 
 
 
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
 
@@ -211,7 +213,8 @@ function WWx!(
     xout::T,
     U::Array{G,1},
     x::T,
-    A,
+    A;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
@@ -224,9 +227,9 @@ function WWx!(
 
 
     #Tx!(temp,U,x,A) 
-    Toex!(temp, U, x, A, iseven) #Toe
+    Toex!(temp, U, x, A, iseven; boundarycondition) #Toe
     #Tx!(temp2,U,temp,A) 
-    Toex!(temp2, U, temp, A, isodd) #Teo
+    Toex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
 
     #set_wing_fermion!(temp,A.boundarycondition)
     #add_fermion!(xout,1,x,-1,temp2)
@@ -260,7 +263,8 @@ function WWdagx!(
     xout::T,
     U::Array{G,1},
     x::T,
-    A,
+    A;
+    boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
@@ -270,9 +274,9 @@ function WWdagx!(
     clear_fermion!(xout)
 
     #Tx!(temp,U,x,A) 
-    Tdagoex!(temp, U, x, A, iseven) #Toe
+    Tdagoex!(temp, U, x, A, iseven; boundarycondition) #Toe
     #Tx!(temp2,U,temp,A) 
-    Tdagoex!(temp2, U, temp, A, isodd) #Teo
+    Tdagoex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
 
     #set_wing_fermion!(temp,A.boundarycondition)
     #add_fermion!(xout,1,x,-1,temp2)
