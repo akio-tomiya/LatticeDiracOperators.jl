@@ -55,12 +55,12 @@ function Dx!(
     set_wing_fermion!(x, boundarycondition)
     clear_fermion!(xout)
     for ν = 1:4
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         Us = staggered_U(U[ν], ν)
         mul!(temp1, Us, xplus)
 
 
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
         Uminus_s = staggered_U(Uminus, ν)
         mul!(temp2, Uminus_s', xminus)
@@ -96,7 +96,8 @@ function clear_fermion!(x::StaggeredFermion_4D_nowing{NC}, evensite) where {NC}
     return
 end
 
-function shift_fermion(F::StaggeredFermion_4D_nowing{NC}, ν::T) where {T<:Integer,NC}
+function shift_fermion(F::StaggeredFermion_4D_nowing{NC}, ν::T;
+    boundarycondition=boundarycondition_default) where {T<:Integer,NC}
     if ν == 1
         shift = (1, 0, 0, 0)
     elseif ν == 2
@@ -115,15 +116,17 @@ function shift_fermion(F::StaggeredFermion_4D_nowing{NC}, ν::T) where {T<:Integ
         shift = (0, 0, 0, -1)
     end
 
-    return Shifted_fermionfields_4D_nowing(F, shift)
+    return Shifted_fermionfields_4D_nowing(F, shift;
+        boundarycondition)
 end
 
 
 function shift_fermion(
     F::TF,
-    shift::NTuple{Dim,T},
+    shift::NTuple{Dim,T};
+    boundarycondition=boundarycondition_default
 ) where {Dim,T<:Integer,TF<:StaggeredFermion_4D_nowing}
-    return Shifted_fermionfields_4D_nowing(F, shift)
+    return Shifted_fermionfields_4D_nowing(F, shift; boundarycondition)
 end
 
 
