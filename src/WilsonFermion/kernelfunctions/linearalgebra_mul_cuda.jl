@@ -1,6 +1,6 @@
 #y = A'*x
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     A::Adjoint_Gaugefields{T},
     x::T3,
 ) where {T<:Gaugefields_4D_accelerator,T3<:WilsonFermion_4D_accelerator,TF<:CUDA.CuArray,NG}
@@ -11,7 +11,7 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     A::T,
     x::Shifted_fermionfields_4D_accelerator,
 ) where {T<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray,NG}
@@ -25,9 +25,9 @@ end
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
     α::Number,
-    X::WilsonFermion_4D_accelerator{NC,TF,NG},
+    X::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     β::Number,
-    Y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    Y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}
     CUDA.@sync begin
         CUDA.@cuda threads = X.blockinfo.blocksize blocks = X.blockinfo.rsize cudakernel_axpby!(α, X.f, β, Y.f, NC)
@@ -38,9 +38,9 @@ end
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
     α::Number,
-    X::WilsonFermion_4D_accelerator{3,TF,4},
+    X::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
     β::Number,
-    Y::WilsonFermion_4D_accelerator{3,TF,4},
+    Y::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
 ) where {TF<:CUDA.CuArray}
     CUDA.@sync begin
         CUDA.@cuda threads = X.blockinfo.blocksize blocks = X.blockinfo.rsize cudakernel_axpby_NC3NG4!(α, X.f, β, Y.f)
@@ -50,9 +50,9 @@ end
 
 
 function LinearAlgebra.mul!(
-    xout::WilsonFermion_4D_accelerator{NC,TF,NG},
+    xout::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     A::TA,
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {TA<:AbstractMatrix,NC,TF<:CUDA.CuArray,NG}
     #Afb = zero(A)
     #Afb .= A
@@ -68,9 +68,9 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    xout::WilsonFermion_4D_accelerator{3,TF,4},
+    xout::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
     A::TA,
-    x::WilsonFermion_4D_accelerator{3,TF,4},
+    x::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
 ) where {TA<:AbstractMatrix,TF<:CUDA.CuArray}
     #Afb = zero(A)
     #Afb .= A
@@ -88,7 +88,7 @@ end
 
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     A::T,
     x::T3,
 ) where {T<:Gaugefields_4D_accelerator,T3<:WilsonFermion_4D_accelerator,TF<:CUDA.CuArray,NG}
@@ -105,7 +105,7 @@ end
 
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     A::T,
     x::T3,
 ) where {T<:Gaugefields_4D_accelerator,T3<:Shifted_fermionfields_4D_accelerator,TF<:CUDA.CuArray,NG}
@@ -118,7 +118,7 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda,TUv,TFshifted},
     A::T,
     x::T3,
 ) where {T<:Gaugefields_4D_accelerator,T3<:Shifted_fermionfields_4D_accelerator,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}
@@ -137,9 +137,9 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     A::T,
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,T<:Number,TF<:CUDA.CuArray,NG}
     @assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
 
@@ -149,9 +149,9 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,4},
+    y::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
     A::T,
-    x::WilsonFermion_4D_accelerator{3,TF,4},
+    x::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
 ) where {T<:Number,TF<:CUDA.CuArray}
     #@assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
 
@@ -162,8 +162,8 @@ end
 
 function LinearAlgebra.mul!(
     u::T1,
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
-    y::WilsonFermion_4D_accelerator{NC,TF,NG}, ; clear=true
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda}, ; clear=true
 ) where {T1<:Gaugefields_4D_accelerator,NC,TF<:CUDA.CuArray,NG}
 
 
@@ -182,8 +182,8 @@ end
 
 function LinearAlgebra.mul!(
     u::T1,
-    x::WilsonFermion_4D_accelerator{3,TF,4},
-    y::WilsonFermion_4D_accelerator{3,TF,4}, ; clear=true
+    x::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
+    y::WilsonFermion_4D_accelerator{3,TF,4,:cuda}, ; clear=true
 ) where {T1<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray}
 
 
@@ -202,7 +202,7 @@ end
 
 function LinearAlgebra.mul!(
     u::T1,
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     y::Adjoint_fermionfields, ; clear=true
 ) where {T1<:Gaugefields_4D_accelerator,NC,TF<:CUDA.CuArray,NG}
 
@@ -224,7 +224,7 @@ end
 
 function LinearAlgebra.mul!(
     u::T1,
-    x::WilsonFermion_4D_accelerator{3,TF,4},
+    x::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
     y::Adjoint_fermionfields, ; clear=true
 ) where {T1<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray}
 
@@ -247,8 +247,8 @@ end
 
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
-    x::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     A::T,
 ) where {T<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray,NG}
 
@@ -258,7 +258,7 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda},
     x::Adjoint_fermionfields{Ts},
     A::Adjoint_Gaugefields{T},
 ) where {T<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray,NG,Ts<:Shifted_fermionfields_4D_accelerator}
@@ -269,7 +269,7 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    y::WilsonFermion_4D_accelerator{3,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{3,TF,NG,:cuda,TUv,TFshifted},
     x::Adjoint_fermionfields{Ts},
     A::Adjoint_Gaugefields{T},
 ) where {T<:Gaugefields_4D_accelerator,TF<:CUDA.CuArray,NG,Ts<:Shifted_fermionfields_4D_accelerator,TUv,TFshifted<:Nothing}
@@ -289,8 +289,8 @@ end
 
 
 function LinearAlgebra.mul!(
-    xout::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    xout::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     A::TA,
 ) where {TA<:AbstractMatrix,NC,TF<:CUDA.CuArray,NG}
     Af = CUDA.CuArray(A)
@@ -302,8 +302,8 @@ end
 
 
 function LinearAlgebra.mul!(
-    xout::WilsonFermion_4D_accelerator{3,TF,4},
-    x::WilsonFermion_4D_accelerator{3,TF,4},
+    xout::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
+    x::WilsonFermion_4D_accelerator{3,TF,4,:cuda},
     A::TA,
 ) where {TA<:AbstractMatrix,TF<:CUDA.CuArray}
     Af = CUDA.CuArray(A)

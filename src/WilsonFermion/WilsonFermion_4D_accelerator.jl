@@ -3,7 +3,7 @@ import Gaugefields.AbstractGaugefields_module:
 
 include("./kernelfunctions/kernel_wilson.jl")
 
-struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{NC}
+struct WilsonFermion_4D_accelerator{NC,TF,NG,accdevise,TUv,TFshifted} <: WilsonFermion_4D{NC}
     f::TF
     NC::Int64
     NX::Int64
@@ -51,7 +51,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
         fshiftedcpu = zeros(ComplexF64, NC, NG, blocksize, rsize)
 
 
-
+        #println(accelerator)
 
         #f = CUDA.CuArray(fcpu)
         if accelerator == "cuda"
@@ -78,6 +78,42 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
                     end
                     accdevise = :none
                 end
+
+            else
+                f = fcpu
+                temp_volume = temp_volumecpu
+                if nocopy
+                    fshifted = nothing
+                else
+                    fshifted = fshiftedcpu
+                end
+                accdevise = :none
+            end
+        elseif accelerator == "JACC"
+            #println("JACC is used")
+            isjaccdefined = @isdefined JACC
+            #println("isjaccdefined = $isjaccdefined")
+            if isjaccdefined
+                NN = NX * NY * NZ * NT
+                fcpu = zeros(ComplexF64, NC, NG, NN)
+                temp_volumecpu = zeros(ComplexF64, NN)
+                fshiftedcpu = zeros(ComplexF64, NC, NG, NN)
+
+
+
+                #Ucpu = zeros(dtype, NC, NC, NV)
+                #temp_volume_cpu = zeros(dtype, NV)
+
+                f = JACC.array(fcpu)
+                temp_volume = JACC.array(temp_volumecpu)
+                if nocopy
+                    fshifted = nothing
+                else
+                    fshifted = JACC.Array(fshiftedcpu)
+                end
+
+                accdevise = :jacc
+                #println(typeof(U))
             else
                 f = fcpu
                 temp_volume = temp_volumecpu
@@ -104,7 +140,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted} <: WilsonFermion_4D{
         TUv = typeof(temp_volume)
         TFshifted = typeof(fshifted)
 
-        return new{NC,TF,NG,TUv,TFshifted}(f, NC, NX, NY, NZ, NT, NG, NDW, Dirac_operator, fshifted,
+        return new{NC,TF,NG,accdevise,TUv,TFshifted}(f, NC, NX, NY, NZ, NT, NG, NDW, Dirac_operator, fshifted,
             blockinfo, accelerator, temp_volume, nocopy)
 
 
@@ -152,7 +188,7 @@ end
 
 
 function gauss_distribution_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG}
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none}
 ) where {NC,TF,NG}
 
     for r = 1:x.blockinfo.rsize
@@ -166,9 +202,9 @@ function gauss_distribution_fermion!(
 end
 
 function gauss_distribution_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     randomfunc,
-     σ
+    σ
 ) where {NC,TF,NG}
 
     for r = 1:x.blockinfo.rsize
@@ -181,7 +217,7 @@ function gauss_distribution_fermion!(
     return
 end
 
-function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG}) where {NC,TF,NG}
+function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG,:none}) where {NC,TF,NG}
 
     for r = 1:a.blockinfo.rsize
         for b = 1:a.blockinfo.blocksize
@@ -193,7 +229,7 @@ end
 
 #=
 function add_fermion!(
-    c:::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c:::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     α::Number,
     a::T1,
     β::Number,
@@ -208,7 +244,7 @@ end
 =#
 
 function add_fermion!(
-    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     α::Number,
     a::T1,
     β::Number,
@@ -216,7 +252,7 @@ function add_fermion!(
 ) where {NC,T1<:WilsonFermion_4D_accelerator,TF,NG}#c += alpha*a 
     for r = 1:c.blockinfo.rsize
         for b = 1:c.blockinfo.blocksize
-            kernel_add_fermion!(b, r, c.f, α, a.f,β, B.f, NC, NG)
+            kernel_add_fermion!(b, r, c.f, α, a.f, β, B.f, NC, NG)
         end
     end
 
@@ -224,7 +260,7 @@ end
 
 
 function add_fermion!(
-    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     α::Number,
     a::T1,
 ) where {NC,T1<:WilsonFermion_4D_accelerator,TF,NG}#c += alpha*a 
@@ -301,7 +337,7 @@ struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
 end
 
 function shifted_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     boundarycondition,
     shift,
 ) where {NC,TF,NG}
@@ -320,7 +356,7 @@ function shifted_fermion!(
 end
 
 function shifted_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     boundarycondition,
     shift,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}
@@ -329,8 +365,8 @@ end
 
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -343,8 +379,8 @@ function mul_1plusγ5x!(
 end
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -357,8 +393,8 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -372,8 +408,8 @@ end
 
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -386,8 +422,8 @@ function mul_1plusγ3x!(
 end
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -401,8 +437,8 @@ end
 
 
 function mul_1minusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -415,8 +451,8 @@ function mul_1minusγ5x!(
 end
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -429,8 +465,8 @@ function mul_1minusγ1x!(
 end
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -444,8 +480,8 @@ end
 
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -458,8 +494,8 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
 
@@ -473,7 +509,7 @@ end
 
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -487,7 +523,7 @@ function mul_1plusγ5x!(
 end
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -504,7 +540,7 @@ function mul_1plusγ5x!(
 end
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -518,7 +554,7 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -535,7 +571,7 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -549,7 +585,7 @@ function mul_1plusγ2x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -568,7 +604,7 @@ end
 
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -582,7 +618,7 @@ end
 
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
     NX = y.NX
@@ -598,7 +634,7 @@ function mul_1plusγ3x!(
 end
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -612,7 +648,7 @@ function mul_1plusγ4x!(
 end
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -632,7 +668,7 @@ end
 
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -646,7 +682,7 @@ function mul_1minusγ1x!(
 end
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -663,7 +699,7 @@ function mul_1minusγ1x!(
 end
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -677,7 +713,7 @@ function mul_1minusγ2x!(
 end
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -696,7 +732,7 @@ end
 
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -710,7 +746,7 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -727,7 +763,7 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG}#(1+gamma_5)/2
 
@@ -741,7 +777,7 @@ function mul_1minusγ4x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:none,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -760,8 +796,8 @@ end
 
 
 function LinearAlgebra.dot(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
-    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}
 
     for r = 1:A.blockinfo.rsize
@@ -774,8 +810,8 @@ function LinearAlgebra.dot(
 end
 
 function substitute_fermion!(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
-    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}
 
     for r = 1:A.blockinfo.rsize
@@ -789,7 +825,7 @@ end
 
 function substitute_fermion!(
     A::AbstractFermionfields_4D{NC},
-    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
 ) where {NC,TF,NG}
     bcpu = Array(B.f)
 
@@ -808,7 +844,7 @@ function substitute_fermion!(
 end
 
 function substitute_fermion!(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
     B::AbstractFermionfields_4D{NC},
 ) where {NC,TF,NG}
     acpu = Array(A.f)

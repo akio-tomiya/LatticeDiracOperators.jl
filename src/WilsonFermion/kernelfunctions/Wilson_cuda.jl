@@ -1,32 +1,32 @@
 include("./cudakernel_wilson.jl")
 
 function gauss_distribution_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     randomfunc,
-     σ
-) where {NC,TF <: CUDA.CuArray,NG}
+    σ
+) where {NC,TF<:CUDA.CuArray,NG}
 
     CUDA.@sync begin
-        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_gauss_distribution_fermion!( x.f,
-        σ, NC, NG)
+        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_gauss_distribution_fermion!(x.f,
+            σ, NC, NG)
     end
     return
 end
 
 function gauss_distribution_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG}
-) where {NC,TF <: CUDA.CuArray,NG}
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda}
+) where {NC,TF<:CUDA.CuArray,NG}
 
     CUDA.@sync begin
-        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_gauss_distribution_fermion!( x.f,
-        1, NC, NG)
+        CUDA.@cuda threads = x.blockinfo.blocksize blocks = x.blockinfo.rsize cudakernel_gauss_distribution_fermion!(x.f,
+            1, NC, NG)
     end
 
 
     return
 end
 
-function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG}) where {NC,TF <:CUDA.CuArray,NG}
+function clear_fermion!(a::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda}) where {NC,TF<:CUDA.CuArray,NG}
     CUDA.@sync begin
         CUDA.@cuda threads = a.blockinfo.blocksize blocks = a.blockinfo.rsize cudakernel_clear_fermion!(a.f, NC, NG)
     end
@@ -34,7 +34,7 @@ end
 
 #=
 function add_fermion!(
-    c:::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c:::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     α::Number,
     a::T1,
     β::Number,
@@ -47,7 +47,7 @@ end
 =#
 
 function add_fermion!(
-    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     α::Number,
     a::T1,
     β::Number,
@@ -55,7 +55,7 @@ function add_fermion!(
 ) where {NC,T1<:WilsonFermion_4D_accelerator,TF<:CUDA.CuArray,NG}#c += alpha*a 
 
     CUDA.@sync begin
-        CUDA.@cuda threads = c.blockinfo.blocksize blocks = c.blockinfo.rsize cudakernel_add_fermion!(c.f, α, a.f,β, B.f, NC, NG)
+        CUDA.@cuda threads = c.blockinfo.blocksize blocks = c.blockinfo.rsize cudakernel_add_fermion!(c.f, α, a.f, β, B.f, NC, NG)
     end
 
 end
@@ -63,7 +63,7 @@ end
 
 
 function add_fermion!(
-    c::WilsonFermion_4D_accelerator{NC,TF,NG},
+    c::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     α::Number,
     a::T1,
 ) where {NC,T1<:WilsonFermion_4D_accelerator,TF<:CUDA.CuArray,NG}#c += alpha*a 
@@ -76,7 +76,7 @@ end
 
 
 function shifted_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     boundarycondition,
     shift,
 ) where {NC,TF<:CUDA.CuArray,NG}
@@ -95,7 +95,7 @@ function shifted_fermion!(
 end
 
 function shifted_fermion!(
-    x::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     boundarycondition,
     shift,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}
@@ -106,8 +106,8 @@ end
 
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -116,8 +116,8 @@ function mul_1plusγ5x!(
 end
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -126,8 +126,8 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
 
@@ -139,8 +139,8 @@ end
 
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
 
@@ -150,8 +150,8 @@ function mul_1plusγ3x!(
 end
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
 
@@ -164,8 +164,8 @@ end
 
 
 function mul_1minusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -177,8 +177,8 @@ end
 
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -189,8 +189,8 @@ function mul_1minusγ1x!(
 end
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -201,8 +201,8 @@ end
 
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -213,8 +213,8 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
-    x::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
     CUDA.@sync begin
@@ -224,7 +224,7 @@ end
 
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -237,7 +237,7 @@ function mul_1plusγ5x!(
 end
 
 function mul_1plusγ5x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -248,7 +248,7 @@ function mul_1plusγ5x!(
 
     CUDA.@sync begin
         CUDA.@cuda threads = y.blockinfo.blocksize blocks = y.blockinfo.rsize cudakernel_mul_1plusγ5x_shifted!(y.f,
-        x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
+            x.parent.f, x.shift, x.parent.blockinfo, NC, x.bc, NX, NY, NZ, NT)
     end
 
 
@@ -257,7 +257,7 @@ end
 
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -269,7 +269,7 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -286,7 +286,7 @@ function mul_1plusγ1x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -300,7 +300,7 @@ function mul_1plusγ2x!(
 end
 
 function mul_1plusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -319,7 +319,7 @@ end
 
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -331,7 +331,7 @@ function mul_1plusγ3x!(
 end
 
 function mul_1plusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -349,7 +349,7 @@ end
 
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -362,7 +362,7 @@ function mul_1plusγ4x!(
 end
 
 function mul_1plusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -381,7 +381,7 @@ end
 
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -394,7 +394,7 @@ function mul_1minusγ1x!(
 end
 
 function mul_1minusγ1x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -412,7 +412,7 @@ end
 
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -424,7 +424,7 @@ function mul_1minusγ2x!(
 end
 
 function mul_1minusγ2x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -442,7 +442,7 @@ end
 
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -455,7 +455,7 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ3x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -472,7 +472,7 @@ function mul_1minusγ3x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG}#(1+gamma_5)/2
 
@@ -482,7 +482,7 @@ function mul_1minusγ4x!(
 end
 
 function mul_1minusγ4x!(
-    y::WilsonFermion_4D_accelerator{NC,TF,NG,TUv,TFshifted},
+    y::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda,TUv,TFshifted},
     x::Shifted_fermionfields_4D_accelerator,
 ) where {NC,TF<:CUDA.CuArray,NG,TUv,TFshifted<:Nothing}#(1+gamma_5)/2
 
@@ -500,12 +500,12 @@ end
 
 
 function LinearAlgebra.dot(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
-    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}
 
     CUDA.@sync begin
-        CUDA.@cuda threads = A.blockinfo.blocksize blocks = A.blockinfo.rsize cudakernel_dot!( A.temp_volume, A.f, B.f, NC)
+        CUDA.@cuda threads = A.blockinfo.blocksize blocks = A.blockinfo.rsize cudakernel_dot!(A.temp_volume, A.f, B.f, NC)
     end
     s = CUDA.reduce(+, A.temp_volume)
 
@@ -513,8 +513,8 @@ function LinearAlgebra.dot(
 end
 
 function substitute_fermion!(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
-    B::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
 ) where {NC,TF<:CUDA.CuArray,NG}
 
     CUDA.@sync begin
@@ -526,7 +526,7 @@ end
 
 
 function substitute_fermion!(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
     B::AbstractFermionfields_4D{NC},
 ) where {NC,TF<:CUDA.CuArray,NG}
     acpu = Array(A.f)
@@ -535,9 +535,9 @@ function substitute_fermion!(
     for r = 1:blockinfo.rsize
         for b = 1:blockinfo.blocksize
             ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
-            for ig=1:NG
-                for ic=1:NC
-                    acpu[ic, ig, b, r] = B[ic,ix, iy, iz, it,ig] 
+            for ig = 1:NG
+                for ic = 1:NC
+                    acpu[ic, ig, b, r] = B[ic, ix, iy, iz, it, ig]
                 end
             end
         end
