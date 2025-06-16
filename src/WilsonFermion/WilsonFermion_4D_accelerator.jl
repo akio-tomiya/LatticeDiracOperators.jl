@@ -109,7 +109,7 @@ struct WilsonFermion_4D_accelerator{NC,TF,NG,accdevise,TUv,TFshifted} <: WilsonF
                 if nocopy
                     fshifted = nothing
                 else
-                    fshifted = JACC.Array(fshiftedcpu)
+                    fshifted = JACC.array(fshiftedcpu)
                 end
 
                 accdevise = :jacc

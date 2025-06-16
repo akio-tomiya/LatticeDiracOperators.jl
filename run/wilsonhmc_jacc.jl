@@ -10,6 +10,7 @@ import Gaugefields: Initialize_4DGaugefields
 import LatticeDiracOperators.SSmodule: shiftedbicg_inSS, shiftedbicgstab_inSS, shiftedbicgstab,
     shiftedbicg_Frommer2003, shiftedbicg_Frommer2003_seed, shiftedbicg_Frommer2003_G_seed
 import JACC
+JACC.@init_backend
 
 function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
