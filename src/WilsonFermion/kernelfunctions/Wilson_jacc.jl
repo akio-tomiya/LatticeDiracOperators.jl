@@ -574,3 +574,21 @@ function substitute_fermion!(
     agpu = JACC.Array(acpu)
     A.f .= agpu
 end
+
+function substitute_fermion!(
+    A::AbstractFermionfields_4D{NC},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
+) where {NC,TF,NG}
+    bcpu = Array(B.f)
+
+    N = B.NX * B.NY * B.NZ * B.NT
+    for i = 1:N
+        ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+        for ig = 1:NG
+            for ic = 1:NC
+                A[ic, ix, iy, iz, it, ig] = bcpu[ic, ig, i] 
+            end
+        end
+    end
+
+end

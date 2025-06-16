@@ -545,3 +545,24 @@ function substitute_fermion!(
     agpu = CUDA.CuArray(acpu)
     A.f .= agpu
 end
+
+
+function substitute_fermion!(
+    A::AbstractFermionfields_4D{NC},
+    B::WilsonFermion_4D_accelerator{NC,TF,NG,:cuda},
+) where {NC,TF,NG}
+    bcpu = Array(B.f)
+
+    blockinfo = B.blockinfo
+    for r = 1:blockinfo.rsize
+        for b = 1:blockinfo.blocksize
+            ix, iy, iz, it = fourdim_cordinate(b, r, blockinfo)
+            for ig = 1:NG
+                for ic = 1:NC
+                    A[ic, ix, iy, iz, it, ig] = bcpu[ic, ig, b, r]
+                end
+            end
+        end
+    end
+
+end
