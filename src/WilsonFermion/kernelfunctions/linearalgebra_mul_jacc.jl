@@ -60,7 +60,7 @@ function LinearAlgebra.mul!(
 ) where {TA<:AbstractMatrix,NC,TF,NG}
     #Afb = zero(A)
     #Afb .= A
-    Af = JACC.Array(A)
+    Af = JACC.array(A[:,:])
     #println(typeof(Af))
     #println(typeof(Afb))
     #error("d")
@@ -79,7 +79,7 @@ function LinearAlgebra.mul!(
 ) where {TA<:AbstractMatrix,TF}
     #Afb = zero(A)
     #Afb .= A
-    Af = JACC.Array(A)
+    Af = JACC.array(A[:,:])
     #println(typeof(Af))
     #println(typeof(Afb))
     #error("d")

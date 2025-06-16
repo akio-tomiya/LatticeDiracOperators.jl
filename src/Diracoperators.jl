@@ -2,6 +2,8 @@ module Dirac_operators
 
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
+import Gaugefields:get_myrank,get_nprocs
+
 import Gaugefields:
     AbstractGaugefields,
     Abstractfields,
