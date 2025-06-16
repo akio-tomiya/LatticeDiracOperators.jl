@@ -102,14 +102,44 @@ function jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
     return factor_x * factor_y * factor_z * factor_t
 end
 
-function jacckernel_shifted_fermion!(i, f, fshifted, bc, shift, NC, NX, NY, NZ, NT)
+function jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
     #ix, iy, iz, it = fourdim_cordinate(i, blockinfo)
     ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    it_shifted = it + shift[4]
+    iz_shifted = iz + shift[3]
+    iy_shifted = iy + shift[2]
+    ix_shifted = ix + shift[1]
+    factor_t = ifelse(it_shifted > NT || it_shifted < 1, bc[4], 1)
+    factor_z = ifelse(iz_shifted > NZ || iz_shifted < 1, bc[3], 1)
+    factor_y = ifelse(iy_shifted > NY || iy_shifted < 1, bc[2], 1)
+    factor_x = ifelse(ix_shifted > NX || ix_shifted < 1, bc[1], 1)
+    
 
-    #inside_up = it_shifted > NT
-    #inside_down = it_shifted < 1
-    #ix,iy,iz,it = 1,1,1,1
+    ix_shifted = mod1(ix_shifted, NX)
+    iy_shifted = mod1(iy_shifted, NY)
+    iz_shifted = mod1(iz_shifted, NZ)
+    it_shifted = mod1(it_shifted, NT)
 
+    #=
+    it_shifted += ifelse(it_shifted > NT,-NT,0)
+    it_shifted += ifelse(it_shifted < NT,NT,0)
+    iz_shifted += ifelse(iz_shifted > NZ,-NZ,0)
+    iz_shifted += ifelse(iz_shifted < NZ,NZ,0)
+    iy_shifted += ifelse(iy_shifted > NY,-NY,0)
+    iy_shifted += ifelse(iy_shifted < NY,NY,0)
+    ix_shifted += ifelse(ix_shifted > NX,-NX,0)
+    ix_shifted += ifelse(ix_shifted < NX,NX,0)
+    =#
+    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+
+    return factor_x * factor_y * factor_z * factor_t,i_shifted
+end
+
+
+function jacckernel_shifted_fermion!(i, f, fshifted, bc, shift, NC, NX, NY, NZ, NT)
+    #ix, iy, iz, it = fourdim_cordinate(i, blockinfo)
+    #=
+    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
 
     it_shifted = it + shift[4]
     iz_shifted = iz + shift[3]
@@ -120,16 +150,18 @@ function jacckernel_shifted_fermion!(i, f, fshifted, bc, shift, NC, NX, NY, NZ, 
     factor_y = ifelse(iy_shifted > NY || iy_shifted < 1, bc[2], 1)
     factor_x = ifelse(ix_shifted > NX || ix_shifted < 1, bc[1], 1)
     i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    =#
 
-
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     @inbounds for ig = 1:4
         for ic = 1:NC
-            fshifted[ic, ig, i] = factor_x *
-                                  factor_y *
-                                  factor_z *
-                                  factor_t *
-                                  f[ic, ig, i_shifted]
+            #fshifted[ic, ig, i] = factor_x *
+            #                      factor_y *
+            #                      factor_z *
+            #                      factor_t *
+            #                      f[ic, ig, i_shifted]
+            fshifted[ic, ig, i] = factor*f[ic, ig, i_shifted]
         end
     end
 
@@ -160,16 +192,16 @@ end
 
 
 function jacckernel_mul_1plusγ5x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
-
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
 
     @inbounds for ic = 1:NC
         y[ic, 1, i] = 0#-1*x[ic,ix,iy,iz,it,1]
@@ -198,14 +230,16 @@ end
 
 
 function jacckernel_mul_1plusγ1x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
+
 
     @inbounds for ic = 1:NC
         v1 = x[ic, 1, i_shifted] - im * x[ic, 4, i_shifted] * factor
@@ -237,14 +271,16 @@ function jacckernel_mul_1minusγ1x!(i, y, x, NC)
 end
 
 function jacckernel_mul_1minusγ1x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
+
 
     @inbounds for ic = 1:NC
         v1 = x[ic, 1, i_shifted] + im * x[ic, 4, i_shifted]
@@ -276,14 +312,15 @@ end
 
 
 function jacckernel_mul_1plusγ2x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
 
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
@@ -320,14 +357,15 @@ function jacckernel_mul_1minusγ2x!(i, y, x, NC)
 end
 
 function jacckernel_mul_1minusγ2x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
 
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
@@ -366,14 +404,15 @@ function jacckernel_mul_1plusγ3x!(i, y, x, NC)
 end
 
 function jacckernel_mul_1plusγ3x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
 
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
@@ -409,15 +448,16 @@ function jacckernel_mul_1minusγ3x!(i, y, x, NC)
 end
 
 function jacckernel_mul_1minusγ3x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
 
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     #factor = kernel_calcfactor(i, shift, blockinfo, bc, NX, NY, NZ, NT)
@@ -455,15 +495,16 @@ end
 function jacckernel_mul_1plusγ4x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     #factor = kernel_calcfactor(i, shift, blockinfo, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
 
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
 
     @inbounds for ic = 1:NC
@@ -497,14 +538,15 @@ end
 function jacckernel_mul_1minusγ4x_shifted!(i, y, x, shift, NC, bc, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     #factor = kernel_calcfactor(i, shift, blockinfo, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
 
 
     @inbounds for ic = 1:NC
@@ -622,14 +664,16 @@ end
 function jacckernel_mul_yAx_NC3_shifted!(i, y, A, x, shift, bc, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     #factor = kernel_calcfactor(i, shift, blockinfo, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
+
 
 
 
@@ -762,14 +806,16 @@ end
 function jacckernel_mul_yxdagAdagshifted_NC3!(i, y, x, A, NG, shift, bc, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
     #factor = kernel_calcfactor(i, shift, blockinfo, bc, NX, NY, NZ, NT)
-    ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
-    ix_shifted = mod1(ix + shift[1], NX)
-    iy_shifted = mod1(iy + shift[2], NY)
-    iz_shifted = mod1(iz + shift[3], NZ)
-    it_shifted = mod1(it + shift[4], NT)
-    i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
+    #ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+    #ix_shifted = mod1(ix + shift[1], NX)
+    #iy_shifted = mod1(iy + shift[2], NY)
+    #iz_shifted = mod1(iz + shift[3], NZ)
+    #it_shifted = mod1(it + shift[4], NT)
+    #i_shifted = coords_to_index(ix_shifted, iy_shifted, iz_shifted, it_shifted, NX, NY, NZ, NT)
     #bshifted, rshifted = shiftedindex(i, shift, blockinfo)
-    factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    #factor = jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
+    factor,i_shifted = jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
+
 
 
     @inbounds for ialpha = 1:NG
@@ -810,7 +856,7 @@ function jacckernel_mul_xA_NC!(i, xout, x, A, NC)
 
 end
 
-function jacckernel_mul_xA_NC3!(i, xout, x, A)
+function jacckernel_mul_xA_NC3NG4!(i, xout, x, A)
     @inbounds for ic = 1:3
         e1 = x[ic, 1, i]
         e2 = x[ic, 2, i]

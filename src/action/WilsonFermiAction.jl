@@ -356,6 +356,8 @@ function sample_pseudofermions!(
         display(W.U[ik])
         error("ddW")
     end
+    #println(typeof(W'))
+    #display(ξ)
 
     mul!(ϕ, W', ξ)
     ik = findfirst(x -> isnan(x), ϕ.f)

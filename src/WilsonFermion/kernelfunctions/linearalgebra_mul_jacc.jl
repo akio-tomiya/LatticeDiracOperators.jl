@@ -248,7 +248,7 @@ function LinearAlgebra.mul!(
         #    println(sum(abs.(u.U)))
     end
 
-    N = y.NX * y.NY * y.NZ * y.NT
+    N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin
     JACC.parallel_for(N, jacckernel_mul_uxydag_NC3NG4!, u.U, x.f, y.parent.f)
     #end
@@ -307,7 +307,7 @@ function LinearAlgebra.mul!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
     A::TA,
 ) where {TA<:AbstractMatrix,NC,TF,NG}
-    Af = CUDA.CuArray(A)
+    Af = JACC.array(A[:,:])
 
     N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin
@@ -321,7 +321,7 @@ function LinearAlgebra.mul!(
     x::WilsonFermion_4D_accelerator{3,TF,4,:jacc},
     A::TA,
 ) where {TA<:AbstractMatrix,TF}
-    Af = CUDA.CuArray(A)
+    Af = JACC.array(A[:,:])
 
     N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin
