@@ -9,6 +9,7 @@ using LatticeDiracOperators
 import Gaugefields: Initialize_4DGaugefields
 import LatticeDiracOperators.SSmodule: shiftedbicg_inSS, shiftedbicgstab_inSS, shiftedbicgstab,
     shiftedbicg_Frommer2003, shiftedbicg_Frommer2003_seed, shiftedbicg_Frommer2003_G_seed
+import JACC
 
 function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ)
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
@@ -153,7 +154,10 @@ function test1()
     NC = 3
 
     #U = Initialize_4DGaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold", cuda=true, blocks=[4, 4, 4, 4])
+    #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
+    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
+
+    #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold", cuda=true, blocks=[4, 4, 4, 4])
     #U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
 
 
@@ -167,6 +171,7 @@ function test1()
 
 
     x = Initialize_pseudofermion_fields(U[1], "Wilson", nowing=true)
+    println(typeof(x))
 
 
     params = Dict()
@@ -193,9 +198,9 @@ function test1()
 
 
     MDtest!(gauge_action, U, Dim, fermi_action, x, y)
+
+
     return
-
-
 
     #g5D = γ5D(D(U))
     g5D = D(U)
