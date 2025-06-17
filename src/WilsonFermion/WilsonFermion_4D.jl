@@ -79,6 +79,68 @@ function calc_beff_dag!(xout, U, x, A) #be + K Teo bo
 
 end
 
+function mul_1plusγμx!(y::WilsonFermion_4D, x, μ)
+    if μ == 1
+        mul_1plusγ1x!(y, x)
+    elseif μ == 2
+        mul_1plusγ2x!(y, x)
+    elseif μ == 3
+        mul_1plusγ3x!(y, x)
+    elseif μ == 4
+        mul_1plusγ4x!(y, x)
+    end
+end
+
+function mul_1minusγμx!(y::WilsonFermion_4D, x, μ)
+    if μ == 1
+        mul_1minusγ1x!(y, x)
+    elseif μ == 2
+        mul_1minusγ2x!(y, x)
+    elseif μ == 3
+        mul_1minusγ3x!(y, x)
+    elseif μ == 4
+        mul_1minusγ4x!(y, x)
+    end
+end
+
+"""
+           (       -i )              (       -1 )
+ GAMMA1 =  (     -i   )     GAMMA2 = (     +1   )
+           (   +i     )              (   +1     )
+           ( +i       )              ( -1       )
+               (     -i   )              (     -1   )
+     GAMMA3 =  (       +i )     GAMMA4 = (       -1 )
+               ( +i       )              ( -1       )
+               (   -i     )              (   -1     )
+
+"""
+
+function mul_x1plusγμ!(y::WilsonFermion_4D, x, μ)
+    if μ == 1
+        mul_1minusγ1x!(y, x)
+    elseif μ == 2
+        mul_1plusγ2x!(y, x)
+    elseif μ == 3
+        mul_1minusγ3x!(y, x)
+    elseif μ == 4
+        mul_1plusγ4x!(y, x)
+    end
+end
+
+function mul_x1minusγμ!(y::WilsonFermion_4D, x, μ)
+    if μ == 1
+        mul_1plusγ1x!(y, x)
+    elseif μ == 2
+        mul_1minusγ2x!(y, x)
+    elseif μ == 3
+        mul_1plusγ3x!(y, x)
+    elseif μ == 4
+        mul_1minusγ4x!(y, x)
+    end
+end
+
+
+
 function Toex!(
     xout::T,
     U::Array{G,1},

@@ -158,6 +158,7 @@ function Wilson_Dirac_operator_faster(
 
 
     r = check_parameters(parameters, "r", 1.0)
+    @assert r == 1 "In fast Wilson mode, r should be 1. Now r = $r"
 
     if Dim == 4
         γ, rplusγ, rminusγ = mk_gamma(r)
