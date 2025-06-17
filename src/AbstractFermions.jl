@@ -166,6 +166,9 @@ function __init__()
     @require JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea" begin
         include("./WilsonFermion/kernelfunctions/Wilson_jacc.jl")
         include("./WilsonFermion/kernelfunctions/linearalgebra_mul_jacc.jl")
+
+        include("./StaggeredFermion/kernelfunctions/Staggered_jacc.jl")
+        include("./StaggeredFermion/kernelfunctions/linearalgebra_mul_jacc.jl")
     end
 
 end

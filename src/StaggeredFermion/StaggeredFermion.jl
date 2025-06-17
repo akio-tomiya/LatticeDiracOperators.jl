@@ -240,3 +240,5 @@ function LinearAlgebra.mul!(
     #error("xout")
     return
 end
+
+include("./StaggeredFermion_4D_accelerator.jl")
