@@ -146,16 +146,16 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, fermi_action, η) 
 end
 
 function test1()
-    NX = 4
-    NY = 4
-    NZ = 4
-    NT = 4
+    NX = 16
+    NY = 16
+    NZ = 16
+    NT = 16
     Nwing = 0
     Dim = 4
     NC = 3
 
-    #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
+    U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
+    #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
     #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
 
     #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold", cuda=true, blocks=[4, 4, 4, 4])
