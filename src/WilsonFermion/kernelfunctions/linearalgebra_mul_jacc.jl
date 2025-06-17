@@ -11,6 +11,19 @@ function LinearAlgebra.mul!(
     #end
 end
 
+#y = A'*x
+function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_accelerator{3,TF,4,:jacc},
+    A::Adjoint_Gaugefields{T},
+    x::T3,
+) where {T<:Gaugefields_4D_accelerator,T3<:WilsonFermion_4D_accelerator,TF}
+
+    #CUDA.@sync begin
+    N = y.NX * y.NY * y.NZ * y.NT
+    JACC.parallel_for(N, jacckernel_mul_yUdagx_NC3NG4!, y.f, A.parent.U, x.f)
+    #end
+end
+
 function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{3,TF,NG,:jacc},
     A::T,
@@ -20,6 +33,19 @@ function LinearAlgebra.mul!(
     N = y.NX * y.NY * y.NZ * y.NT
     #CUDA.@sync begin
     JACC.parallel_for(N, jacckernel_mul_yUx_NC3!, y.f, A.U, x.parent.fshifted, NG)
+    #end
+
+end
+
+function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_accelerator{3,TF,4,:jacc},
+    A::T,
+    x::Shifted_fermionfields_4D_accelerator,
+) where {T<:Gaugefields_4D_accelerator,TF}
+
+    N = y.NX * y.NY * y.NZ * y.NT
+    #CUDA.@sync begin
+    JACC.parallel_for(N, jacckernel_mul_yUx_NC3NG4!, y.f, A.U, x.parent.fshifted)
     #end
 
 end
@@ -62,8 +88,7 @@ function LinearAlgebra.mul!(
     #Afb .= A
     Af = JACC.array(A[:,:])
     #println(typeof(Af))
-    #println(typeof(Afb))
-    #error("d")
+
 
     N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin
@@ -82,6 +107,8 @@ function LinearAlgebra.mul!(
     Af = JACC.array(A[:,:])
     #println(typeof(Af))
     #println(typeof(Afb))
+    #error("d")
+    #    println(typeof(Af))
     #error("d")
 
     N = x.NX * x.NY * x.NZ * x.NT

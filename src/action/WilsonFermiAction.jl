@@ -113,7 +113,7 @@ function calc_UdSfdU!(
     #println("Xd ",X[1,1,1,1,1,1])
     #ϕ.f .= 1
     #println("solve DinvX")
-    solve_DinvX!(X, WdagW, ϕ)
+    @time solve_DinvX!(X, WdagW, ϕ)
     #error("ee")
     #println("X ",X[1,1,1,1,1,1])
     clear_U!(UdSfdU)

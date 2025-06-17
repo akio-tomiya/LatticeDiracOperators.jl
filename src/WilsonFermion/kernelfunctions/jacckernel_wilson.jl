@@ -67,6 +67,28 @@ function jacckernel_mul_yUx_NC3!(i, y, A, x, NG)
 end
 
 
+function jacckernel_mul_yUx_NC3NG4!(i, y, A, x)
+    @inbounds for ialpha = 1:4
+        x1 = x[1, ialpha, i]
+        x2 = x[2, ialpha, i]
+        x3 = x[3, ialpha, i]
+
+        y[1, ialpha, i] =
+            A[1, 1, i] * x1 +
+            A[1, 2, i] * x2 +
+            A[1, 3, i] * x3
+        y[2, ialpha, i] =
+            A[2, 1, i] * x1 +
+            A[2, 2, i] * x2 +
+            A[2, 3, i] * x3
+        y[3, ialpha, i] =
+            A[3, 1, i] * x1 +
+            A[3, 2, i] * x2 +
+            A[3, 3, i] * x3
+    end
+end
+
+
 function jacckernel_mul_yUdagx_NC3!(i, y, A, x, NG)
     @inbounds for ialpha = 1:NG
         x1 = x[1, ialpha, i]
@@ -88,8 +110,33 @@ function jacckernel_mul_yUdagx_NC3!(i, y, A, x, NG)
     end
 end
 
+
+function jacckernel_mul_yUdagx_NC3NG4!(i, y, A, x)
+    @inbounds for ialpha = 1:4
+        x1 = x[1, ialpha, i]
+        x2 = x[2, ialpha, i]
+        x3 = x[3, ialpha, i]
+
+        y[1, ialpha, i] =
+            conj(A[1, 1, i]) * x1 +
+            conj(A[2, 1, i]) * x2 +
+            conj(A[3, 1, i]) * x3
+        y[2, ialpha, i] =
+            conj(A[1, 2, i]) * x1 +
+            conj(A[2, 2, i]) * x2 +
+            conj(A[3, 2, i]) * x3
+        y[3, ialpha, i] =
+            conj(A[1, 3, i]) * x1 +
+            conj(A[2, 3, i]) * x2 +
+            conj(A[3, 3, i]) * x3
+    end
+end
+
 function jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
     #ix, iy, iz, it = fourdim_cordinate(i, blockinfo)
+    #bc = JACC.shared(bc_in)
+    #shift = JACC.shared(shift_in)
+
     ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
     it_shifted = it + shift[4]
     iz_shifted = iz + shift[3]
@@ -102,7 +149,7 @@ function jacckernel_calcfactor(i, shift, bc, NX, NY, NZ, NT)
     return factor_x * factor_y * factor_z * factor_t
 end
 
-function jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
+@inline function jacckernel_calcfactor_and_index(i, shift, bc, NX, NY, NZ, NT)
     #ix, iy, iz, it = fourdim_cordinate(i, blockinfo)
     ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
     it_shifted = it + shift[4]
