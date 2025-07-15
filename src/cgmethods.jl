@@ -1135,3 +1135,214 @@ function shiftedbicg_2003(σ, A, b; maxsteps=3000, eps=1e-15, verboselevel=2)
 
 
 end
+
+
+function gmres(x, A, b; eps = 1e-5, maxsteps = 1000, restart = 50, verbose = Verbose_print(2))
+    println_verbose_level3(verbose, "--------------------------------------")
+    println_verbose_level3(verbose, "GMRES method")
+
+    temps = get_temporaryvectors_forCG(A)
+    r, it_r = get_temp(temps)
+    Ax, it_Ax = get_temp(temps)
+    w, it_w = get_temp(temps)
+
+    substitute_fermion!(r, b)
+    mul!(Ax, A, x)
+    add!(r, -1, Ax)
+
+    beta =norm(r)
+    # println(norm(r)-beta)
+    if beta < eps
+        unused!(temps, it_r)
+        unused!(temps, it_Ax)
+        unused!(temps, it_w)
+        return
+    end
+
+    V = [similar(x) for _ in 1:(restart + 1)]
+    H = zeros(ComplexF64, restart + 1, restart)
+    y = zeros(eltype(dot(x, x)), restart)
+
+    for iter_outer = 1:maxsteps
+        V[1] = deepcopy(r)
+        add!(0, V[1], 1 / beta, V[1])
+
+        s = zeros(Float64, restart + 1)
+        s[1] = beta
+
+        for j = 1:restart
+            mul!(w, A, V[j])
+
+            for i = 1:j
+                H[i, j] = dot(V[i], w)
+                add!(w, -H[i, j], V[i])
+            end
+
+            H[j+1, j] = norm(w)
+            if H[j+1, j] != 0
+                V[j+1] = similar(w)
+                add!(0, V[j+1], 1.0 / H[j+1, j], w)
+            end
+
+            y = H[1:j+1, 1:j] \ s[1:j+1]
+            rnorm = norm(s[1:j+1] - H[1:j+1, 1:j] * y)
+
+
+
+            if rnorm < eps
+                temp_x = similar(x)
+                for k = 1:j
+                    add!(temp_x, y[k], V[k])
+                end
+                add!(x, 1, temp_x)
+
+                println("Converged at $(iter_outer)-$(j)-th step. eps: $(rnorm)")
+                unused!(temps, it_r)
+                unused!(temps, it_Ax)
+                unused!(temps, it_w)
+                return
+            end
+        end
+
+        temp_x = similar(x)
+        for k = 1:restart
+            add!(temp_x, y[k], V[k])
+        end
+        add!(x, 1, temp_x)
+
+        mul!(Ax, A, x)
+        substitute_fermion!(r, b)
+        add!(r, -1, Ax)
+        beta = norm(r)
+        println("restart at :",beta)
+        if beta < eps
+            unused!(temps, it_r)
+            unused!(temps, it_Ax)
+            unused!(temps, it_w)
+            return
+        end
+    end
+
+    unused!(temps, it_r)
+    unused!(temps, it_Ax)
+    unused!(temps, it_w)
+
+    println("""
+    GMRES did not converge within maxsteps=$(maxsteps).
+    Residual: $(beta^2)
+    Consider increasing maxsteps or adjusting restart parameter.""")
+end
+
+
+
+
+
+
+
+function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = Verbose_print(2))
+    println_verbose_level3(verbose, "--------------------------------------")
+    println_verbose_level3(verbose, "Flexible GMRES method")
+
+    temps = get_temporaryvectors_forCG(A)
+    r, it_r = get_temp(temps)
+    Ax, it_Ax = get_temp(temps)
+    w, it_w = get_temp(temps)
+
+    substitute_fermion!(r, b)
+    mul!(Ax, A, x)
+    add!(r, -1, Ax)
+
+
+    beta = norm(r)
+    if beta < eps
+        unused!(temps, it_r)
+        unused!(temps, it_Ax)
+        unused!(temps, it_w)
+        return
+    end
+
+    V = [similar(x) for _ in 1:(restart + 1)]
+    Z = [similar(x) for _ in 1:restart]  # z_j = M(v_j)
+    H = zeros(ComplexF64, restart + 1, restart)
+    y = zeros(eltype(dot(x, x)), restart)
+
+    for iter_outer = 1:maxsteps
+        V[1] = deepcopy(r)
+        add!(0, V[1], 1 / beta, V[1])  # V[1] = r / beta
+
+        s = zeros(Float64, restart + 1)
+        s[1] = beta
+
+        for j = 1:restart
+            Z[j] = M(V[j])        # z_j = M(v_j)
+            mul!(w, A, Z[j])        # w = A * z_j
+
+            for i = 1:j
+                H[i, j] = dot(V[i], w)
+                add!(w, -H[i, j], V[i])
+            end
+
+            H[j+1, j] = norm(w)
+            if H[j+1, j] != 0
+                V[j+1] = similar(w)
+                add!(0, V[j+1], 1.0 / H[j+1, j], w)
+            end
+
+            y = H[1:j+1, 1:j] \ s[1:j+1]
+            rnorm = norm(s[1:j+1] - H[1:j+1, 1:j] * y)
+            # println(rnorm)
+            # println("x: ", norm(x))
+
+            if rnorm < eps
+                temp_x = similar(x)
+                for k = 1:j
+                    add!(temp_x, y[k], Z[k])  # x += y_k * z_k
+                end
+                add!(x, 1, temp_x)
+
+                println("Converged at $(iter_outer)-$(j)-th step. eps: $(rnorm)")
+                unused!(temps, it_r)
+                unused!(temps, it_Ax)
+                unused!(temps, it_w)
+                return
+            end
+        end
+
+        temp_x = similar(x)
+        for k = 1:restart
+            add!(temp_x, y[k], Z[k])
+        end
+        add!(x, 1, temp_x)
+
+        # r = b - A*x
+        mul!(Ax, A, x)
+        substitute_fermion!(r, b)
+        add!(r, -1, Ax)
+        beta = norm(r)
+        println("restart at :",beta)
+
+        if beta < eps
+            unused!(temps, it_r)
+            unused!(temps, it_Ax)
+            unused!(temps, it_w)
+            return
+        end
+    end
+
+    unused!(temps, it_r)
+    unused!(temps, it_Ax)
+    unused!(temps, it_w)
+
+    println("""
+    FGMRES did not converge within maxsteps=$(maxsteps).
+    Residual: $(beta^2)
+    Consider increasing maxsteps or adjusting restart parameter.""")
+end
+
+
+
+
+
+
+
+
