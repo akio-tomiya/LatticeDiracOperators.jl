@@ -282,7 +282,7 @@ function gauss_distribution_fermion!(
     return
 end
 
-function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}, randomfunc) where {NC}
+function gauss_distribution_fermion!(x::WilsonFermion_4D_mpi{NC}, randomfunc) where {NC}
     σ = 1
     gauss_distribution_fermion!(x, randomfunc, σ)
 end

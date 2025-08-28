@@ -86,7 +86,7 @@ function LinearAlgebra.mul!(
 ) where {TA<:AbstractMatrix,NC,TF,NG}
     #Afb = zero(A)
     #Afb .= A
-    Af = JACC.array(A[:,:])
+    Af = JACC.array(A[:, :])
     #println(typeof(Af))
 
 
@@ -104,7 +104,7 @@ function LinearAlgebra.mul!(
 ) where {TA<:AbstractMatrix,TF}
     #Afb = zero(A)
     #Afb .= A
-    Af = JACC.array(A[:,:])
+    Af = JACC.array(A[:, :])
     #println(typeof(Af))
     #println(typeof(Afb))
     #error("d")
@@ -136,7 +136,7 @@ end
 
 
 
-
+#=
 function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{3,TF,NG,:jacc},
     A::T,
@@ -149,6 +149,7 @@ function LinearAlgebra.mul!(
     #end
 
 end
+=#
 
 function LinearAlgebra.mul!(
     y::WilsonFermion_4D_accelerator{3,TF,NG,:jacc,TUv,TFshifted},
@@ -334,7 +335,7 @@ function LinearAlgebra.mul!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
     A::TA,
 ) where {TA<:AbstractMatrix,NC,TF,NG}
-    Af = JACC.array(A[:,:])
+    Af = JACC.array(A[:, :])
 
     N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin
@@ -348,7 +349,7 @@ function LinearAlgebra.mul!(
     x::WilsonFermion_4D_accelerator{3,TF,4,:jacc},
     A::TA,
 ) where {TA<:AbstractMatrix,TF}
-    Af = JACC.array(A[:,:])
+    Af = JACC.array(A[:, :])
 
     N = x.NX * x.NY * x.NZ * x.NT
     #CUDA.@sync begin

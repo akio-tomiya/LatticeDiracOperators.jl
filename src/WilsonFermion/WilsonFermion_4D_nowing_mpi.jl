@@ -4,19 +4,7 @@ import Gaugefields: comm, setvalue!
 import Gaugefields: barrier
 import Gaugefields.AbstractGaugefields_module: getvalue
 
-mutable struct Data_sent_fermion{NC} #data format for MPI
-    count::Int64
-    data::Array{ComplexF64,3}
-    positions::Vector{Int64}
 
-    function Data_sent_fermion(N, NC; NG = 4)
-        data = zeros(ComplexF64, NC, NG, N)
-        count = 0
-        positions = zeros(Int64, N)
-
-        return new{NC}(count, data, positions)
-    end
-end
 
 """
 Struct for WilsonFermion
@@ -60,7 +48,7 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
         NZ::T,
         NT::T,
         PEs;
-        comm = MPI.COMM_WORLD,
+        comm=MPI.COMM_WORLD,
     ) where {T<:Integer}
         NG = 4
         NDW = 0
@@ -165,7 +153,7 @@ function barrier(x::T) where {T<:WilsonFermion_4D_nowing_mpi}
 end
 
 function Base.similar(x::T) where {T<:WilsonFermion_4D_nowing_mpi}
-    return WilsonFermion_4D_nowing_mpi(x.NC, x.NX, x.NY, x.NZ, x.NT, x.PEs, comm = x.comm)
+    return WilsonFermion_4D_nowing_mpi(x.NC, x.NX, x.NY, x.NZ, x.NT, x.PEs, comm=x.comm)
 end
 
 
@@ -262,7 +250,7 @@ end
     i4,
     i5,
     i6,
-) where {T<:Abstractfermion}  #F'
+) where {T<:WilsonFermion_4D_nowing_mpi}  #F'
     @inbounds return conj(getvalue(F.parent, i1, i2, i3, i4, i5, i6))
 end
 
@@ -293,7 +281,7 @@ struct Shifted_fermionfields_4D_nowing_mpi{NC,T} <: Shifted_fermionfields{NC,4}
     function Shifted_fermionfields_4D_nowing_mpi(
         F,
         shift;
-        boundarycondition = boundarycondition_default,
+        boundarycondition=boundarycondition_default,
     )
         NC = F.NC
         shifted_fermion!(F, boundarycondition, shift)
@@ -466,7 +454,8 @@ function mpi_updates_fermion_1data!(
 
         for (myrank_send, value) in send_ranks
             count = value.count
-            MPI.Put(value.data[:, :, 1:count], myrank_send, win)
+            MPI.Put(view(value.data, :, :, 1:count), myrank_send, win)
+            #MPI.Put(value.data[:, :, 1:count], myrank_send, win)
         end
 
         MPI.Win_fence(0, win)
@@ -477,7 +466,8 @@ function mpi_updates_fermion_1data!(
 
         for (myrank_send, value) in send_ranks
             count = value.count
-            MPI.Put(value.positions[1:count], myrank_send, win_i)
+            MPI.Put(view(value.positions, 1:count), myrank_send, win_i)
+            #MPI.Put(value.positions[1:count], myrank_send, win_i)
         end
 
         MPI.Win_fence(0, win_i)
@@ -592,8 +582,14 @@ function mpi_updates_fermion_moredata!(
         end
 
 
-        MPI.Put(value.positions[1:count], myrank_send, disp, win_i)
-        MPI.Put(value.data[:, :, 1:count], myrank_send, disp * NC * NG, win)
+        #MPI.Put(value.positions[1:count], myrank_send, disp, win_i)
+        #MPI.Put(value.data[:, :, 1:count], myrank_send, disp * NC * NG, win)
+        #GC.@preserve value begin
+        buf_pos = view(value.positions, 1:count)
+        buf_data = view(value.data, :, :, 1:count)
+        MPI.Put(buf_pos, myrank_send, disp, win_i)
+        MPI.Put(buf_data, myrank_send, disp * NC * NG, win)
+        #end
     end
 
 
@@ -1034,7 +1030,7 @@ c     Random number function Z4  Noise
 c     https://arxiv.org/pdf/1611.01193.pdf
 c-------------------------------------------------c
     """
-function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC}) where {NC}
+function Z4_distribution_fermi!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1066,7 +1062,7 @@ function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC}) where {NC}
 end
 
 
-function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}, randomfunc) where {NC}
+function gauss_distribution_fermion!(x::WilsonFermion_4D_nowing_mpi{NC}, randomfunc) where {NC}
     σ = 1
     gauss_distribution_fermion!(x, randomfunc, σ)
 end
@@ -1546,7 +1542,7 @@ end
 function LinearAlgebra.mul!(
     u::T1,
     x::WilsonFermion_4D_nowing_mpi{NC},
-    y::Adjoint_fermionfields{<:WilsonFermion_4D_nowing_mpi{NC}};clear=true
+    y::Adjoint_fermionfields{<:WilsonFermion_4D_nowing_mpi{NC}}; clear=true
 ) where {T1<:AbstractGaugefields,NC}
     #_,NX,NY,NZ,NT,NG = size(y)
     NG = x.NG
@@ -1585,7 +1581,7 @@ mul!(u,x,y) -> u_{ab} = x_a*y_b
 function LinearAlgebra.mul!(
     u::T1,
     x::WilsonFermion_4D_nowing_mpi{NC},
-    y::WilsonFermion_4D_nowing_mpi{NC};clear = true
+    y::WilsonFermion_4D_nowing_mpi{NC}; clear=true
 ) where {T1<:AbstractGaugefields,NC}
     NX = x.NX
     NY = x.NY
@@ -1995,7 +1991,7 @@ function apply_γ5!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
 
 end
 
-function apply_σ!(x::WilsonFermion_4D_nowing_mpi{NC},σ::σμν{μ,ν},b::WilsonFermion_4D_nowing_mpi{NC};factor=1) where {NC,μ,ν}
+function apply_σ!(x::WilsonFermion_4D_nowing_mpi{NC}, σ::σμν{μ,ν}, b::WilsonFermion_4D_nowing_mpi{NC}; factor=1) where {NC,μ,ν}
     n1, n6, n2, n3, n4, n5 = size(a.f)
     @inbounds for i5 = 1:n5
         #it = i5+NDW
@@ -2009,8 +2005,8 @@ function apply_σ!(x::WilsonFermion_4D_nowing_mpi{NC},σ::σμν{μ,ν},b::Wilso
                         value = σ.σ[i6]
                         iβ = σ.indices[i6]
                         @simd for i1 = 1:NC
-                            x.f[i1, i6, i2, i3, i4, i5] += factor*value*b.f[i1, iβ, i2, i3, i4, i5] 
-                                #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
+                            x.f[i1, i6, i2, i3, i4, i5] += factor * value * b.f[i1, iβ, i2, i3, i4, i5]
+                            #x.f[i1, i6, i2, i3, i4, i5] * ifelse(i6 <= 2, -1, 1)
                         end
                     end
                 end
@@ -2448,3 +2444,5 @@ function mul_1plusγ4x!(y::WilsonFermion_4D_nowing_mpi{NC}, x) where {NC}#(1+gam
         end
     end
 end
+
+

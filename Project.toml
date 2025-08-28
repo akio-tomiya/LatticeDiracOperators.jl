@@ -1,26 +1,30 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
-version = "0.4.15"
+version = "0.5.0"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
 Gaugefields = "a461e10c-0d91-493e-bc41-027b226eee91"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 
 [compat]
+Gaugefields = "0.5,0.6"
+JACC = "0.5.0"
 JLD2 = "0.4,0.5"
+MPI = "0.20.23"
 Requires = "1"
-Wilsonloop = "0.1.5"
-Gaugefields  = "0.5,0.6"
-julia = "1.10,1.11"
 SparseArrays = "1,2"
+Wilsonloop = "0.1.5"
+julia = "1.11"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

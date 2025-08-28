@@ -2,9 +2,19 @@ using JLD2
 
 abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4} end
 
+mutable struct Data_sent_fermion{NC} #data format for MPI
+    count::Int64
+    data::Array{ComplexF64,3}
+    positions::Vector{Int64}
 
+    function Data_sent_fermion(N, NC; NG=4)
+        data = zeros(ComplexF64, NC, NG, N)
+        count = 0
+        positions = zeros(Int64, N)
 
-
+        return new{NC}(count, data, positions)
+    end
+end
 
 function Base.setindex!(x::T, v, i1, i2, i3, i4, i5, i6) where {T<:AbstractFermionfields_4D}
     @inbounds x.f[i1, i2+x.NDW, i3+x.NDW, i4+x.NDW, i5+x.NDW, i6] = v
@@ -186,6 +196,27 @@ function substitute_fermion!(a::AbstractFermionfields_4D{NC}, b::Abstractfermion
         end
     end
     set_wing_fermion!(a)
+end
+
+struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
+    parent::T
+    #parent::T
+    shift::NTuple{4,Int8}
+    NC::Int64
+    bc::NTuple{4,Int8}
+
+    #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
+    function Shifted_fermionfields_4D_accelerator(
+        F,
+        shift;
+        boundarycondition=boundarycondition_default_accelerator,
+    )
+        NC = F.NC
+        bc = Tuple(boundarycondition)
+
+        shifted_fermion!(F, boundarycondition, shift)
+        return new{NC,typeof(F)}(F, shift, NC, bc)
+    end
 end
 
 struct Shifted_fermionfields_4D_nowing{NC,T} <: Shifted_fermionfields{NC,4}
@@ -490,6 +521,7 @@ function LinearAlgebra.mul!(
         end
     end
 end
+
 
 function LinearAlgebra.mul!(
     y::AbstractFermionfields_4D{3},
@@ -1644,3 +1676,922 @@ function apply_σ!(a::AbstractFermionfields_4D{NC}, σ::σμν{μ,ν}, b::Shifte
 end
 
 
+function Ux_ν!(
+    y::AbstractFermionfields_4D{NC},
+    A::T,
+    x::T3,
+    ν::Integer;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion,NC}
+
+    xplus = shift_fermion(x, ν; boundarycondition)
+    mul!(y, A, xplus)
+
+end
+
+struct Uxplusminus_ν
+end
+
+function Uxplus_1!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+                        ix_shifted = ix + 1
+                        inside_up = ix_shifted > NX
+                        factor_x = ifelse(inside_up, boundarycondition[1], 1)
+                        ix_shifted += ifelse(inside_up, -NX, 0)
+
+                        x1 = x[1, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x2 = x[2, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x3 = x[3, ix_shifted, iy, iz, it, ialpha] * factor_x
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_1!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+                        ix_shifted = ix - 1
+                        inside_down = ix_shifted < 1
+                        factor_x = ifelse(inside_down, boundarycondition[1], 1)
+                        ix_shifted += ifelse(inside_down, NX, 0)
+
+                        x1 = x[1, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x2 = x[2, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x3 = x[3, ix_shifted, iy, iz, it, ialpha] * factor_x
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+function Uxplus_2!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    iy_shifted = iy + 1
+                    inside_up = iy_shifted > NY
+                    factor = ifelse(inside_up, boundarycondition[2], 1)
+                    iy_shifted += ifelse(inside_up, -NY, 0)
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy_shifted, iz, it, ialpha] * factor
+                        x2 = x[2, ix, iy_shifted, iz, it, ialpha] * factor
+                        x3 = x[3, ix, iy_shifted, iz, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_2!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    iy_shifted = iy - 1
+                    inside_down = iy_shifted < 1
+                    factor = ifelse(inside_down, boundarycondition[2], 1)
+                    iy_shifted += ifelse(inside_down, NY, 0)
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy_shifted, iz, it, ialpha] * factor
+                        x2 = x[2, ix, iy_shifted, iz, it, ialpha] * factor
+                        x3 = x[3, ix, iy_shifted, iz, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+
+function Uxplus_3!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                iz_shifted = iz + 1
+                inside_up = iz_shifted > NZ
+                factor = ifelse(inside_up, boundarycondition[3], 1)
+                iz_shifted += ifelse(inside_up, -NZ, 0)
+
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz_shifted, it, ialpha] * factor
+                        x2 = x[2, ix, iy, iz_shifted, it, ialpha] * factor
+                        x3 = x[3, ix, iy, iz_shifted, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_3!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                iz_shifted = iz - 1
+                inside_down = iz_shifted < 1
+                factor = ifelse(inside_down, boundarycondition[3], 1)
+                iz_shifted += ifelse(inside_down, NZ, 0)
+
+                for iy = 1:NY
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz_shifted, it, ialpha] * factor
+                        x2 = x[2, ix, iy, iz_shifted, it, ialpha] * factor
+                        x3 = x[3, ix, iy, iz_shifted, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+function Uxplus_4!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+            it_shifted = it + 1
+            inside_up = it_shifted > NT
+            factor = ifelse(inside_up, boundarycondition[4], 1)
+            it_shifted += ifelse(inside_up, -NT, 0)
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz, it_shifted, ialpha] * factor
+                        x2 = x[2, ix, iy, iz, it_shifted, ialpha] * factor
+                        x3 = x[3, ix, iy, iz, it_shifted, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_4!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+            it_shifted = it - 1
+            inside_down = it_shifted < 1
+            factor = ifelse(inside_down, boundarycondition[4], 1)
+            it_shifted += ifelse(inside_down, NT, 0)
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+
+                for iy = 1:NY
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz, it_shifted, ialpha] * factor
+                        x2 = x[2, ix, iy, iz, it_shifted, ialpha] * factor
+                        x3 = x[3, ix, iy, iz, it_shifted, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it] * x1 +
+                            A[1, 2, ix, iy, iz, it] * x2 +
+                            A[1, 3, ix, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it] * x1 +
+                            A[2, 2, ix, iy, iz, it] * x2 +
+                            A[2, 3, ix, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it] * x1 +
+                            A[3, 2, ix, iy, iz, it] * x2 +
+                            A[3, 3, ix, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+"""
+(Ux)
+"""
+function Ux_afterν!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3,
+    ν::Integer;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+
+
+
+    mul!(y, A, x)
+    x_shifted = shift_fermion(y, ν; boundarycondition)
+    substitute_fermion!(y, x_shifted)
+
+end
+
+
+function Uxplus_after1!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+                        ix_shifted = ix + 1
+                        inside_up = ix_shifted > NX
+                        factor_x = ifelse(inside_up, boundarycondition[1], 1)
+                        ix_shifted += ifelse(inside_up, -NX, 0)
+
+                        x1 = x[1, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x2 = x[2, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x3 = x[3, ix_shifted, iy, iz, it, ialpha] * factor_x
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[1, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[1, 3, ix_shifted, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[2, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[2, 3, ix_shifted, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[3, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[3, 3, ix_shifted, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_after1!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+                        ix_shifted = ix - 1
+                        inside_down = ix_shifted < 1
+                        factor_x = ifelse(inside_down, boundarycondition[1], 1)
+                        ix_shifted += ifelse(inside_down, NX, 0)
+
+                        x1 = x[1, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x2 = x[2, ix_shifted, iy, iz, it, ialpha] * factor_x
+                        x3 = x[3, ix_shifted, iy, iz, it, ialpha] * factor_x
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[1, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[1, 3, ix_shifted, iy, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[2, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[2, 3, ix_shifted, iy, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix_shifted, iy, iz, it] * x1 +
+                            A[3, 2, ix_shifted, iy, iz, it] * x2 +
+                            A[3, 3, ix_shifted, iy, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+function Uxplus_after2!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    iy_shifted = iy + 1
+                    inside_up = iy_shifted > NY
+                    factor = ifelse(inside_up, boundarycondition[2], 1)
+                    iy_shifted += ifelse(inside_up, -NY, 0)
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy_shifted, iz, it, ialpha] * factor
+                        x2 = x[2, ix, iy_shifted, iz, it, ialpha] * factor
+                        x3 = x[3, ix, iy_shifted, iz, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[1, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[1, 3, ix, iy_shifted, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[2, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[2, 3, ix, iy_shifted, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[3, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[3, 3, ix, iy_shifted, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_after2!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                for iy = 1:NY
+                    iy_shifted = iy - 1
+                    inside_down = iy_shifted < 1
+                    factor = ifelse(inside_down, boundarycondition[2], 1)
+                    iy_shifted += ifelse(inside_down, NY, 0)
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy_shifted, iz, it, ialpha] * factor
+                        x2 = x[2, ix, iy_shifted, iz, it, ialpha] * factor
+                        x3 = x[3, ix, iy_shifted, iz, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[1, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[1, 3, ix, iy_shifted, iz, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[2, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[2, 3, ix, iy_shifted, iz, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy_shifted, iz, it] * x1 +
+                            A[3, 2, ix, iy_shifted, iz, it] * x2 +
+                            A[3, 3, ix, iy_shifted, iz, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+
+function Uxplus_after3!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                iz_shifted = iz + 1
+                inside_up = iz_shifted > NZ
+                factor = ifelse(inside_up, boundarycondition[3], 1)
+                iz_shifted += ifelse(inside_up, -NZ, 0)
+
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz_shifted, it, ialpha] * factor
+                        x2 = x[2, ix, iy, iz_shifted, it, ialpha] * factor
+                        x3 = x[3, ix, iy, iz_shifted, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[1, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[1, 3, ix, iy, iz_shifted, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[2, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[2, 3, ix, iy, iz_shifted, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[3, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[3, 3, ix, iy, iz_shifted, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_after3!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+                iz_shifted = iz - 1
+                inside_down = iz_shifted < 1
+                factor = ifelse(inside_down, boundarycondition[3], 1)
+                iz_shifted += ifelse(inside_down, NZ, 0)
+
+                for iy = 1:NY
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz_shifted, it, ialpha] * factor
+                        x2 = x[2, ix, iy, iz_shifted, it, ialpha] * factor
+                        x3 = x[3, ix, iy, iz_shifted, it, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[1, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[1, 3, ix, iy, iz_shifted, it] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[2, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[2, 3, ix, iy, iz_shifted, it] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz_shifted, it] * x1 +
+                            A[3, 2, ix, iy, iz_shifted, it] * x2 +
+                            A[3, 3, ix, iy, iz_shifted, it] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+function Uxplus_after4!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+            it_shifted = it + 1
+            inside_up = it_shifted > NT
+            factor = ifelse(inside_up, boundarycondition[4], 1)
+            it_shifted += ifelse(inside_up, -NT, 0)
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+
+                for iy = 1:NY
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz, it_shifted, ialpha] * factor
+                        x2 = x[2, ix, iy, iz, it_shifted, ialpha] * factor
+                        x3 = x[3, ix, iy, iz, it_shifted, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[1, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[1, 3, ix, iy, iz, it_shifted] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[2, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[2, 3, ix, iy, iz, it_shifted] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[3, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[3, 3, ix, iy, iz, it_shifted] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function Uxminus_after4!(
+    y::AbstractFermionfields_4D{3},
+    A::T,
+    x::T3;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha = 1:NG
+        for it = 1:NT
+            it_shifted = it - 1
+            inside_down = it_shifted < 1
+            factor = ifelse(inside_down, boundarycondition[4], 1)
+            it_shifted += ifelse(inside_down, NT, 0)
+
+            #println("it = ",it, " ialpha = $ialpha")
+            for iz = 1:NZ
+
+                for iy = 1:NY
+
+                    for ix = 1:NX
+                        #updatefunc!(y,A,x,ix,iy,iz,it,ialpha)
+                        #error("oo")
+                        # #=
+
+                        x1 = x[1, ix, iy, iz, it_shifted, ialpha] * factor
+                        x2 = x[2, ix, iy, iz, it_shifted, ialpha] * factor
+                        x3 = x[3, ix, iy, iz, it_shifted, ialpha] * factor
+
+                        y[1, ix, iy, iz, it, ialpha] =
+                            A[1, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[1, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[1, 3, ix, iy, iz, it_shifted] * x3
+                        y[2, ix, iy, iz, it, ialpha] =
+                            A[2, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[2, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[2, 3, ix, iy, iz, it_shifted] * x3
+                        y[3, ix, iy, iz, it, ialpha] =
+                            A[3, 1, ix, iy, iz, it_shifted] * x1 +
+                            A[3, 2, ix, iy, iz, it_shifted] * x2 +
+                            A[3, 3, ix, iy, iz, it_shifted] * x3
+                        # =#
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
+const γ1indices = (4, 3, 2, 1)
+const γ1coeffs = (-im, -im, im, im)
+const γ2indices = (4, 3, 2, 1)
+const γ2coeffs = (-1, 1, 1, -1)
+const γ3indices = (3, 4, 1, 2)
+const γ3coeffs = (-im, im, im, -im)
+const γ4indices = (3, 4, 1, 2)
+const γ4coeffs = (-1, -1, -1, -1)
+
+const γindices = (γ1indices, γ2indices, γ3indices, γ4indices)
+const γcoeffs = (γ1coeffs, γ2coeffs, γ3coeffs, γ4coeffs)

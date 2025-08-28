@@ -315,26 +315,7 @@ end
 
 const boundarycondition_default_accelerator = [1, 1, 1, -1]
 
-struct Shifted_fermionfields_4D_accelerator{NC,T} <: Shifted_fermionfields{NC,4}
-    parent::T
-    #parent::T
-    shift::NTuple{4,Int8}
-    NC::Int64
-    bc::NTuple{4,Int8}
 
-    #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
-    function Shifted_fermionfields_4D_accelerator(
-        F,
-        shift;
-        boundarycondition=boundarycondition_default_accelerator,
-    )
-        NC = F.NC
-        bc = Tuple(boundarycondition)
-
-        shifted_fermion!(F, boundarycondition, shift)
-        return new{NC,typeof(F)}(F, shift, NC, bc)
-    end
-end
 
 function shifted_fermion!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},

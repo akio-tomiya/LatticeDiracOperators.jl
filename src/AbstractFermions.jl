@@ -150,26 +150,21 @@ include("./AbstractFermions_2D.jl")
 include("./AbstractFermions_3D.jl")
 
 function __init__()
-    @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
-        include("./WilsonFermion/WilsonFermion_4D_wing_mpi.jl")
-        include("./WilsonFermion/WilsonFermion_4D_nowing_mpi.jl")
-        include("./StaggeredFermion/StaggeredFermion_4D_nowing_mpi.jl")
-        include("./DomainwallFermion/DomainwallFermion_5d_wing_mpi.jl")
-        include("./DomainwallFermion/DomainwallFermion_5d_mpi.jl")
-    end
+    #@require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
+
+
+
+    #end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
         include("./WilsonFermion/kernelfunctions/Wilson_cuda.jl")
         include("./WilsonFermion/kernelfunctions/linearalgebra_mul_cuda.jl")
     end
 
-    @require JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea" begin
-        include("./WilsonFermion/kernelfunctions/Wilson_jacc.jl")
-        include("./WilsonFermion/kernelfunctions/linearalgebra_mul_jacc.jl")
+    #@require JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea" begin
 
-        include("./StaggeredFermion/kernelfunctions/Staggered_jacc.jl")
-        include("./StaggeredFermion/kernelfunctions/linearalgebra_mul_jacc.jl")
-    end
+
+    #end
 
 end
 

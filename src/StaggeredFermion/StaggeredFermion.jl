@@ -20,6 +20,7 @@ include("./StaggeredFermion_4D_wing.jl")
 include("./StaggeredFermion_4D_nowing.jl")
 include("./StaggeredFermion_2D_wing.jl")
 include("./StaggeredFermion_2D_nowing.jl")
+include("./StaggeredFermion_4D_nowing_mpi.jl")
 
 function Staggered_Dirac_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
@@ -241,4 +242,6 @@ function LinearAlgebra.mul!(
     return
 end
 
-include("./StaggeredFermion_4D_accelerator.jl")
+#include("./StaggeredFermion_4D_accelerator.jl")
+#include("./kernelfunctions/Staggered_jacc.jl")
+#include("./kernelfunctions/linearalgebra_mul_jacc.jl")

@@ -27,6 +27,20 @@ function LinearAlgebra.mul!(
 
 end
 
+#=
+function LinearAlgebra.mul!(
+    y::StaggeredFermion_4D_accelerator{3,TF,:jacc},
+    A::T,
+    x::T3,
+) where {T<:Gaugefields_4D_accelerator,T3<:Shifted_fermionfields_4D_accelerator,TF}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    N = y.NX * y.NY * y.NZ * y.NT
+    #CUDA.@sync begin
+    JACC.parallel_for(N, jacckernel_mul_yAx_NC3_staggered!, y.f, A.U, x.parent.fshifted)
+    #end
+
+end
+=#
 
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
@@ -83,18 +97,7 @@ end
 
 
 
-function LinearAlgebra.mul!(
-    y::StaggeredFermion_4D_accelerator{3,TF,:jacc},
-    A::T,
-    x::T3,
-) where {T<:Gaugefields_4D_accelerator,T3<:Shifted_fermionfields_4D_accelerator,TF}
-    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
-    N = y.NX * y.NY * y.NZ * y.NT
-    #CUDA.@sync begin
-    JACC.parallel_for(N, jacckernel_mul_yAx_NC3_staggered!, y.f, A.U, x.parent.fshifted)
-    #end
 
-end
 
 function LinearAlgebra.mul!(
     y::StaggeredFermion_4D_accelerator{3,TF,:jacc,TUv,TFshifted},
@@ -297,6 +300,7 @@ function LinearAlgebra.mul!(
 end
 
 
+#=
 function LinearAlgebra.mul!(
     y::StaggeredFermion_4D_accelerator{3,TF,:jacc},
     A::T,
@@ -311,6 +315,7 @@ function LinearAlgebra.mul!(
     N = y.NX * y.NY * y.NZ * y.NT
     JACC.parallel_for(N, jacckernel_mul_yAx_NC3_staggered!, y.f, A.U, x.f)
 end
+=#
 
 function LinearAlgebra.mul!(
     y::StaggeredFermion_4D_accelerator{3,TF,:jacc},

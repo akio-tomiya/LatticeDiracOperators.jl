@@ -348,3 +348,7 @@ function WWdagx!(
 
     return
 end
+
+
+include("./WilsonFermion_4D_wing_mpi.jl")
+include("./WilsonFermion_4D_nowing_mpi.jl")

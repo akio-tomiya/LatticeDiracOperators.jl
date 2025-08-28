@@ -3,6 +3,8 @@ using Wilsonloop
 using Gaugefields
 using Requires
 using AlgRemez_jll
+using MPI
+using JACC
 
 import Gaugefields: add_U!
 import Gaugefields: Abstractfields, clear_U!

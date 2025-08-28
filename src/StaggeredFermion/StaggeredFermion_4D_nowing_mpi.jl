@@ -172,6 +172,7 @@ function Base.similar(x::T) where {T<:StaggeredFermion_4D_nowing_mpi}
     )
 end
 
+#=
 function Base.similar(x::T) where {T<:StaggeredFermion_4D_nowing_mpi}
     return StaggeredFermion_4D_nowing_mpi(
         x.NC,
@@ -183,6 +184,7 @@ function Base.similar(x::T) where {T<:StaggeredFermion_4D_nowing_mpi}
         comm=x.comm,
     )
 end
+=#
 
 function Base.setindex!(
     x::StaggeredFermion_4D_nowing_mpi{NC},
@@ -279,7 +281,7 @@ end
     i4,
     i5,
     i6,
-) where {T<:Abstractfermion}  #F'
+) where {T<:StaggeredFermion_4D_nowing_mpi}  #F'
     @inbounds return conj(getvalue(F.parent, i1, i2, i3, i4, i5, i6))
 end
 
@@ -297,6 +299,7 @@ end
     @inbounds x.f[i1, i2, i3, i4, i5, i6] = v
 end
 
+#=
 function shift_fermion(F::StaggeredFermion_4D_nowing_mpi{NC}, ν::T) where {T<:Integer,NC}
     if ν == 1
         shift = (1, 0, 0, 0)
@@ -318,6 +321,7 @@ function shift_fermion(F::StaggeredFermion_4D_nowing_mpi{NC}, ν::T) where {T<:I
 
     return Shifted_fermionfields_4D_nowing_mpi(F, shift)
 end
+=#
 
 function update_sent_data!(
     send_ranks,
@@ -984,7 +988,7 @@ c     Random number function Z4  Noise
 c     https://arxiv.org/pdf/1611.01193.pdf
 c-------------------------------------------------c
     """
-function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC}) where {NC}
+function Z4_distribution_fermi!(x::StaggeredFermion_4D_nowing_mpi{NC}) where {NC}
     NX = x.NX
     NY = x.NY
     NZ = x.NZ
@@ -1015,20 +1019,21 @@ function Z4_distribution_fermi!(x::AbstractFermionfields_4D{NC}) where {NC}
     return
 end
 
-function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}, randomfunc) where {NC}
+function gauss_distribution_fermion!(x::StaggeredFermion_4D_nowing_mpi{NC}, randomfunc) where {NC}
     σ = 1
     gauss_distribution_fermion!(x, randomfunc, σ)
 end
 
 
 
-
+#=
 function set_wing_fermion!(
     a::StaggeredFermion_4D_nowing_mpi{NC},
     boundarycondition,
 ) where {NC}
     return
 end
+=#
 
 
 
@@ -1196,7 +1201,7 @@ function add_fermion!(
     α::Number,
     a::T1,
     iseven::Bool,
-) where {NC,T1<:Abstractfermion,T2<:Abstractfermion}#c += alpha*a + beta*b
+) where {NC,T1<:Abstractfermion}#c += alpha*a + beta*b
 
 
     NT = c.NT
@@ -1269,6 +1274,7 @@ function set_wing_fermion!(
     return
 end
 
+#=
 function clear_fermion!(a::StaggeredFermion_4D_nowing_mpi{NC}, iseven) where {NC}
     n1, n6, n2, n3, n4, n5 = size(a.f)
     @inbounds for i5 = 1:n5
@@ -1292,6 +1298,8 @@ function clear_fermion!(a::StaggeredFermion_4D_nowing_mpi{NC}, iseven) where {NC
         end
     end
 end
+
+=#
 
 function LinearAlgebra.dot(
     a::StaggeredFermion_4D_nowing_mpi{NC},

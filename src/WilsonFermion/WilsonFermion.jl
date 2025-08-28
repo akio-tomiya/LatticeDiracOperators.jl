@@ -1026,3 +1026,5 @@ struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
 end
 
 include("./kernelfunctions/linearalgebra_mul.jl")
+include("./kernelfunctions/Wilson_jacc.jl")
+include("./kernelfunctions/linearalgebra_mul_jacc.jl")

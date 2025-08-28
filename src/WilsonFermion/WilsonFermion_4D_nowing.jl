@@ -972,11 +972,12 @@ function mul_1minusγ1x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1-gamma_
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds 
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] + im * x[ic, ix, iy, iz, it, 4]
                         v2 = x[ic, ix, iy, iz, it, 2] + im * x[ic, ix, iy, iz, it, 3]
                         v3 = x[ic, ix, iy, iz, it, 3] - im * x[ic, ix, iy, iz, it, 2]
@@ -999,11 +1000,12 @@ function mul_1plusγ1x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1+gamma_1
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] - im * x[ic, ix, iy, iz, it, 4]
                         v2 = x[ic, ix, iy, iz, it, 2] - im * x[ic, ix, iy, iz, it, 3]
                         v3 = x[ic, ix, iy, iz, it, 3] + im * x[ic, ix, iy, iz, it, 2]
@@ -1031,11 +1033,12 @@ function mul_1minusγ2x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1-gamma_
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] + x[ic, ix, iy, iz, it, 4]
                         v2 = x[ic, ix, iy, iz, it, 2] - x[ic, ix, iy, iz, it, 3]
                         v3 = x[ic, ix, iy, iz, it, 3] - x[ic, ix, iy, iz, it, 2]
@@ -1057,11 +1060,12 @@ function mul_1plusγ2x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1-gamma_5
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] - x[ic, ix, iy, iz, it, 4]
                         v2 = x[ic, ix, iy, iz, it, 2] + x[ic, ix, iy, iz, it, 3]
                         v3 = x[ic, ix, iy, iz, it, 3] + x[ic, ix, iy, iz, it, 2]
@@ -1091,11 +1095,12 @@ function mul_1minusγ3x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1-gamma_
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] + im * x[ic, ix, iy, iz, it, 3]
                         v2 = x[ic, ix, iy, iz, it, 2] - im * x[ic, ix, iy, iz, it, 4]
                         v3 = x[ic, ix, iy, iz, it, 3] - im * x[ic, ix, iy, iz, it, 1]
@@ -1117,11 +1122,12 @@ function mul_1plusγ3x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1+gamma_3
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] - im * x[ic, ix, iy, iz, it, 3]
                         v2 = x[ic, ix, iy, iz, it, 2] + im * x[ic, ix, iy, iz, it, 4]
                         v3 = x[ic, ix, iy, iz, it, 3] + im * x[ic, ix, iy, iz, it, 1]
@@ -1152,11 +1158,12 @@ function mul_1minusγ4x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1-gamma_
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] + x[ic, ix, iy, iz, it, 3]
                         v2 = x[ic, ix, iy, iz, it, 2] + x[ic, ix, iy, iz, it, 4]
                         v3 = x[ic, ix, iy, iz, it, 3] + x[ic, ix, iy, iz, it, 1]
@@ -1178,11 +1185,13 @@ function mul_1plusγ4x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1+gamma_4
     NZ = y.NZ
     NT = y.NT
     #NC = x.NC
-    @inbounds for ic = 1:NC
-        for it = 1:NT
-            for iz = 1:NZ
-                for iy = 1:NY
-                    @simd for ix = 1:NX
+    #@inbounds for ic = 1:NC
+
+    @inbounds for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                @simd for ix = 1:NX
+                    for ic = 1:NC
                         v1 = x[ic, ix, iy, iz, it, 1] - x[ic, ix, iy, iz, it, 3]
                         v2 = x[ic, ix, iy, iz, it, 2] - x[ic, ix, iy, iz, it, 4]
                         v3 = x[ic, ix, iy, iz, it, 3] - x[ic, ix, iy, iz, it, 1]
@@ -1197,7 +1206,6 @@ function mul_1plusγ4x!(y::WilsonFermion_4D_nowing{NC}, x) where {NC}#(1+gamma_4
         end
     end
 end
-
 
 
 """
@@ -1375,5 +1383,67 @@ function cloverterm!(vec::WilsonFermion_4D_nowing{NC}, cloverterm, x::WilsonFerm
 
     #println("vec = ",vec*vec)
 
+end
+
+function Ux_ν!(
+    y::WilsonFermion_4D_nowing{3},
+    A::T,
+    x::T3,
+    ν::Integer;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+    if ν == 1
+        Uxplus_1!(y, A, x; boundarycondition)
+    elseif ν == -1
+        Uxminus_1!(y, A, x; boundarycondition)
+    elseif ν == 2
+        Uxplus_2!(y, A, x; boundarycondition)
+    elseif ν == -2
+        Uxminus_2!(y, A, x; boundarycondition)
+    elseif ν == 3
+        Uxplus_3!(y, A, x; boundarycondition)
+    elseif ν == -3
+        Uxminus_3!(y, A, x; boundarycondition)
+    elseif ν == 4
+        Uxplus_4!(y, A, x; boundarycondition)
+    elseif ν == -4
+        Uxminus_4!(y, A, x; boundarycondition)
+    else
+        xplus = shift_fermion(x, ν; boundarycondition)
+        mul!(y, A, xplus)
+    end
+end
+
+
+function Ux_afterν!(
+    y::WilsonFermion_4D_nowing{3},
+    A::T,
+    x::T3,
+    ν::Integer;
+    boundarycondition=(1, 1, 1, -1)
+) where {T<:Abstractfields,T3<:Abstractfermion}
+
+    if ν == 1
+        Uxplus_after1!(y, A, x; boundarycondition)
+    elseif ν == -1
+        Uxminus_after1!(y, A, x; boundarycondition)
+    elseif ν == 2
+        Uxplus_after2!(y, A, x; boundarycondition)
+    elseif ν == -2
+        Uxminus_after2!(y, A, x; boundarycondition)
+    elseif ν == 3
+        Uxplus_after3!(y, A, x; boundarycondition)
+    elseif ν == -3
+        Uxminus_after3!(y, A, x; boundarycondition)
+    elseif ν == 4
+        Uxplus_after4!(y, A, x; boundarycondition)
+    elseif ν == -4
+        Uxminus_after4!(y, A, x; boundarycondition)
+    else
+
+        mul!(y, A, x)
+        x_shifted = shift_fermion(y, ν; boundarycondition)
+        substitute_fermion!(y, x_shifted)
+    end
 end
 
