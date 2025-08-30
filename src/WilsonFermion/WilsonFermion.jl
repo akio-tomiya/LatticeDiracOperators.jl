@@ -570,7 +570,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
         #... Dirac multiplication
 
-        mul!(temp1, view(A.rminusγ, :, :, ν))
+        mul!(temp1, A.rminusγ[:, :, ν])
 
         #if any(isnan, temp1.f)
         ##    error("NaN detected in array temp1! 2")
@@ -589,7 +589,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         #
         #fermion_shift!(temp2,U,-ν,x)
         #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2, view(A.rplusγ, :, :, ν))
+        mul!(temp2, A.rplusγ[:, :, ν])
 
         #if any(isnan, temp2.f)
         #    error("NaN detected in array temp2 2!")

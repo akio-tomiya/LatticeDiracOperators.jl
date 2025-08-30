@@ -186,6 +186,8 @@ end
 struct Oneγμ{sign,μ} <: AbstractMatrix{Complex{Int64}}
 end
 
+JACC.array(A::Oneγμ{sign,μ}) = A
+
 Base.size(::Oneγμ{sign,μ}) where {sign,μ} = (4, 4)
 
 
