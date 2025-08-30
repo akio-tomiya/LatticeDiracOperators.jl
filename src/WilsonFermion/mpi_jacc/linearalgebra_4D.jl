@@ -35,8 +35,11 @@ function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     #println("mul")
     #display(C.A[:, :, 2, 2, 2, 2])
     #println("before")
+    n1, n2 = size(A)
+    At = zeros(eltype(A), n1, n2)
+    At .= A
     JACC.parallel_for(
-        prod(C.PN), kernel_4Dmatrix_mulA!, C.A, A, Val(NC1), Val(nw), C.PN
+        prod(C.PN), kernel_4Dmatrix_mulA!, C.A, At, Val(NC1), Val(nw), C.PN
     )
     #display(C.A[:, :, 2, 2, 2, 2])
     #set_halo!(C)
