@@ -445,8 +445,9 @@ function Wdagx_noclover!(xout::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     clear_fermion!(temp)
     #set_wing_fermion!(x)
     for ν = 1:Dim
-        #Wdagx_noclover_ν!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν], temp1, temp2)
-        Wdagx_noclover_ν_p!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν])
+        Wdagx_noclover_ν!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν], temp1, temp2)
+
+        #Wdagx_noclover_ν_p!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν])
 
     end
 
