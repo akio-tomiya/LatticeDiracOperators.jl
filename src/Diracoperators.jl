@@ -114,6 +114,7 @@ function Dirac_operator(
         Staggered_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         fasterversion = check_parameters(parameters, "faster version", false)
+        #@info fasterversion
         if fasterversion
             Wilson_Dirac_operator_faster(U, x, parameters)
         else
@@ -333,13 +334,18 @@ function LinearAlgebra.mul!(
 
 
     mul!(temp, A.dirac, x)
+    set_wing_fermion!(temp)
+    #println("dgadg")
+
 
     if any(isnan, temp.f)
+        #println(temp.f.A)
         error("NaN detected in array temp!")
     end
 
+    #println("temp ", dot(temp, temp))
     mul!(y, A.dirac', temp)
-
+    #set_wing_fermion!(y)
     unused!(A.dirac._temporary_fermi, it_temp)
 
     return

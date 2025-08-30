@@ -489,6 +489,8 @@ function LinearAlgebra.mul!(
     NT = y.NT
     NG = y.NG
 
+    #println(x.shift)
+
     @inbounds for ialpha = 1:NG
         for it = 1:NT
             #println("it = ",it, " ialpha = $ialpha")
@@ -501,6 +503,9 @@ function LinearAlgebra.mul!(
                         x1 = x[1, ix, iy, iz, it, ialpha]
                         x2 = x[2, ix, iy, iz, it, ialpha]
                         x3 = x[3, ix, iy, iz, it, ialpha]
+
+
+
 
                         y[1, ix, iy, iz, it, ialpha] =
                             A[1, 1, ix, iy, iz, it] * x1 +
@@ -515,6 +520,12 @@ function LinearAlgebra.mul!(
                             A[3, 2, ix, iy, iz, it] * x2 +
                             A[3, 3, ix, iy, iz, it] * x3
                         # =#
+
+                        #if (ix, iy, iz, it) == (1, 1, 1, 1)
+                        #    println((x1, x2, x3))
+                        #    println((y[1, ix, iy, iz, it, ialpha], y[2, ix, iy, iz, it, ialpha], y[3, ix, iy, iz, it, ialpha]))
+
+                        #end
                     end
                 end
             end
@@ -1339,12 +1350,18 @@ function add_fermion!(
                         @simd for i1 = 1:NC
                             #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
                             c.f[i1, i2, i3, i4, i5, i6] += α * a.f[i1, i2, i3, i4, i5, i6]
+
                         end
                     end
                 end
             end
         end
     end
+    #if (i2, i3, i4, i5) == (1, 1, 1, 1)
+    #display(c.f[:, 1, 1, 1, 1, :])
+    #println("a α = $α")
+    #display(a.f[:, 1, 1, 1, 1, :])
+    #end
     return
 end
 
@@ -2141,6 +2158,7 @@ function Ux_afterν!(
 
 
     mul!(y, A, x)
+    set_wing_fermion!(y)
     x_shifted = shift_fermion(y, ν; boundarycondition)
     substitute_fermion!(y, x_shifted)
 

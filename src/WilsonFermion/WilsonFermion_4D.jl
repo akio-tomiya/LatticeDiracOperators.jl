@@ -80,6 +80,8 @@ function calc_beff_dag!(xout, U, x, A) #be + K Teo bo
 end
 
 function mul_1plusγμx!(y::WilsonFermion_4D, x, μ)
+    #println("mul")
+    #display(x[:, 1, 1, 1, 1, :])
     if μ == 1
         mul_1plusγ1x!(y, x)
     elseif μ == 2

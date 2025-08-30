@@ -113,6 +113,15 @@ function calc_UdSfdU!(
     #println("Xd ",X[1,1,1,1,1,1])
     #ϕ.f .= 1
     #println("solve DinvX")
+    #mul!(X, WdagW, ϕ)
+    #println("----------------------")
+    #println("----------------------")
+    #set_wing_fermion!(X)
+    #println("----------------------")
+    #println("----------------------")
+    #return
+
+
     solve_DinvX!(X, WdagW, ϕ)
     #error("ee")
     #println("X ",X[1,1,1,1,1,1])
@@ -134,8 +143,9 @@ function calc_UdSfdU_fromX!(
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     W = fermi_action.diracoperator(U)
+    #set_wing_fermion!(X)
     mul!(Y, W, X)
-    #set_wing_fermion!(Y)
+    set_wing_fermion!(Y)
 
     temp0_f, it_temp0_f = get_temp(fermi_action._temporary_fermionfields)
     temp1_f, it_temp1_f = get_temp(fermi_action._temporary_fermionfields)
@@ -161,6 +171,8 @@ function calc_UdSfdU_fromX!(
         #@time mul!(temp0_f,U[μ],X)
 
         mul!(temp0_f, U[μ], Xplus)
+
+
 
 
         # (r-γ_μ) U_{k,μ} X_{k+μ}
@@ -354,9 +366,13 @@ function sample_pseudofermions!(
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
 
+    set_wing_fermion!(ξ)
+    #println("ξ")
+
     mul!(ϕ, W', ξ)
 
     set_wing_fermion!(ϕ)
+    #println("ϕ")
 end
 
 function sample_pseudofermions!(

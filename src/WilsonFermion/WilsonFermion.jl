@@ -65,7 +65,7 @@ end
 include("./WilsonFermion_4D.jl")
 include("./WilsonFermion_4D_accelerator.jl")
 
-
+include("./mpi_jacc/WilsonFermion_4D_MPILattice.jl")
 
 include("./WilsonFermion_4D_wing.jl")
 include("./WilsonFermion_4D_nowing.jl")
@@ -307,6 +307,7 @@ function LinearAlgebra.mul!(
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Wilson_operator,T3<:AbstractFermionfields}
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
+    #println("Wdag")
     Wdagx!(y, A.parent.U, x, A.parent)
     #error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
 
@@ -560,6 +561,9 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
 
         mul!(temp1, U[ν], xplus)
+        #if any(isnan, temp1.f)
+        #    error("NaN detected in array temp1 1!")
+        #end
 
 
         #fermion_shift!(temp1,U,ν,x)
@@ -568,7 +572,9 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
         mul!(temp1, view(A.rminusγ, :, :, ν))
 
-
+        #if any(isnan, temp1.f)
+        ##    error("NaN detected in array temp1! 2")
+        #end
 
         xminus = shift_fermion(x, -ν)
         Uminus = shift_U(U[ν], -ν)
@@ -576,12 +582,24 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
         mul!(temp2, Uminus', xminus)
 
+        #if any(isnan, temp2.f)
+        #    error("NaN detected in array temp2 1!")
+        #end
+
         #
         #fermion_shift!(temp2,U,-ν,x)
         #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
         mul!(temp2, view(A.rplusγ, :, :, ν))
 
+        #if any(isnan, temp2.f)
+        #    error("NaN detected in array temp2 2!")
+        #end
+
         add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
+        set_wing_fermion!(temp)
+        #if any(isnan, temp.f)
+        #    error("NaN detected in array temp 0!")
+        #end
 
     end
 
@@ -866,11 +884,16 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
         xplus = shift_fermion(x, ν)
         mul!(temp1, U[ν], xplus)
 
+
         #fermion_shift!(temp1,U,ν,x)
 
         #... Dirac multiplication
         #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+        #println("nu $ν 1 ", dot(temp1, temp1))
+        #set_wing_fermion!(temp1)
         mul!(temp1, view(A.rplusγ, :, :, ν))
+        #set_wing_fermion!(temp1)
+        #println("nu $ν 2 ", dot(temp1, temp1))
 
 
         #

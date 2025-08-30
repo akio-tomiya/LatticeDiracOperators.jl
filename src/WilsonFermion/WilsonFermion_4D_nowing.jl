@@ -66,8 +66,9 @@ function shift_fermion(F::WilsonFermion_4D_nowing{NC}, ν::T;
         shift = (0, 0, 0, -1)
     end
 
-    return Shifted_fermionfields_4D_nowing(F, shift;
+    s = Shifted_fermionfields_4D_nowing(F, shift;
         boundarycondition)
+    return s
 end
 
 
@@ -225,6 +226,9 @@ function Base.zero(x::T) where {T<:WilsonFermion_4D_nowing}
 end
 
 function set_wing_fermion!(a::WilsonFermion_4D_nowing{NC}, boundarycondition) where {NC}
+    #println("wing")
+    #display(a.f[:, 1, 1, 1, 1, :])
+    #println("wing-------")
     return
 end
 
@@ -407,7 +411,8 @@ function LinearAlgebra.mul!(
     #n6 = size(x.f)[6]
     #f = zeros(ComplexF64,4)
     #e = zeros(ComplexF64,4)
-
+    #display(x[:, :, 1, 1, 1, 1])
+    #println("before")
     for ic = 1:NC
         for it = 1:NT
             for iz = 1:NZ
@@ -432,6 +437,7 @@ function LinearAlgebra.mul!(
             end
         end
     end
+    #display(x[:, :, 1, 1, 1, 1])
 
 end
 

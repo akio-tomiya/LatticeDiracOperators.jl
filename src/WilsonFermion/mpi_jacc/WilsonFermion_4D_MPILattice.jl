@@ -1,0 +1,428 @@
+using JACC
+import Gaugefields.MPILattice: LatticeMatrix,
+    Shifted_Lattice,
+    Adjoint_Lattice,
+    TALattice,
+    makeidentity_matrix!,
+    set_halo!,
+    substitute!,
+    partial_trace,
+    get_PEs,
+    clear_matrix!,
+    add_matrix!,
+    expt!,
+    get_4Dindex,
+    traceless_antihermitian_add!,
+    normalize_matrix!,
+    randomize_matrix!,
+    get_shift,
+    gather_and_bcast_matrix,
+    traceless_antihermitian!
+import Gaugefields.AbstractGaugefields_module: Gaugefields_4D_MPILattice, Fields_4D_MPILattice
+
+include("linearalgebra_4D.jl")
+
+abstract type WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFermion_4D{NC} end
+
+
+struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::LatticeMatrix{4,T,AT,NC,NG}
+    NC::Int64
+    NX::Int64
+    NY::Int64
+    NZ::Int64
+    NT::Int64
+    NG::Int64
+    NDW::Int64
+    Dirac_operator::String
+    singleprecision::Bool
+
+    function WilsonFermion_4D_MPILattice(
+        NC,
+        NX,
+        NY,
+        NZ,
+        NT;
+        NDW=1,
+        singleprecision=false,
+        boundarycondition=[1, 1, 1, -1],
+        PEs=nothing,
+        comm=MPI.COMM_WORLD)
+
+        Dirac_operator = "Wilson"
+        NG = 4
+
+        if MPI.Initialized() == false
+            MPI.Init()
+            mpiinit = true
+        end
+
+
+        comm0 = comm
+
+        gsize = (NX, NY, NZ, NT)
+        dim = 4
+        nw = NDW
+        @assert NDW > 0 "NDW should be larger than 0. We use a halo area."
+        elementtype = ifelse(singleprecision, ComplexF32, ComplexF64)
+        phases = boundarycondition
+        nprocs = MPI.Comm_size(comm)
+        if isnothing(PEs)
+            PEs_in = (1, 1, 1, nprocs)
+        else
+            PEs_in = deepcopy(PEs)
+        end
+
+        @assert NX > PEs_in[1] "PEs[1] is larger than NX. Now NX = $NX and PEs = $PEs_in"
+        @assert NY > PEs_in[2] "PEs[2] is larger than NY. Now NX = $NY and PEs = $PEs_in"
+        @assert NZ > PEs_in[3] "PEs[3] is larger than NZ. Now NX = $NZ and PEs = $PEs_in"
+        @assert NT > PEs_in[4] "PEs[4] is larger than NT. Now NX = $NT and PEs = $PEs_in"
+
+        @assert NX % PEs_in[1] == 0 "NX % PEs[1] should be 0. Now NX = $NX and PEs = $PEs_in"
+        @assert NY % PEs_in[2] == 0 "NY % PEs[2] should be 0. Now NY = $NY and PEs = $PEs_in"
+        @assert NZ % PEs_in[3] == 0 "NZ % PEs[3] should be 0. Now NZ = $NZ and PEs = $PEs_in"
+        @assert NT % PEs_in[4] == 0 "NT % PEs[4] should be 0. Now NT = $NT and PEs = $PEs_in"
+
+
+        @assert prod(PEs_in) == nprocs "num. of MPI process should be prod(PEs). Now nprocs = $nprocs and PEs = $PEs"
+        myrank = MPI.Comm_rank(comm)
+
+        #verbose_print = Verbose_print(verbose_level, myid=myrank)
+
+        f = LatticeMatrix(NC, NG, dim, gsize, PEs_in;
+            nw, elementtype, phases, comm0)
+        T = elementtype
+        AT = typeof(f.A)
+
+
+        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG}(
+            f,
+            NC,
+            NX,
+            NY,
+            NZ,
+            NT,
+            NG,
+            NDW,
+            Dirac_operator,
+            singleprecision)
+    end
+end
+
+function Initialize_WilsonFermion(
+    u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}
+    ; boundarycondition=[1, 1, 1, -1]) where {NC,NX,NY,NZ,NT,T,AT,NDW}
+    x = WilsonFermion_4D_MPILattice(
+        NC,
+        NX,
+        NY,
+        NZ,
+        NT;
+        NDW=u.NDW,
+        singleprecision=u.singleprecision,
+        boundarycondition,
+        PEs=get_PEs(u.U),
+        comm=u.U.comm)
+
+    return x
+end
+
+
+function Initialize_pseudofermion_fields(
+    u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW},
+    Dirac_operator::String;
+    L5=2,
+    kwargs...
+) where {NC,NX,NY,NZ,NT,T,AT,NDW}
+
+    if Dirac_operator == "staggered"
+        error(
+            "Dirac_operator  = $Dirac_operator witn nowing = $nowing is not supported",
+        )
+    elseif Dirac_operator == "Wilson"
+        x = Initialize_WilsonFermion(u)
+    end
+    return x
+end
+
+function Base.similar(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    return WilsonFermion_4D_MPILattice(
+        NC,
+        NX,
+        NY,
+        NZ,
+        NT;
+        NDW,
+        singleprecision=x.singleprecision,
+        boundarycondition=x.f.phases,
+        PEs=get_PEs(x.f),
+        comm=x.f.comm)
+end
+
+function gauss_distribution_fermion!(
+    x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT)
+    work = map(i -> gauss_distribution(), work)
+    PEs = get_PEs(x.f)
+    a = LatticeMatrix(work, 4, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
+    substitute!(x.f, a)
+
+    return
+end
+
+function gauss_distribution(σ=1)
+    v1 = sqrt(-log(rand() + 1e-10))
+    v2 = 2pi * rand()
+    xr = v1 * cos(v2)
+    xi = v1 * sin(v2)
+    return σ * xr + σ * im * xi
+end
+
+
+function clear_fermion!(a::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    clear_matrix!(a.f)
+    set_halo!(a.f)
+end
+
+struct Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Shifted_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW},shift}
+
+    function Shifted_WilsonFermion_4D_MPILattice(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+        #sU = Shifted_Lattice{typeof(U.U),shift}(U.U)
+        sx = Shifted_Lattice(x.f, shift)
+        shiftin = get_shift(sx)
+        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shiftin}(sx)
+    end
+end
+
+struct Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Adjoint_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW}}
+end
+
+struct Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Adjoint_Lattice{Shifted_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW},shift}}
+end
+
+function Base.adjoint(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}(x.f')
+end
+
+function Base.adjoint(x::Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}
+    Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}(x.f')
+end
+
+
+function LinearAlgebra.mul!(
+    c::WilsonFields_4D_MPILattice,
+    a::Fields_4D_MPILattice,
+    b::WilsonFields_4D_MPILattice,
+)
+    #println(typeof(c.f))
+    #println(typeof(a.U))
+    #println(typeof(b.f))
+
+    mul!(c.f, a.U, b.f)
+    #@code_warntype mul!(c.f, a.U, b.f)
+end
+
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::TA) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
+
+    mul!(C.f, A)
+    #set_halo!(C)
+end
+
+#lattice shift
+function shift_fermion(F::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, ν::T1; boundarycondition=nothing) where {T1<:Integer,NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    if boundarycondition != nothing
+        @assert F.f.phases ≈ boundarycondition "boundary condition is wrong now the boudnary condition of the fermions is $(F.f.phases) but you want to use $boundarycondition"
+    end
+    #println(F.f.phases)
+
+    if ν == 1
+        shift = (1, 0, 0, 0)
+    elseif ν == 2
+        shift = (0, 1, 0, 0)
+    elseif ν == 3
+        shift = (0, 0, 1, 0)
+    elseif ν == 4
+        shift = (0, 0, 0, 1)
+    elseif ν == -1
+        shift = (-1, 0, 0, 0)
+    elseif ν == -2
+        shift = (0, -1, 0, 0)
+    elseif ν == -3
+        shift = (0, 0, -1, 0)
+    elseif ν == -4
+        shift = (0, 0, 0, -1)
+    end
+
+    return shift_fermion(F, shift)
+end
+
+
+function shift_fermion(
+    F::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    shift::NTuple{4,T1},
+) where {T1<:Integer,NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    return Shifted_WilsonFermion_4D_MPILattice(F, shift)
+end
+
+function add_fermion!(
+    c::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    α::Number,
+    a::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}#c += alpha*a 
+    add_matrix!(c.f, a.f, α)
+end
+
+function add_fermion!(
+    c::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    α::Number,
+    a::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    β::Number,
+    b::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    add_matrix!(c.f, a.f, b.f, α, β)
+end
+
+function set_wing_fermion!(F::WilsonFermion_4D_MPILattice)
+    #println("wing")
+    #display(F.f.A[:, :, 2, 2, 2, 2])
+    #println("wing-------")
+    set_halo!(F.f)
+end
+
+function set_wing_fermion!(F::T, boundarycondition) where {T<:WilsonFermion_4D_MPILattice}
+    @assert boundarycondition ≈ F.f.phases "boundarycondition = $boundarycondition $(F.f.phases)"
+    set_halo!(F.f)
+end
+
+function LinearAlgebra.dot(
+    A::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    B::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    s = dot(A.f, B.f)
+    return s
+end
+
+
+function substitute_fermion!(
+    A::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    B::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    substitute!(A.f, B.f)
+    set_halo!(A.f)
+
+end
+
+function substitute_fermion!(A::WilsonFermion_4D_MPILattice, B::WilsonFermion_4D)
+    dim = 4
+    PEs = A.f.dims
+    phases = A.f.phases
+    nw = A.f.nw
+    comm0 = A.f.comm
+    D = permutedims(B.f, (1, 6, 2, 3, 4, 5))
+
+    tempf = LatticeMatrix(D, dim, PEs;
+        nw,
+        phases,
+        comm0)
+    substitute!(A.f, tempf)
+    set_halo!(A.f)
+end
+
+#Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
+function LinearAlgebra.axpby!(
+    a::Number,
+    X::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    b::Number,
+    Y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    axpby!(a, X.f, b, Y.f)
+    set_halo!(Y.f)
+end
+
+function mul_x1plusγμ!(y::WilsonFermion_4D_MPILattice, x, μ)
+    #mul_1plusγμx!(y, x, μ)
+    if μ == 1
+        mul_1minusγμx!(y, x, 1)
+    elseif μ == 2
+        mul_1plusγμx!(y, x, 2)
+    elseif μ == 3
+        mul_1minusγμx!(y, x, 3)
+    elseif μ == 4
+        mul_1plusγμx!(y, x, 4)
+    end
+
+end
+
+function mul_x1minusγμ!(y::WilsonFermion_4D_MPILattice, x, μ)
+    if μ == 1
+        mul_1plusγμx!(y, x, 1)
+    elseif μ == 2
+        mul_1minusγμx!(y, x, 2)
+    elseif μ == 3
+        mul_1plusγμx!(y, x, 3)
+    elseif μ == 4
+        mul_1minusγμx!(y, x, 4)
+    end
+end
+
+function mul_1plusγμx!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x, μ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    #println("mul")
+    #display(x.f.A[:, :, 2, 2, 2, 2])
+    mul!(y.f, Oneγμ{:plus,μ}(), x.f)
+    #error("mul_1plus")
+end
+
+
+function mul_1minusγμx!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x, μ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul!(y.f, Oneγμ{:minus,μ}(), x.f)
+    #error("mul_1minus")
+end
+
+#C = a*x
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    a::TA, x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:Number}
+
+    mul!(C.f, a, x.f)
+    #set_halo!(C)
+end
+
+
+function LinearAlgebra.mul!(
+    u::Gaugefields_4D_MPILattice,
+    x::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    y::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, ; clear=true
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    #clear_U!(u)
+    if clear
+        clear_matrix!(u.U)
+    else
+        #    println(sum(abs.(u.U)))
+    end
+
+    mul!(u.U, x.f, y.f)
+
+end
+
+function LinearAlgebra.mul!(
+    y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    u::Fields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+
+    mul!(y.f, x.f, u.U)
+
+end
