@@ -717,3 +717,173 @@ function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:minus,4}, x, ::Val{NC1}
     return
 end
 
+
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,1}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 - im * x4
+        C[ic, 2, ix, iy, iz, it] = x2 - im * x3
+        C[ic, 3, ix, iy, iz, it] = x3 + im * x2
+        C[ic, 4, ix, iy, iz, it] = x4 + im * x1
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,1}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 + im * x4
+        C[ic, 2, ix, iy, iz, it] = x2 + im * x3
+        C[ic, 3, ix, iy, iz, it] = x3 - im * x2
+        C[ic, 4, ix, iy, iz, it] = x4 - im * x1
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,2}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 - x4
+        C[ic, 2, ix, iy, iz, it] = x2 + x3
+        C[ic, 3, ix, iy, iz, it] = x3 + x2
+        C[ic, 4, ix, iy, iz, it] = x4 - x1
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,2}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 + x4
+        C[ic, 2, ix, iy, iz, it] = x2 - x3
+        C[ic, 3, ix, iy, iz, it] = x3 - x2
+        C[ic, 4, ix, iy, iz, it] = x4 + x1
+    end
+
+    return
+end
+
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,3}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 - im * x3
+        C[ic, 2, ix, iy, iz, it] = x2 + im * x4
+        C[ic, 3, ix, iy, iz, it] = x3 + im * x1
+        C[ic, 4, ix, iy, iz, it] = x4 - im * x2
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,3}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 + im * x3
+        C[ic, 2, ix, iy, iz, it] = x2 - im * x4
+        C[ic, 3, ix, iy, iz, it] = x3 - im * x1
+        C[ic, 4, ix, iy, iz, it] = x4 + im * x2
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,4}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 - x3
+        C[ic, 2, ix, iy, iz, it] = x2 - x4
+        C[ic, 3, ix, iy, iz, it] = x3 - x1
+        C[ic, 4, ix, iy, iz, it] = x4 - x2
+    end
+
+    return
+end
+
+function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,4}, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:NC1
+        x1 = C[ic, 1, ix, iy, iz, it]
+        x2 = C[ic, 2, ix, iy, iz, it]
+        x3 = C[ic, 3, ix, iy, iz, it]
+        x4 = C[ic, 4, ix, iy, iz, it]
+        C[ic, 1, ix, iy, iz, it] = x1 + x3
+        C[ic, 2, ix, iy, iz, it] = x2 + x4
+        C[ic, 3, ix, iy, iz, it] = x3 + x1
+        C[ic, 4, ix, iy, iz, it] = x4 + x2
+    end
+
+    return
+end

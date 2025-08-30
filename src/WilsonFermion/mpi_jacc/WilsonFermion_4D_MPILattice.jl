@@ -426,3 +426,55 @@ function LinearAlgebra.mul!(
     mul!(y.f, x.f, u.U)
 
 end
+
+
+function Wdagx_noclover!(xout::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, U::Array{G,1},
+    x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, A, Dim) where {
+    G<:AbstractGaugefields,NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
+    #temp = A._temporary_fermi[4] #temps[4]
+    #temp1 = A._temporary_fermi[1] #temps[1]
+    #temp2 = A._temporary_fermi[2] #temps[2]
+    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
+    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
+    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
+    #println("MPILattice")
+
+    clear_fermion!(temp)
+    #set_wing_fermion!(x)
+    for ν = 1:Dim
+        Wdagx_noclover_ν!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν], A.rplusγ, A.rminusγ, temp1, temp2)
+    end
+
+    clear_fermion!(xout)
+    add_fermion!(xout, 1, x, -1, temp)
+    set_wing_fermion!(xout, A.boundarycondition)
+
+    unused!(A._temporary_fermi, it_temp)
+    unused!(A._temporary_fermi, it_temp1)
+    unused!(A._temporary_fermi, it_temp2)
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function Wdagx_noclover_ν!(temp, x, ν, Uν, Ahoppν, Ahopmν, Arplusγ, Arminusγ, temp1, temp2)
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, Uν, xplus)
+
+    #mul!(temp1, view(Arplusγ, :, :, ν))
+    mul!(temp1, Oneγμ{:plus,ν}())
+
+    xminus = shift_fermion(x, -ν)
+    Uminus = shift_U(Uν, -ν)
+
+    mul!(temp2, Uminus', xminus)
+    #fermion_shift!(temp2,U,-ν,x)
+    #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
+    #mul!(temp2, view(Arminusγ, :, :, ν))
+    mul!(temp2, Oneγμ{:minus,ν}())
+
+    add_fermion!(temp, Ahoppν, temp1, Ahopmν, temp2)
+end
