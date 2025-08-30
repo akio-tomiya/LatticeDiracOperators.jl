@@ -1,4 +1,5 @@
 using JACC
+using StaticArrays
 import Gaugefields.MPILattice: LatticeMatrix,
     Shifted_Lattice,
     Adjoint_Lattice,
@@ -444,7 +445,9 @@ function Wdagx_noclover!(xout::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     clear_fermion!(temp)
     #set_wing_fermion!(x)
     for ν = 1:Dim
-        Wdagx_noclover_ν!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν], A.rplusγ, A.rminusγ, temp1, temp2)
+        #Wdagx_noclover_ν!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν], temp1, temp2)
+        Wdagx_noclover_ν_p!(temp, x, ν, U[ν], A.hopp[ν], A.hopm[ν])
+
     end
 
     clear_fermion!(xout)
@@ -460,7 +463,7 @@ function Wdagx_noclover!(xout::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     return
 end
 
-function Wdagx_noclover_ν!(temp, x, ν, Uν, Ahoppν, Ahopmν, Arplusγ, Arminusγ, temp1, temp2)
+function Wdagx_noclover_ν!(temp, x, ν, Uν, Ahoppν, Ahopmν, temp1, temp2)
     xplus = shift_fermion(x, ν)
     mul!(temp1, Uν, xplus)
 
@@ -478,3 +481,197 @@ function Wdagx_noclover_ν!(temp, x, ν, Uν, Ahoppν, Ahopmν, Arplusγ, Arminu
 
     add_fermion!(temp, Ahoppν, temp1, Ahopmν, temp2)
 end
+
+
+function Wdagx_noclover_ν_p!(temp::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x, ν, Uν, Ahoppν, Ahopmν) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    JACC.parallel_for(
+        prod(temp.f.PN), kernel_Wdagx_noclover_ν!, temp.f.A, x.f.A, Val(ν),
+        Uν.U.A, Ahoppν, Ahopmν, temp.f.PN, Val(NC), Val(NG), Val(NDW))
+end
+
+function kernel_Wdagx_noclover_ν!(i, temp,
+    x::AbstractArray{T}, ::Val{ν}, Uν, Ahoppν, Ahopmν, PN,
+    ::Val{NC}, ::Val{NG}, ::Val{nw}) where {NC,NG,ν,T,nw}
+
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+    ixp = ix + ifelse(ν == 1, 1, 0)
+    iyp = iy + ifelse(ν == 2, 1, 0)
+    izp = iz + ifelse(ν == 3, 1, 0)
+    itp = it + ifelse(ν == 4, 1, 0)
+    #xplus = shift_fermion(x, ν)
+    xplus = MMatrix{NC,NG,T}(undef)
+    @inbounds for jc = 1:NG
+        for ic = 1:NC
+            xplus[ic, jc] = x[ic, jc, ixp, iyp, izp, itp]
+        end
+    end
+    temp1 = MMatrix{NC,NG,T}(undef)
+    temp2 = MMatrix{NC,NG,T}(undef)
+
+    # mul!(temp1, Uν, xplus)
+
+    @inbounds for jc = 1:NG
+        for ic = 1:NC
+            temp1[ic, jc] = zero(eltype(temp))
+            for kc = 1:NC
+                temp1[ic, jc] += Uν[ic, kc, ix, iy, iz, it] * xplus[kc, jc]
+            end
+        end
+    end
+
+    #mul!(temp1, Oneγμ{:plus,ν}())
+    mul!(temp1, Oneγμ{:plus,ν}())
+
+    xminus = MMatrix{NC,NG,T}(undef)
+    ixm = ix + ifelse(ν == 1, -1, 0)
+    iym = iy + ifelse(ν == 2, -1, 0)
+    izm = iz + ifelse(ν == 3, -1, 0)
+    itm = it + ifelse(ν == 4, -1, 0)
+
+    @inbounds for jc = 1:NG
+        for ic = 1:NC
+            xminus[ic, jc] = x[ic, jc, ixm, iym, izm, itm]
+        end
+    end
+    Uminus = MMatrix{NC,NC,T}(undef)
+    @inbounds for jc = 1:NC
+        for ic = 1:NC
+            Uminus[ic, jc] = Uν[ic, jc, ixm, iym, izm, itm]
+        end
+    end
+
+    @inbounds for jc = 1:NG
+        for ic = 1:NC
+            temp2[ic, jc] = zero(eltype(temp))
+            for kc = 1:NC
+                temp2[ic, jc] += Uminus[kc, ic]' * xminus[kc, jc]
+            end
+        end
+    end
+    mul!(temp2, Oneγμ{:minus,ν}())
+
+    @inbounds for jc = 1:NG
+        for ic = 1:NC
+            temp[ic, jc, ix, iy, iz, it] += Ahoppν * temp1[ic, jc] + Ahopmν * temp2[ic, jc]
+        end
+    end
+    #xminus = shift_fermion(x, -ν)
+    #Uminus = shift_U(Uν, -ν)
+
+    #mul!(temp2, Uminus', xminus)
+    #mul!(temp2, Oneγμ{:minus,ν}())
+
+    #add_fermion!(temp, Ahoppν, temp1, Ahopmν, temp2)
+end
+
+
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:plus,1}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 - im * x4
+        C[ic, 2] = x2 - im * x3
+        C[ic, 3] = x3 + im * x2
+        C[ic, 4] = x4 + im * x1
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:minus,1}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 + im * x4
+        C[ic, 2] = x2 + im * x3
+        C[ic, 3] = x3 - im * x2
+        C[ic, 4] = x4 - im * x1
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:plus,2}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 - x4
+        C[ic, 2] = x2 + x3
+        C[ic, 3] = x3 + x2
+        C[ic, 4] = x4 - x1
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:minus,2}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 + x4
+        C[ic, 2] = x2 - x3
+        C[ic, 3] = x3 - x2
+        C[ic, 4] = x4 + x1
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:plus,3}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 - im * x3
+        C[ic, 2] = x2 + im * x4
+        C[ic, 3] = x3 + im * x1
+        C[ic, 4] = x4 - im * x2
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:minus,3}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 + im * x3
+        C[ic, 2] = x2 - im * x4
+        C[ic, 3] = x3 - im * x1
+        C[ic, 4] = x4 + im * x2
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:plus,4}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 - x3
+        C[ic, 2] = x2 - x4
+        C[ic, 3] = x3 - x1
+        C[ic, 4] = x4 - x2
+    end
+end
+
+function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:minus,4}) where {NC,NG,T}
+    @inbounds for ic = 1:NC
+        x1 = C[ic, 1]
+        x2 = C[ic, 2]
+        x3 = C[ic, 3]
+        x4 = C[ic, 4]
+        C[ic, 1] = x1 + x3
+        C[ic, 2] = x2 + x4
+        C[ic, 3] = x3 + x1
+        C[ic, 4] = x4 + x2
+    end
+end
+
