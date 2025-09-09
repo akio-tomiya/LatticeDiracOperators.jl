@@ -412,3 +412,27 @@ end
 function apply_σ!(a::T1, σ::σμν{μ,ν}, b::T2; factor=1) where {μ,ν,T1<:Abstractfermion,T2<:Abstractfermion}
     error("apply_σ! is not implemented in type a:$(typeof(a)),b:$(typeof(b))")
 end
+
+function mul_x1plusγμ!(y::Abstractfermion, x, μ)
+    if μ == 1
+        mul_1minusγ1x!(y, x)
+    elseif μ == 2
+        mul_1plusγ2x!(y, x)
+    elseif μ == 3
+        mul_1minusγ3x!(y, x)
+    elseif μ == 4
+        mul_1plusγ4x!(y, x)
+    end
+end
+
+function mul_x1minusγμ!(y::Abstractfermion, x, μ)
+    if μ == 1
+        mul_1plusγ1x!(y, x)
+    elseif μ == 2
+        mul_1minusγ2x!(y, x)
+    elseif μ == 3
+        mul_1plusγ3x!(y, x)
+    elseif μ == 4
+        mul_1minusγ4x!(y, x)
+    end
+end
