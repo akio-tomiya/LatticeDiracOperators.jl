@@ -1,7 +1,7 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -14,6 +14,7 @@ MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 
 [compat]
@@ -23,6 +24,7 @@ JLD2 = "0.4,0.5"
 MPI = "0.20.23"
 Requires = "1"
 SparseArrays = "1,2"
+StaticArrays = "1.9.15"
 Wilsonloop = "0.1.5"
 julia = "1.11"
 
