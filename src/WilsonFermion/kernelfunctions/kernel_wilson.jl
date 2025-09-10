@@ -666,6 +666,29 @@ function kernel_mul_yxdagAdag_NC3!(b, r, y, x, A, NG)
     end
 end
 
+function cudakernel_mul_yAdagshiftedxshift_NC3!(b, r, y, A,x, NG, shift, blockinfo, bc, NX, NY, NZ, NT)
+    bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
+    factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)
+
+    @inbounds for ialpha = 1:NG
+        x1 = x[1, ialpha, bshifted, rshifted] * factor
+        x2 = x[2, ialpha, bshifted, rshifted] * factor
+        x3 = x[3, ialpha, bshifted, rshifted] * factor
+        y[1, ialpha, b, r] =
+            conj(A[1, 1, b, r])*x1 +
+            conj(A[2, 1, b, r])*x2 +
+            conj(A[3, 1, b, r])*x3
+        y[2, ialpha, b, r] =
+            conj(A[1, 1, b, r])*x1 +
+            conj(A[2, 2, b, r])*x2 +
+            conj(A[3, 2, b, r])*x3
+        y[3, ialpha, b, r] =
+            conj(A[1, 3, b, r])*x1 +
+            conj(A[2, 3, b, r])*x2 +
+            conj(A[3, 3, b, r])*x3
+    end
+end
+
 function kernel_mul_yxdagAdagshifted_NC3!(b, r, y, x, A, NG, shift, blockinfo, bc, NX, NY, NZ, NT)
     bshifted, rshifted = shiftedindex(b, r, shift, blockinfo)
     factor = kernel_calcfactor(b, r, shift, blockinfo, bc, NX, NY, NZ, NT)

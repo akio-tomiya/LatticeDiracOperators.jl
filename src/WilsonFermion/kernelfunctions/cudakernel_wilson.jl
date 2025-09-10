@@ -140,6 +140,12 @@ function cudakernel_mul_yxdagAdagshifted_NC3!(y, x, A, NG, shift, blockinfo, bc,
     kernel_mul_yxdagAdagshifted_NC3!(b, r, y, x, A, NG, shift, blockinfo, bc, NX, NY, NZ, NT)
 end
 
+function cudakernel_mul_yAdagshiftedxshift_NC3!(y,A,x,NG, shift, blockinfo, bc, NX, NY, NZ, NT)
+    b = Int64(CUDA.threadIdx().x)
+    r = Int64(CUDA.blockIdx().x)
+    kernel_mul_yAdagshiftedxshift_NC3!(b, r, y, A, x, NG, shift, blockinfo, bc, NX, NY, NZ, NT)
+end
+
 
 function cudakernel_mul_xA_NC!(xout, x, A, NC)
     b = Int64(CUDA.threadIdx().x)

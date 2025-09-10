@@ -1,5 +1,5 @@
 import Gaugefields.AbstractGaugefields_module:
-    Gaugefields_4D_accelerator, Blockindices, Adjoint_Gaugefields, fourdim_cordinate
+    Gaugefields_4D_accelerator, Blockindices, Adjoint_Gaugefields, fourdim_cordinate,Shifted_Gaugefields_4D_accelerator
 
 include("./kernelfunctions/kernel_wilson.jl")
 
@@ -291,7 +291,10 @@ end
 function set_wing_fermion!(F::T, boundarycondition) where {T<:WilsonFermion_4D_accelerator}
 end
 
-function shift_fermion(F::WilsonFermion_4D_accelerator, ν::T) where {T<:Integer}
+const boundarycondition_default_accelerator = [1, 1, 1, -1]
+
+
+function shift_fermion(F::WilsonFermion_4D_accelerator, ν::T;boundarycondition=boundarycondition_default_accelerator) where {T<:Integer}
     if ν == 1
         shift = (1, 0, 0, 0)
     elseif ν == 2
@@ -310,10 +313,9 @@ function shift_fermion(F::WilsonFermion_4D_accelerator, ν::T) where {T<:Integer
         shift = (0, 0, 0, -1)
     end
 
-    return Shifted_fermionfields_4D_accelerator(F, shift)
+    return Shifted_fermionfields_4D_accelerator(F, shift;boundarycondition)
 end
 
-const boundarycondition_default_accelerator = [1, 1, 1, -1]
 
 
 
@@ -334,6 +336,15 @@ function shifted_fermion!(
             kernel_shifted_fermion!(b, r, x.f, x.fshifted, x.blockinfo, bc, shift, NC, NX, NY, NZ, NT)
         end
     end
+end
+
+function shifted_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:none},
+    shift;boundarycondition=boundarycondition_default_accelerator
+) where {NC,TF,NG}
+
+    shifted_fermion!(x,boundarycondition,shift)
+
 end
 
 function shifted_fermion!(

@@ -19,9 +19,14 @@ function gauss_distribution_fermion!(
 ) where {NC,TF,NG}
 
     N = x.NX * x.NY * x.NZ * x.NT
+    xcpu = Array(x.f)
+    for i=1:N
+        jacckernel_gauss_distribution_fermion!(i,xcpu,1,NC,NG)
+    end
+    x.f .= JACC.array(xcpu)
     #CUDA.@sync begin
-    JACC.parallel_for(N, jacckernel_gauss_distribution_fermion!, x.f,
-        1, NC, NG)
+    #JACC.parallel_for(N, jacckernel_gauss_distribution_fermion!, x.f,
+    #    1, NC, NG)
     #end
 
 
@@ -77,6 +82,13 @@ function add_fermion!(
 
 end
 
+
+function shifted_fermion!(
+    x::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
+    shift;boundarycondition=boundarycondition_default_accelerator
+) where {NC,TF,NG}
+    shifted_fermion!(x,boundarycondition,shift)
+end
 
 function shifted_fermion!(
     x::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
@@ -555,14 +567,14 @@ end
 
 
 function substitute_fermion!(
-    A::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc},
+    A::WilsonFermion_4D_accelerator{NC,TF,NG,:jacc,TUv,TFshifted},
     B::AbstractFermionfields_4D{NC},
-) where {NC,TF,NG}
+) where {NC,TF,NG,TUv,TFshifted}
     acpu = Array(A.f)
 
     N = A.NX * A.NY * A.NZ * A.NT
     for i = 1:N
-        ix, iy, iz, it = index_to_coords(i, NX, NY, NZ, NT)
+        ix, iy, iz, it = index_to_coords(i, A.NX, A.NY, A.NZ, A.NT)
         for ig = 1:NG
             for ic = 1:NC
                 acpu[ic, ig, i] = B[ic, ix, iy, iz, it, ig]

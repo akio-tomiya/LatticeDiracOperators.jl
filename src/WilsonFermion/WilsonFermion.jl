@@ -891,7 +891,7 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
         #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
         #println("nu $ν 1 ", dot(temp1, temp1))
         #set_wing_fermion!(temp1)
-        mul!(temp1, view(A.rplusγ, :, :, ν))
+        mul!(temp1, A.rplusγ[ :, :, ν])
         #set_wing_fermion!(temp1)
         #println("nu $ν 2 ", dot(temp1, temp1))
 
@@ -903,7 +903,7 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
         mul!(temp2, Uminus', xminus)
         #fermion_shift!(temp2,U,-ν,x)
         #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
-        mul!(temp2, view(A.rminusγ, :, :, ν))
+        mul!(temp2, A.rminusγ[:, :, ν])
 
 
         add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
