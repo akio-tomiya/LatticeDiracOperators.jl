@@ -436,3 +436,30 @@ function mul_x1minusγμ!(y::Abstractfermion, x, μ)
         mul_1minusγ4x!(y, x)
     end
 end
+
+
+function mul_1plusγμx!(y::Abstractfermion, x, μ)
+    #println("mul")
+    #display(x[:, 1, 1, 1, 1, :])
+    if μ == 1
+        mul_1plusγ1x!(y, x)
+    elseif μ == 2
+        mul_1plusγ2x!(y, x)
+    elseif μ == 3
+        mul_1plusγ3x!(y, x)
+    elseif μ == 4
+        mul_1plusγ4x!(y, x)
+    end
+end
+
+function mul_1minusγμx!(y::Abstractfermion, x, μ)
+    if μ == 1
+        mul_1minusγ1x!(y, x)
+    elseif μ == 2
+        mul_1minusγ2x!(y, x)
+    elseif μ == 3
+        mul_1minusγ3x!(y, x)
+    elseif μ == 4
+        mul_1minusγ4x!(y, x)
+    end
+end
