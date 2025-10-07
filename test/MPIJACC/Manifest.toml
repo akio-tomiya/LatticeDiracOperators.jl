@@ -145,7 +145,7 @@ version = "6.3.0+0"
 
 [[deps.Gaugefields]]
 deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JACC", "JLD2", "LinearAlgebra", "MPI", "NPZ", "PreallocatedArrays", "Random", "Requires", "StableRNGs", "StaticArrays", "Wilsonloop"]
-path = "/Users/yuki/Gaugefields.jl/master/Gaugefields.jl/"
+path = "/home/yuki/Gaugefields.jl/master/Gaugefields.jl/"
 uuid = "a461e10c-0d91-493e-bc41-027b226eee91"
 version = "0.6.2"
 

@@ -8,7 +8,7 @@ using LatticeDiracOperators
 import Gaugefields: Initialize_4DGaugefields
 using Test
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
-
+using CUDA
 
 function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ, ξcpu, Ucpu,
     fermi_action_cpu, ηcpu, gauge_action_cpu)
@@ -235,8 +235,9 @@ function test1()
 
     #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
     Ucpu = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
-        isMPILattice=true,singleprecision)
+#    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
+#        isMPILattice=true,singleprecision)
+    U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
     #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     #U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
 
@@ -255,9 +256,9 @@ function test1()
     β = 5.5 / 2
     push!(gauge_action_cpu, β, plaqloop)
 
-    x = Initialize_pseudofermion_fields(U[1], "Wilson")
+    x = Initialize_pseudofermion_fields(U[1], "Wilson", nowing=true)
     xcpu = Initialize_pseudofermion_fields(Ucpu[1], "Wilson")
-    substitute_fermion!(x, xcpu)
+    #substitute_fermion!(x, xcpu)
 
     params = Dict()
     params["Dirac_operator"] = "Wilson"

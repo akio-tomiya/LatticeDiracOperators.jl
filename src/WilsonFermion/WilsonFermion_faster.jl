@@ -357,10 +357,17 @@ function LinearAlgebra.mul!(
     y::T1,
     A::Wilson_Dirac_1storder_operator{Dim,T,fermion},
     x::T3,
-) where {T1<:AbstractFermionfields,T,Dim,fermion,T3<:AbstractFermionfields}
+) where {T1<:WilsonFields_4D_MPILattice,T,Dim,fermion,T3<:AbstractFermionfields}
 
     apply_Dirac_1storder_ν!(y, x, A.U, A.μ, A.boundarycondition, A._temporary_fermi)
     return
+end
+
+function LinearAlgebra.mul!(
+    y::T1,
+    A::Wilson_Dirac_1storder_operator{Dim,T,fermion},
+    x::T3,
+) where {T1<:AbstractFermionfields,T,Dim,fermion,T3<:AbstractFermionfields}
 
     if A.μ == 1
         apply_Dirac_1storder_1!(y, x, A.U, A.boundarycondition, A._temporary_fermi)
@@ -381,13 +388,67 @@ function LinearAlgebra.mul!(
         Wilson_Dirac_1storder_operator{Dim,T,fermion},
     },
     x::T3,
-) where {T1<:AbstractFermionfields,T,Dim,fermion,T3<:AbstractFermionfields}
+) where {T1<:WilsonFields_4D_MPILattice,T,Dim,fermion,T3<:AbstractFermionfields}
 
     apply_Dirac_1storder_ν_dagger!(y, x,
         A.parent.U,
         A.parent.μ,
         A.parent.boundarycondition,
         A.parent._temporary_fermi,)
+    return
+end
+
+function LinearAlgebra.mul!(
+    y::T1,
+    A::Adjoint_Wilson_Dirac_1storder_operator{
+        Wilson_Dirac_1storder_operator{Dim,T,fermion},
+    },
+    x::T3,
+) where {T1<:AbstractFermionfields,T,Dim,fermion,T3<:AbstractFermionfields}
+
+
+    if A.parent.μ == 1
+        apply_Dirac_1storder_1_dagger!(
+            y,
+            x,
+            A.parent.U,
+            A.parent.boundarycondition,
+            A.parent._temporary_fermi,
+        )
+
+    elseif A.parent.μ == 2
+        apply_Dirac_1storder_2_dagger!(
+            y,
+            x,
+            A.parent.U,
+            A.parent.boundarycondition,
+            A.parent._temporary_fermi,
+        )
+    elseif A.parent.μ == 3
+        apply_Dirac_1storder_3_dagger!(
+            y,
+            x,
+            A.parent.U,
+            A.parent.boundarycondition,
+            A.parent._temporary_fermi,
+        )
+    elseif A.parent.μ == 4
+        apply_Dirac_1storder_4_dagger!(
+            y,
+            x,
+            A.parent.U,
+            A.parent.boundarycondition,
+            A.parent._temporary_fermi,
+        )
+    else
+        error("μ = $(A.parent.μ) is not supported!!")
+    end
+
+    #apply_Dirac_1storder_ν_dagger!(y, x,
+    ##    A.parent.U,
+    #    A.parent.μ,
+    #    A.parent.boundarycondition,
+    #    A.parent._temporary_fermi,)
     return
 end
 
@@ -433,6 +494,21 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     Udagx, it_Udagx = get_temp(_temporary_fermi)
 
     clear_fermion!(y)
+
+    #=
+    Ux_ν!(temp1, U[ν], x, ν; boundarycondition)
+    mul_1minusγνx!(y, ν, temp1)
+
+    Ux_afterν!(Udagx, U[ν]', x, -ν; boundarycondition)
+    mul_1plusγνx!(temp1, ν, Udagx)
+    add_fermion!(y, 1, temp1)
+
+    unused!(_temporary_fermi, it_temp1)
+    unused!(_temporary_fermi, it_Udagx)
+    return
+    =#
+
+
     #=
     println(" x   --")
     if typeof(temp1) <: WilsonFermion_4D_nowing
@@ -516,17 +592,170 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     return
 
 
-    Ux_ν!(temp1, U[ν], x, ν; boundarycondition)
-    mul_1minusγνx!(y, ν, temp1)
 
-    Ux_afterν!(Udagx, U[ν]', x, -ν; boundarycondition)
-    mul_1plusγνx!(temp1, ν, Udagx)
+
+end
+
+"""
+U_n[ν](1 - γν)*ψ_{n+ν} + U_{n-ν}[-ν]^+ (1 + γν)*ψ_{n-ν}
+"""
+function apply_Dirac_1storder_1!(y, x, U, boundarycondition, _temporary_fermi)
+
+    ν = 1
+    #temp1 = _temporary_fermi[1]
+    temp1, it_temp1 = get_temp(_temporary_fermi)
+
+    #Udagx = _temporary_fermi[2]
+    Udagx, it_Udagx = get_temp(_temporary_fermi)
+    #Ux = _temporary_fermi[3]
+    clear_fermion!(y)
+    mul!(Udagx, U[ν]', x)
+    set_wing_fermion!(Udagx)
+
+
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+
+    mul_1minusγ1x!(y, temp1)
+
+    #mul!(y,view(rminusγ,:,:,ν),temp1)
+
+    xminus = shift_fermion(Udagx, -ν)
+    #xminus = shift_fermion(x,-ν)
+    #Uminus = shift_U(U[ν],-ν)
+    #mul!(temp1,Uminus',xminus)
+
+    mul_1plusγ1x!(temp1, xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),temp1)
     add_fermion!(y, 1, temp1)
+    set_wing_fermion!(y, boundarycondition)
 
     unused!(_temporary_fermi, it_temp1)
     unused!(_temporary_fermi, it_Udagx)
 
+    #display(xout)
+    #    exit()
+    return
 end
+
+function apply_Dirac_1storder_2!(y, x, U, boundarycondition, _temporary_fermi)
+
+    ν = 2
+    #temp1 = _temporary_fermi[1]
+    #Udagx = _temporary_fermi[2]
+    temp1, it_temp1 = get_temp(_temporary_fermi)
+    Udagx, it_Udagx = get_temp(_temporary_fermi)
+
+    #Ux = _temporary_fermi[3]
+    clear_fermion!(y)
+    mul!(Udagx, U[ν]', x)
+    set_wing_fermion!(Udagx)
+
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    mul_1minusγ2x!(y, temp1)
+    #mul!(y,view(rminusγ,:,:,ν),temp1)
+
+    xminus = shift_fermion(Udagx, -ν)
+    #xminus = shift_fermion(x,-ν)
+    #Uminus = shift_U(U[ν],-ν)
+    #mul!(temp1,Uminus',xminus)
+
+    mul_1plusγ2x!(temp1, xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),temp1)
+    add_fermion!(y, 1, temp1)
+    set_wing_fermion!(y, boundarycondition)
+
+    unused!(_temporary_fermi, it_temp1)
+    unused!(_temporary_fermi, it_Udagx)
+
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+function apply_Dirac_1storder_3!(y, x, U, boundarycondition, _temporary_fermi)
+
+    ν = 3
+    #temp1 = _temporary_fermi[1]
+    #Udagx = _temporary_fermi[2]
+    temp1, it_temp1 = get_temp(_temporary_fermi)
+    Udagx, it_Udagx = get_temp(_temporary_fermi)
+
+    #Ux = _temporary_fermi[3]
+    clear_fermion!(y)
+    mul!(Udagx, U[ν]', x)
+    set_wing_fermion!(Udagx)
+
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    mul_1minusγ3x!(y, temp1)
+    #mul!(y,view(rminusγ,:,:,ν),temp1)
+
+    xminus = shift_fermion(Udagx, -ν)
+    #xminus = shift_fermion(x,-ν)
+    #Uminus = shift_U(U[ν],-ν)
+    #mul!(temp1,Uminus',xminus)
+
+    mul_1plusγ3x!(temp1, xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),temp1)
+    add_fermion!(y, 1, temp1)
+    set_wing_fermion!(y, boundarycondition)
+
+    unused!(_temporary_fermi, it_temp1)
+    unused!(_temporary_fermi, it_Udagx)
+
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+
+function apply_Dirac_1storder_4!(y, x, U, boundarycondition, _temporary_fermi)
+
+    ν = 4
+    #temp1 = _temporary_fermi[1]
+    #Udagx = _temporary_fermi[2]
+    temp1, it_temp1 = get_temp(_temporary_fermi)
+    Udagx, it_Udagx = get_temp(_temporary_fermi)
+
+    #Ux = _temporary_fermi[3]
+    clear_fermion!(y)
+    mul!(Udagx, U[ν]', x)
+    set_wing_fermion!(Udagx)
+
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    mul_1minusγ4x!(y, temp1)
+    #mul!(y,view(rminusγ,:,:,ν),temp1)
+
+    xminus = shift_fermion(Udagx, -ν)
+    #xminus = shift_fermion(x,-ν)
+    #Uminus = shift_U(U[ν],-ν)
+    #mul!(temp1,Uminus',xminus)
+
+    mul_1plusγ4x!(temp1, xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),xminus)
+    #mul!(temp1,view(rplusγ,:,:,ν),temp1)
+    add_fermion!(y, 1, temp1)
+    set_wing_fermion!(y, boundarycondition)
+
+    unused!(_temporary_fermi, it_temp1)
+    unused!(_temporary_fermi, it_Udagx)
+
+
+    #display(xout)
+    #    exit()
+    return
+end
+
+
+#=
 
 """
 U_n[ν](1 - γν)*ψ_{n+ν} + U_{n-ν}[-ν]^+ (1 + γν)*ψ_{n-ν}
@@ -763,6 +992,8 @@ function apply_Dirac_1storder_ν_dagger!(y, x, U, ν, boundarycondition, _tempor
     unused!(_temporary_fermi, it_Udagx)
 
 end
+
+=#
 
 function apply_Dirac_1storder_1_dagger!(y, x, U, boundarycondition, _temporary_fermi)
 

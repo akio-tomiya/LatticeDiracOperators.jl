@@ -8,7 +8,7 @@ using LatticeDiracOperators
 import Gaugefields: Initialize_4DGaugefields
 using Test
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
-
+using CUDA
 
 function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ, ξcpu, Ucpu,
     fermi_action_cpu, ηcpu, gauge_action_cpu)
@@ -70,7 +70,7 @@ function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, fermi_action, η, ξ,
 
 
     gauss_sampling_in_action!(ξcpu, Ucpu, fermi_action_cpu)
-    substitute_fermion!(ξ, ξcpu)
+    #substitute_fermion!(ξ, ξcpu)
     #set_wing_fermion!(ξ)
     #set_wing_fermion!(ξcpu)
     #error("d")
@@ -235,8 +235,10 @@ function test1()
 
     #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
     Ucpu = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
-        isMPILattice=true,singleprecision)
+#    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
+#        isMPILattice=true,singleprecision)
+    U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold"; accelerator="JACC")
+#    U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold"; accelerator="cuda")
     #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     #U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
 
@@ -255,9 +257,9 @@ function test1()
     β = 5.5 / 2
     push!(gauge_action_cpu, β, plaqloop)
 
-    x = Initialize_pseudofermion_fields(U[1], "Wilson")
+    x = Initialize_pseudofermion_fields(U[1], "Wilson", nowing=true)
     xcpu = Initialize_pseudofermion_fields(Ucpu[1], "Wilson")
-    substitute_fermion!(x, xcpu)
+    #substitute_fermion!(x, xcpu)
 
     params = Dict()
     params["Dirac_operator"] = "Wilson"
@@ -268,7 +270,7 @@ function test1()
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
     params["method_CG"] = "bicg"
-    #params["faster version"] = true
+    params["faster version"] = true
     D = Dirac_operator(U, x, params)
 
     parameters_action = Dict()

@@ -82,6 +82,8 @@ function kernel_4Dmatrix_mulA!(i, C, A, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw
 
 end
 
+
+
 #C = x*A^T
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     A::TA, x::LatticeMatrix{4,T1,AT1,NC1,4,nw}) where {T1,AT1,NC1,nw,TA<:AbstractMatrix}
@@ -101,6 +103,27 @@ function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{NC1}, ::Val{nw}, PN) where {N
     it += nw
 
     @inbounds for ic = 1:NC1
+        row = ntuple(kc -> x[ic, kc, ix, iy, iz, it], 4)
+        for jc = 1:4
+            acc = zero(eltype(C))
+            @inbounds for kc = 1:4
+                acc += row[kc] * A[jc, kc]   # = dot(C[ic,:], A[jc,:])
+            end
+            C[ic, jc, ix, iy, iz, it] = acc
+        end
+    end
+    return
+end
+
+
+function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, PN) where {nw}
+    ix, iy, iz, it = get_4Dindex(i, PN)
+    ix += nw
+    iy += nw
+    iz += nw
+    it += nw
+
+    @inbounds for ic = 1:3
         row = ntuple(kc -> x[ic, kc, ix, iy, iz, it], 4)
         for jc = 1:4
             acc = zero(eltype(C))

@@ -2601,7 +2601,6 @@ function Uxminus_after4!(
 end
 
 
-
 const γ1indices = (4, 3, 2, 1)
 const γ1coeffs = (-im, -im, im, im)
 const γ2indices = (4, 3, 2, 1)
