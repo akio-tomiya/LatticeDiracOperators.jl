@@ -44,7 +44,7 @@ import .Dirac_operators:
     calc_UdSfdU!,
     bicgstab,
     gmres,
-    pregmres,
+    #pregmres,
     Z2_distribution_fermion!,
     Wilson_Dirac_operator_evenodd,
     calc_p_UdSfdU!,

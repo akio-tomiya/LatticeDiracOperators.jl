@@ -177,7 +177,7 @@ function calc_UdSfdU_fromX!(
 
         # (r-γ_μ) U_{k,μ} X_{k+μ}
         #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
-        if W.r == 1
+        if W.r == 1 && Dim == 4
             mul_1minusγμx!(temp1_f, temp0_f, μ)
         else
             mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
@@ -199,7 +199,7 @@ function calc_UdSfdU_fromX!(
         mul!(temp0_f, Yplus', U[μ]')
 
         # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        if W.r == 1
+        if W.r == 1 && Dim == 4
             mul_x1plusγμ!(temp1_f, temp0_f, μ)
         else
             mul!(temp1_f, temp0_f, view(W.rplusγ, :, :, μ))
@@ -285,7 +285,7 @@ function calc_p_UdSfdU_fromX!(
 
         # (r-γ_μ) U_{k,μ} X_{k+μ}
         #println("1")
-        if W.r == 1
+        if W.r == 1 && Dim == 4
             mul_1minusγμx!(temp1_f, temp0_f, μ)
         else
             mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)

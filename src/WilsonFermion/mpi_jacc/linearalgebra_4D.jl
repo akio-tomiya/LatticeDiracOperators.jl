@@ -1,4 +1,4 @@
-import Gaugefields.MPILattice: add_matrix!, kernel_add_4D!
+import Gaugefields.MPILattice: add_matrix!#, kernel_add_4D!
 
 
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
