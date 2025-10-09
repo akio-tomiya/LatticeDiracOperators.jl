@@ -263,6 +263,7 @@ function test1()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = 0.141139 / 2
     params["eps_CG"] = 1.0e-18
+    params["improved gpu"] = true
     #params["eps_CG"] = 1.0e-1
     #params["verbose_level"] = 3
     #params["method_CG"] = "preconditiond_bicgstab"

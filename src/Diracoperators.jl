@@ -11,7 +11,8 @@ import Gaugefields:
     shift_U,
     clear_U!,
     set_wing_U!,
-    add_U!
+    add_U!,
+    AbstractGaugefields_module.Gaugefields_4D_MPILattice
 #import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 #import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 using LinearAlgebra
@@ -116,7 +117,7 @@ function Dirac_operator(
         fasterversion = check_parameters(parameters, "faster version", false)
         improved_gpu = check_parameters(parameters, "improved gpu", false)
         #@info fasterversion
-        if improved_gpu
+        if improved_gpu && eltype(U) <: Gaugefields_4D_MPILattice
             Wilson_Dirac_operator_improved(U, x, parameters)
         else
             if fasterversion

@@ -1,8 +1,8 @@
 import LatticeMatrices: WilsonDiracOperator4D
-struct Wilson_Dirac_operator_improved{Dim,T,fermion} <:
+struct Wilson_Dirac_operator_improved{Dim,T,fermion,TD} <:
        Wilson_Dirac_operators{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D::WilsonDiracOperator4D{T}
+    D::WilsonDiracOperator4D{TD}
     κ::Float64 #Hopping parameter
     _temporary_fermi::Temporalfields{fermion}#Vector{fermion}
     factor::Float64
@@ -13,6 +13,14 @@ struct Wilson_Dirac_operator_improved{Dim,T,fermion} <:
     method_CG::String
     verbose_print::Verbose_print
     _temporary_fermion_forCG::Temporalfields{fermion}#Vector{fermion}
+
+    γ::Array{ComplexF64,3}
+    rplusγ::Array{ComplexF64,3}
+    rminusγ::Array{ComplexF64,3}
+    r::Float64 #Wilson term
+    hopp::Array{ComplexF64,1}
+    hopm::Array{ComplexF64,1}
+
 end
 
 function Wilson_Dirac_operator_improved(
@@ -60,10 +68,25 @@ function Wilson_Dirac_operator_improved(
     r = check_parameters(parameters, "r", 1.0)
     @assert r == 1 "In fast Wilson mode, r should be 1. Now r = $r"
 
-    D = WilsonDiracOperator4D(U, κ)
+    D = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], κ)
+
+    if Dim == 4
+        γ, rplusγ, rminusγ = mk_gamma(r)
+        hopp = zeros(ComplexF64, 4)
+        hopm = zeros(ComplexF64, 4)
+        hopp .= κ
+        hopm .= κ
+    elseif Dim == 2
+        γ, rplusγ, rminusγ = mk_sigma(r)
+        hopp = zeros(ComplexF64, 2)
+        hopm = zeros(ComplexF64, 2)
+        hopp .= κ
+        hopm .= κ
+    end
 
 
-    return Wilson_Dirac_operator_faster{Dim,T,xtype}(
+
+    return Wilson_Dirac_operator_improved{Dim,T,xtype,typeof(U[1].U)}(
         U,
         D,
         κ,
@@ -75,16 +98,23 @@ function Wilson_Dirac_operator_improved(
         verbose_level,
         method_CG,
         verbose_print,
-        _temporary_fermion_forCG
+        _temporary_fermion_forCG,
+        γ,#::Array{ComplexF64,3}
+        rplusγ,#::Array{ComplexF64,3}
+        rminusγ,#::Array{ComplexF64,3}
+        r,#::Float64 #Wilson term
+        hopp,#::Array{ComplexF64,1}
+        hopm,#::Array{ComplexF64,1})
     )
 
 
 end
 
 function (D::Wilson_Dirac_operator_improved{Dim,T,fermion})(U) where {Dim,T,fermion}
-    return Wilson_Dirac_operator_improved{Dim,T,fermion}(
+    WD = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], D.κ)
+    return Wilson_Dirac_operator_improved{Dim,T,fermion,typeof(U[1].U)}(
         U,
-        WilsonDiracOperator4D(U, D.κ),
+        WD,
         D.κ,
         D._temporary_fermi,
         D.factor,
@@ -94,16 +124,22 @@ function (D::Wilson_Dirac_operator_improved{Dim,T,fermion})(U) where {Dim,T,ferm
         D.verbose_level,
         D.method_CG,
         D.verbose_print,
-        D._temporary_fermion_forCG
+        D._temporary_fermion_forCG,
+        D.γ,#::Array{ComplexF64,3}
+        D.rplusγ,#::Array{ComplexF64,3}
+        D.rminusγ,#::Array{ComplexF64,3}
+        D.r,#::Float64 #Wilson term
+        D.hopp,#::Array{ComplexF64,1}
+        D.hopm,#::Array{ComplexF64,1})
     )
 end
 
-struct Adjoint_Wilson_operator_improved{T} <: Adjoint_Dirac_operator
+struct Adjoint_Wilson_Dirac_operator_improved{T} <: Adjoint_Dirac_operator
     parent::T
 end
 
 function Base.adjoint(A::T) where {T<:Wilson_Dirac_operator_improved}
-    Adjoint_Wilson_operator_improved{typeof(A)}(A)
+    Adjoint_Wilson_Dirac_operator_improved{typeof(A)}(A)
 end
 
 """
@@ -125,3 +161,21 @@ function LinearAlgebra.mul!(
     unused!(A._temporary_fermi, it_temp1)
     set_wing_fermion!(y)
 end
+
+function LinearAlgebra.mul!(
+    y::T1,
+    A::Adjoint_Wilson_Dirac_operator_improved{T},
+    x::T3,
+) where {T1<:AbstractFermionfields,T,T3<:AbstractFermionfields}
+
+
+    clear_fermion!(y)
+    temp1, it_temp1 = get_temp(A.parent._temporary_fermi)
+
+    mul!(temp1.f, A.parent.D', x.f)
+
+    add_fermion!(y, A.parent.factor, temp1)
+    unused!(A.parent._temporary_fermi, it_temp1)
+    set_wing_fermion!(y)
+end
+
