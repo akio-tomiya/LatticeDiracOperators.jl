@@ -20,14 +20,15 @@ import Gaugefields.MPILattice: LatticeMatrix,
     gather_and_bcast_matrix,
     traceless_antihermitian!
 import Gaugefields.AbstractGaugefields_module: Gaugefields_4D_MPILattice, Fields_4D_MPILattice
+import LatticeMatrices: mulT!
 
 include("linearalgebra_4D.jl")
 
 abstract type WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFermion_4D{NC} end
 
 
-struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    f::LatticeMatrix{4,T,AT,NC,NG}
+struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Tf#LatticeMatrix{4,T,AT,NC,NG}
     NC::Int64
     NX::Int64
     NY::Int64
@@ -96,7 +97,7 @@ struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFields_4
         AT = typeof(f.A)
 
 
-        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG}(
+        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG,typeof(f)}(
             f,
             NC,
             NX,
@@ -188,31 +189,31 @@ function clear_fermion!(a::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,N
     set_halo!(a.f)
 end
 
-struct Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    f::Shifted_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW},shift}
+struct Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Shifted_Lattice{Tf,shift}
 
     function Shifted_WilsonFermion_4D_MPILattice(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
         #sU = Shifted_Lattice{typeof(U.U),shift}(U.U)
         sx = Shifted_Lattice(x.f, shift)
         shiftin = get_shift(sx)
-        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shiftin}(sx)
+        return new{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shiftin,typeof(x.f)}(sx)
     end
 end
 
-struct Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    f::Adjoint_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW}}
+struct Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Adjoint_Lattice{Tf}
 end
 
-struct Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    f::Adjoint_Lattice{Shifted_Lattice{LatticeMatrix{4,T,AT,NC,NG,NDW},shift}}
+struct Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    f::Adjoint_Lattice{Shifted_Lattice{Tf,shift}}
 end
 
 function Base.adjoint(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}(x.f')
+    Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,typeof(x.f)}(x.f')
 end
 
-function Base.adjoint(x::Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}
-    Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift}(x.f')
+function Base.adjoint(x::Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift,Tf}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift,Tf}
+    Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,shift,Tf}(x.f')
 end
 
 
@@ -423,8 +424,13 @@ function LinearAlgebra.mul!(
     u::Fields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
 
+    #y[k1, ix, iy, iz, it, ialpha] +=
+    #      x[k2, ix, iy, iz, it, ialpha] *
+    #      A[k2, k1, ix, iy, iz, it]
 
-    mul!(y.f, x.f, u.U)
+    #y[i,a] = x[k,a]*u[k,i]
+    #mul!(y.f, x.f, u.U)
+    mulT!(y.f, x.f, u.U)
 
 end
 

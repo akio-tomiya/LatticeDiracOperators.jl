@@ -669,8 +669,10 @@ function LinearAlgebra.mul!(
                             y[k1, ix, iy, iz, it, ialpha] = 0
                             @simd for k2 = 1:NC
                                 y[k1, ix, iy, iz, it, ialpha] +=
-                                    x[k1, ix, iy, iz, it, ialpha] *
-                                    A[k1, k2, ix, iy, iz, it]
+                                    x[k2, ix, iy, iz, it, ialpha] *
+                                    A[k2, k1, ix, iy, iz, it]
+                                #x[k1, ix, iy, iz, it, ialpha] *
+                                #A[k1, k2, ix, iy, iz, it]
                             end
                         end
                     end
@@ -705,8 +707,10 @@ function LinearAlgebra.mul!(
                                 y[k1, ix, iy, iz, it, ialpha] = 0
                                 @simd for k2 = 1:NC
                                     y[k1, ix, iy, iz, it, ialpha] +=
-                                        x[k1, ix, iy, iz, it, ialpha] *
-                                        A[k1, k2, ix, iy, iz, it]
+                                        x[k2, ix, iy, iz, it, ialpha] *
+                                        A[k2, k1, ix, iy, iz, it]
+                                    #x[k1, ix, iy, iz, it, ialpha] *
+                                    #A[k1, k2, ix, iy, iz, it]
                                 end
                             end
                         end

@@ -95,7 +95,7 @@ function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     #set_halo!(C)
 end
 
-function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
+function kernel_4Dmatrix_mulxAT!(i, C, A::T, x, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw,T<:AbstractMatrix}
     ix, iy, iz, it = get_4Dindex(i, PN)
     ix += nw
     iy += nw
@@ -115,8 +115,8 @@ function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{NC1}, ::Val{nw}, PN) where {N
     return
 end
 
-
-function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, PN) where {nw}
+#=
+function kernel_4Dmatrix_mulxAT!(i, C, A::T, x, ::Val{3}, ::Val{nw}, PN) where {nw,T<:AbstractMatrix}
     ix, iy, iz, it = get_4Dindex(i, PN)
     ix += nw
     iy += nw
@@ -135,6 +135,7 @@ function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, PN) where {nw}
     end
     return
 end
+=#
 
 #C = C+ α*A + β*B
 function add_matrix!(C::LatticeMatrix{4,T,AT,NC1,NC2,nw}, A::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
@@ -235,6 +236,7 @@ function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,1}, x, ::Val{NC1}, ::Val{
     return
 end
 
+#function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, PN) where {nw}
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,1}, x, ::Val{NC1}, ::Val{nw}, PN) where {NC1,nw}
     ix, iy, iz, it = get_4Dindex(i, PN)
     ix += nw

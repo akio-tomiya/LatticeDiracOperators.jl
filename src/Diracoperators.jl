@@ -114,11 +114,16 @@ function Dirac_operator(
         Staggered_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         fasterversion = check_parameters(parameters, "faster version", false)
+        improved_gpu = check_parameters(parameters, "improved gpu", false)
         #@info fasterversion
-        if fasterversion
-            Wilson_Dirac_operator_faster(U, x, parameters)
+        if improved_gpu
+            Wilson_Dirac_operator_improved(U, x, parameters)
         else
-            Wilson_Dirac_operator(U, x, parameters)
+            if fasterversion
+                Wilson_Dirac_operator_faster(U, x, parameters)
+            else
+                Wilson_Dirac_operator(U, x, parameters)
+            end
         end
     elseif parameters["Dirac_operator"] == "WilsonClover"
         @warn "not implemented completely!!"

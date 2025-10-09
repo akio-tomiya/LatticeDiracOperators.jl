@@ -15,7 +15,7 @@ function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ, ξcpu, Ucpu,
     p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
     Uold = similar(U)
     substitute_U!(Uold, U)
-    MDsteps = 10
+    MDsteps = 10 * 4
     temp1 = similar(U[1])
     temp2 = similar(U[1])
     comb = 2
@@ -224,10 +224,10 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, fermi_action, η,
 end
 
 function test1()
-    NX = 16
-    NY = 16
-    NZ = 16
-    NT = 16
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
     Nwing = 1
     Dim = 4
     NC = 3
@@ -236,7 +236,7 @@ function test1()
     #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
     Ucpu = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
-        isMPILattice=true,singleprecision)
+        isMPILattice=true, singleprecision)
     #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     #U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
 

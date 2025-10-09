@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.6"
+julia_version = "1.11.7"
 manifest_format = "2.0"
 project_hash = "e5a1d0b401c614cb811fd4a9d10edfecadfe4147"
 
@@ -80,9 +80,9 @@ version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "3e6d038b77f22791b8e3472b7c633acea1ecac06"
+git-tree-sha1 = "3bc002af51045ca3b47d2e1787d6ce02e68b943a"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.120"
+version = "0.25.122"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -112,9 +112,9 @@ version = "1.2.2"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "b66970a70db13f45b7e57fbda1736e1cf72174ea"
+git-tree-sha1 = "d60eb76f37d7e5a40cc2e7c36974d864b82dc802"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.17.0"
+version = "1.17.1"
 
     [deps.FileIO.extensions]
     HTTPExt = "HTTP"
@@ -128,9 +128,9 @@ version = "1.11.0"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "6a70198746448456524cb442b8af316927ff3e1a"
+git-tree-sha1 = "173e4d8f14230a7523ae11b9a3fa9edb3e0efd78"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.13.0"
+version = "1.14.0"
 weakdeps = ["PDMats", "SparseArrays", "Statistics"]
 
     [deps.FillArrays.extensions]
@@ -144,10 +144,10 @@ uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 version = "6.3.0+0"
 
 [[deps.Gaugefields]]
-deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JACC", "JLD2", "LinearAlgebra", "MPI", "NPZ", "PreallocatedArrays", "Random", "Requires", "StableRNGs", "StaticArrays", "Wilsonloop"]
-path = "/home/yuki/Gaugefields.jl/master/Gaugefields.jl/"
+deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JACC", "JLD2", "LatticeMatrices", "LinearAlgebra", "MPI", "NPZ", "PreallocatedArrays", "Random", "Requires", "StableRNGs", "StaticArrays", "Wilsonloop"]
+git-tree-sha1 = "04365c339b9db9206b0fb4fbf481ddaba5ca1fac"
 uuid = "a461e10c-0d91-493e-bc41-027b226eee91"
-version = "0.6.2"
+version = "0.6.9"
 
 [[deps.HashArrayMappedTries]]
 git-tree-sha1 = "2eaa69a7cab70a52b9687c8bf950a5a93ec895ae"
@@ -216,10 +216,16 @@ uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.4.0"
 
 [[deps.LatticeDiracOperators]]
-deps = ["AlgRemez_jll", "Gaugefields", "InteractiveUtils", "JACC", "JLD2", "LinearAlgebra", "MPI", "Random", "Requires", "SparseArrays", "StaticArrays", "Wilsonloop"]
+deps = ["AlgRemez_jll", "Gaugefields", "InteractiveUtils", "JACC", "JLD2", "LatticeMatrices", "LinearAlgebra", "MPI", "Random", "Requires", "SparseArrays", "StaticArrays", "Wilsonloop"]
 path = "../.."
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
-version = "0.5.0"
+version = "0.5.3"
+
+[[deps.LatticeMatrices]]
+deps = ["InteractiveUtils", "JACC", "LinearAlgebra", "MPI", "MPIPreferences", "StaticArrays", "Test"]
+path = "../../../../../LatticeMatrices/main/LatticeMatrices.jl"
+uuid = "dd6a91e4-736f-4540-ac85-13822ca7b545"
+version = "0.1.4"
 
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
@@ -516,9 +522,9 @@ version = "1.11.0"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "41852b8679f78c8d8961eeadc8f62cef861a52e3"
+git-tree-sha1 = "f2685b435df2613e25fc10ad8c26dddb8640f547"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.5.1"
+version = "2.6.1"
 
     [deps.SpecialFunctions.extensions]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -605,6 +611,11 @@ version = "1.0.3"
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 version = "1.10.0"
+
+[[deps.Test]]
+deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
+uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+version = "1.11.0"
 
 [[deps.TranscodingStreams]]
 git-tree-sha1 = "0c45878dcfdcfa8480052b6ab162cdd138781742"
