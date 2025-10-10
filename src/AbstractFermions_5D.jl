@@ -240,7 +240,8 @@ function LinearAlgebra.axpby!(
     L5 = length(X.w)
     #n1,n2,n3,n4,n5,n6 = size(X.w[1].f)
     for iL = 1:L5
-        Y.w[iL] = axpby!(a, X.w[iL], b, Y.w[iL])
+        axpby!(a, X.w[iL], b, Y.w[iL])
+        #Y.w[iL] = Yw#axpby!(a, X.w[iL], b, Y.w[iL])
     end
     return Y
 end

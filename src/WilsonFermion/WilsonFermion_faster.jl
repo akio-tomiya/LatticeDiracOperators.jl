@@ -995,6 +995,20 @@ end
 
 =#
 
+function apply_Dirac_1storder_ν_dagger!(y, x, U, ν, boundarycondition, _temporary_fermi)
+    if ν == 1
+        apply_Dirac_1storder_1_dagger!(y, x, U, boundarycondition, _temporary_fermi)
+    elseif ν == 2
+        apply_Dirac_1storder_2_dagger!(y, x, U, boundarycondition, _temporary_fermi)
+    elseif ν == 3
+        apply_Dirac_1storder_3_dagger!(y, x, U, boundarycondition, _temporary_fermi)
+    elseif ν == 4
+        apply_Dirac_1storder_4_dagger!(y, x, U, boundarycondition, _temporary_fermi)
+    else
+        error("μ = $(ν) is not supported!!")
+    end
+end
+
 function apply_Dirac_1storder_1_dagger!(y, x, U, boundarycondition, _temporary_fermi)
 
     ν = 1

@@ -208,7 +208,7 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, U[μ], Xsplus)
 
             # (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp1_f, view(Dwilson.rminusγ, :, :, μ), temp0_f)
+            mul!(temp1_f, Dwilson.rminusγ[ :, :, μ], temp0_f)
 
             # κ (r-γ_μ) U_{k,μ} X_{k+μ}
             mul!(temp0_f, κ, temp1_f)
@@ -224,7 +224,7 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, Ysplus', U[μ]')
 
             # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f, temp0_f, view(Dwilson.rplusγ, :, :, μ))
+            mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
 
             # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
             mul!(temp0_f, κ, temp1_f)
@@ -255,7 +255,7 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, U[μ], Zsplus)
 
             # (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp1_f, view(Dwilson.rminusγ, :, :, μ), temp0_f)
+            mul!(temp1_f, Dwilson.rminusγ[ :, :, μ], temp0_f)
 
             # κ (r-γ_μ) U_{k,μ} X_{k+μ}
             mul!(temp0_f, κ, temp1_f)
@@ -274,7 +274,7 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, ϕsplus', U[μ]')
 
             # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f, temp0_f, view(Dwilson.rplusγ, :, :, μ))
+            mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
 
             # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
             mul!(temp0_f, κ, temp1_f)
@@ -393,7 +393,7 @@ function calc_p_UdSfdU_fromX!(
             mul!(temp0_f, U[μ], Xsplus)
 
             # (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp1_f, view(Dwilson.rminusγ, :, :, μ), temp0_f)
+            mul!(temp1_f, Dwilson.rminusγ[ :, :, μ], temp0_f)
 
             # κ (r-γ_μ) U_{k,μ} X_{k+μ}
 
@@ -414,7 +414,7 @@ function calc_p_UdSfdU_fromX!(
             mul!(temp0_f, Ysplus', U[μ]')
 
             # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f, temp0_f, view(Dwilson.rplusγ, :, :, μ))
+            mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
 
             # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
             mul!(temp0_f, κ, temp1_f)

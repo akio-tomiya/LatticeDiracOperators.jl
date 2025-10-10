@@ -113,7 +113,8 @@ end
 
 function Initialize_WilsonFermion(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}
-    ; boundarycondition=[1, 1, 1, -1]) where {NC,NX,NY,NZ,NT,T,AT,NDW}
+    ; nowing=false,boundarycondition=[1, 1, 1, -1]) where {NC,NX,NY,NZ,NT,T,AT,NDW}
+    @assert nowing == true "nowing should be false."
     x = WilsonFermion_4D_MPILattice(
         NC,
         NX,
@@ -134,18 +135,64 @@ function Initialize_pseudofermion_fields(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW},
     Dirac_operator::String;
     L5=2,
-    kwargs...
+    nowing=true, kwargs...
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW}
 
+#=
     if Dirac_operator == "staggered"
         error(
             "Dirac_operator  = $Dirac_operator witn nowing = $nowing is not supported",
         )
     elseif Dirac_operator == "Wilson"
         x = Initialize_WilsonFermion(u)
+    else
+        error("Dirac_operator  = $Dirac_operator is not supported")
     end
     return x
+    =#
+    Dim = 4
+    if Dim == 4
+        if Dirac_operator == "staggered"
+            x = Initialize_StaggeredFermion(u, nowing=nowing)
+        elseif Dirac_operator == "Wilson"
+            x = Initialize_WilsonFermion(u, nowing=nowing)
+        elseif Dirac_operator == "Domainwall"
+            #@warn "Domainwall fermion is not well tested!!"
+            x = Initialize_DomainwallFermion(u, L5, nowing=nowing)
+        elseif Dirac_operator == "MobiusDomainwall"
+            #@warn "MobiusDomainwall fermion is not well tested!!"
+            x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing)
+        elseif Dirac_operator == "GeneralizedDomainwall"
+            #@warn "GeneralizedDomainwall fermion is not well tested!!"
+            x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)
+
+        else
+            error("Dirac_operator = $Dirac_operator is not supported")
+        end
+    elseif Dim == 2
+        if Dirac_operator == "staggered"
+            x = Initialize_StaggeredFermion(u)
+        elseif Dirac_operator == "Wilson"
+            x = Initialize_WilsonFermion(u)
+        elseif Dirac_operator == "Domainwall"
+            #@warn "Domainwall fermion is not well tested!!"
+            x = Initialize_DomainwallFermion(u, L5)
+        elseif Dirac_operator == "MobiusDomainwall"
+            @warn "MobiusDomainwall fermion is not well tested!!"
+            x = Initialize_MobiusDomainwallFermion(u, L5)
+        elseif Dirac_operator == "GeneralizedDomainwall"
+            @warn "GeneralizedDomainwall fermion is not tested!!"
+            x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)
+        else
+            error("Dirac_operator = $Dirac_operator is not supported")
+        end
+    else
+        error("Dim = $Dim is not supported")
+    end
+    return x
+
 end
+
 
 function Base.similar(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
 
@@ -173,6 +220,19 @@ function gauss_distribution_fermion!(
     substitute!(x.f, a)
 
     return
+end
+
+function gauss_distribution_fermion!(
+     x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    randomfunc,
+    σ,
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT)
+    work = map(i -> gauss_distribution(σ), work)
+    PEs = get_PEs(x.f)
+    a = LatticeMatrix(work, 4, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
+    substitute!(x.f, a)
 end
 
 function gauss_distribution(σ=1)
@@ -234,6 +294,20 @@ function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     A::TA) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
 
     mul!(C.f, A)
+    #set_halo!(C)
+end
+
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::TA,x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
+
+    mul!(C.f, A,x.f)
+    #set_halo!(C)
+end
+
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},A::TA,) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
+
+    mul!(C.f, x.f,A)
     #set_halo!(C)
 end
 
@@ -381,16 +455,75 @@ function mul_1plusγμx!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,
     x, μ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
     #println("mul")
     #display(x.f.A[:, :, 2, 2, 2, 2])
-    mul!(y.f, Oneγμ{:plus,μ}(), x.f)
+    substitute!(y.f,x.f)
+    set_halo!(y.f)
+    mul!(y.f, Oneγμ{:plus,μ}())
+    #mul!(y.f, Oneγμ{:plus,μ}(), x.f)
     #error("mul_1plus")
 end
 
 
 function mul_1minusγμx!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
     x, μ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    mul!(y.f, Oneγμ{:minus,μ}(), x.f)
+    substitute!(y.f,x.f)
+    mul!(y.f, Oneγμ{:minus,μ}())
+    #mul!(y.f, Oneγμ{:minus,μ}(), x.f)
     #error("mul_1minus")
 end
+
+function mul_1plusγ1x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1plusγμx!(y, x, 1)
+end
+
+function mul_1plusγ2x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1plusγμx!(y, x, 2)
+end
+
+function mul_1plusγ3x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1plusγμx!(y, x, 3)
+end
+
+function mul_1plusγ4x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1plusγμx!(y, x, 4)
+end
+
+function mul_1plusγ5x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1plusγμx!(y, x, 5)
+end
+
+function mul_1minusγ1x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1minusγμx!(y, x, 1)
+end
+
+function mul_1minusγ2x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1minusγμx!(y, x, 2)
+end
+
+function mul_1minusγ3x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1minusγμx!(y, x, 3)
+end
+
+function mul_1minusγ4x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1minusγμx!(y, x, 4)
+end
+
+function mul_1minusγ5x!(y::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    x) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    mul_1minusγμx!(y, x, 5)
+end
+
+
+
+
 
 #C = a*x
 function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
