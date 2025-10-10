@@ -121,8 +121,10 @@ function Dirac_operator(
             Wilson_Dirac_operator_improved(U, x, parameters)
         else
             if fasterversion
+                #println("faster version is used")
                 Wilson_Dirac_operator_faster(U, x, parameters)
             else
+                #println("faster version is not used")
                 Wilson_Dirac_operator(U, x, parameters)
             end
         end

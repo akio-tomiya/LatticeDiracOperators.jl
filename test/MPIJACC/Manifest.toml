@@ -223,9 +223,9 @@ version = "0.5.3"
 
 [[deps.LatticeMatrices]]
 deps = ["InteractiveUtils", "JACC", "LinearAlgebra", "MPI", "MPIPreferences", "StaticArrays", "Test"]
-path = "../../../../../LatticeMatrices/main/LatticeMatrices.jl"
+git-tree-sha1 = "d1198b3a6a219053de68c7ac11f2f124586bda1f"
 uuid = "dd6a91e4-736f-4540-ac85-13822ca7b545"
-version = "0.1.4"
+version = "0.1.5"
 
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]

@@ -224,10 +224,10 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, fermi_action, η,
 end
 
 function test1()
-    NX = 4
-    NY = 4
-    NZ = 4
-    NT = 4
+    NX = 16
+    NY = 16
+    NZ = 16
+    NT = 16
     Nwing = 1
     Dim = 4
     NC = 3
@@ -235,8 +235,12 @@ function test1()
 
     #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
     Ucpu = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
-        isMPILattice=true, singleprecision)
+    #U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
+    #    isMPILattice=true, singleprecision)
+
+    #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold"; accelerator="cuda")     
+    #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold"; accelerator="jacc")    
+    U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold") 
     #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     #U  =Initialize_Gaugefields(NC,Nwing,NX,NY,NZ,NT,condition = "cold")
 
@@ -263,13 +267,14 @@ function test1()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = 0.141139 / 2
     params["eps_CG"] = 1.0e-18
-    params["improved gpu"] = true
+    params["improved gpu"] = false
+    #params["improved gpu"] = true
     #params["eps_CG"] = 1.0e-1
     #params["verbose_level"] = 3
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
     params["method_CG"] = "bicg"
-    #params["faster version"] = true
+    params["faster version"] = true
     D = Dirac_operator(U, x, params)
 
     parameters_action = Dict()

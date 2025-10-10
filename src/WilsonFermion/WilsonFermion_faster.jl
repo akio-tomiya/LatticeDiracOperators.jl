@@ -1006,13 +1006,13 @@ function apply_Dirac_1storder_1_dagger!(y, x, U, boundarycondition, _temporary_f
     clear_fermion!(y)
 
 
-    #mul!(Udagx, U[ν]', x)
-    #set_wing_fermion!(Udagx)
+    mul!(Udagx, U[ν]', x)
+    set_wing_fermion!(Udagx)
 
 
-    #xplus = shift_fermion(x, ν)
-    #mul!(temp1, U[ν], xplus)
-    Ux_ν!(temp1, U[ν], x, ν)
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    #Ux_ν!(temp1, U[ν], x, ν)
     mul_1plusγ1x!(y, temp1)
 
     #mul!(y,view(rminusγ,:,:,ν),temp1)
@@ -1023,18 +1023,18 @@ function apply_Dirac_1storder_1_dagger!(y, x, U, boundarycondition, _temporary_f
     #Uminus = shift_U(U[ν],-ν)
     #mul!(temp1,Uminus',xminus)
 
-    #xminus = shift_fermion(Udagx, -ν)
-    #mul_1minusγ1x!(temp1, xminus)
+    xminus = shift_fermion(Udagx, -ν)
+    mul_1minusγ1x!(temp1, xminus)
 
     #mul!(temp1,view(rplusγ,:,:,ν),xminus)
     #mul!(temp1,view(rplusγ,:,:,ν),temp1)
-    #add_fermion!(y, 1, temp1)
-
-
-    Ux_afterν!(Udagx, U[ν]', x, -ν)
-    set_wing_fermion!(Udagx)
-    mul_1minusγ1x!(temp1, Udagx)
     add_fermion!(y, 1, temp1)
+
+
+    #Ux_afterν!(Udagx, U[ν]', x, -ν)
+    #set_wing_fermion!(Udagx)
+    #mul_1minusγ1x!(temp1, Udagx)
+    #add_fermion!(y, 1, temp1)
 
 
 
@@ -1062,9 +1062,9 @@ function apply_Dirac_1storder_2_dagger!(y, x, U, boundarycondition, _temporary_f
     mul!(Udagx, U[ν]', x)
     set_wing_fermion!(Udagx)
 
-    #xplus = shift_fermion(x, ν)
-    #mul!(temp1, U[ν], xplus)
-    Ux_ν!(temp1, U[ν], x, ν)
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    #Ux_ν!(temp1, U[ν], x, ν)
     mul_1plusγ2x!(y, temp1)
     #mul!(y,view(rminusγ,:,:,ν),temp1)
 
@@ -1102,9 +1102,9 @@ function apply_Dirac_1storder_3_dagger!(y, x, U, boundarycondition, _temporary_f
     mul!(Udagx, U[ν]', x)
     set_wing_fermion!(Udagx)
 
-    #xplus = shift_fermion(x, ν)
-    #mul!(temp1, U[ν], xplus)
-    Ux_ν!(temp1, U[ν], x, ν)
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    #Ux_ν!(temp1, U[ν], x, ν)
     mul_1plusγ3x!(y, temp1)
     #mul!(y,view(rminusγ,:,:,ν),temp1)
 
@@ -1141,9 +1141,9 @@ function apply_Dirac_1storder_4_dagger!(y, x, U, boundarycondition, _temporary_f
     mul!(Udagx, U[ν]', x)
     set_wing_fermion!(Udagx)
 
-    #xplus = shift_fermion(x, ν)
-    #mul!(temp1, U[ν], xplus)
-    Ux_ν!(temp1, U[ν], x, ν)
+    xplus = shift_fermion(x, ν)
+    mul!(temp1, U[ν], xplus)
+    #Ux_ν!(temp1, U[ν], x, ν)
     mul_1plusγ4x!(y, temp1)
     #mul!(y,view(rminusγ,:,:,ν),temp1)
 
