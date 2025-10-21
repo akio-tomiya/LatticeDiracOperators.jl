@@ -17,7 +17,7 @@ struct MobiusDomainwallFermion_5D{NC,WilsonFermion} <:
     Dirac_operator::String
     NWilson::Int64
     nowing::Bool
-    
+
 
     function MobiusDomainwallFermion_5D(
         L5,
@@ -48,10 +48,10 @@ struct MobiusDomainwallFermion_5D{NC,WilsonFermion} <:
     function MobiusDomainwallFermion_5D(
         u::AbstractGaugefields{NC,4},
         L5::T,
-        ;nowing=false, kwargs...
+        ; nowing=false, kwargs...
     ) where {T<:Integer,NC}
 
-        x = Initialize_WilsonFermion(u;nowing,kwargs...)
+        x = Initialize_WilsonFermion(u; nowing, kwargs...)
         NX = u.NX
         NY = u.NY
         NZ = u.NZ
@@ -91,7 +91,7 @@ struct MobiusDomainwallFermion_5D{NC,WilsonFermion} <:
         for i = 2:L5
             w1[i] = similar(x)
         end
-        
+
         return new{NC,WilsonFermion}(w1, NC, NX, NY, NZ, NT, L5, Dirac_operator, NWilson, nowing)
     end
 end
@@ -318,6 +318,7 @@ function apply_1pD!(
     x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
     factor,
 ) where {NC,WilsonFermion,G<:AbstractGaugefields}
+    #println("clear fermion")
     clear_fermion!(xout)
 
     # if factor == 0
@@ -334,7 +335,6 @@ function apply_1pD!(
         irange_out = Int64[]
         #irange = 1:L5
         #irange_out = (L5+1):xout.L5
-
         for i5 = 1:xout.L5
             if i5 <= div(L5, 2) || i5 >= xout.L5 - div(L5, 2) + 1
                 push!(irange, i5)
@@ -343,8 +343,6 @@ function apply_1pD!(
             end
 
         end
-
-
         #for i5 in irange_out
         #    axpy!(1,x.w[i5],xout.w[i5])
         #end
@@ -353,9 +351,14 @@ function apply_1pD!(
     end
     ratio = 1.0
 
+    #Dwilson = A(U)
     for i5 in irange
         j5 = i5
+        #println("D4x!")
+        #@code_warntype D4x!(xout.w[i5], U, x.w[j5], A, 4)
         D4x!(xout.w[i5], U, x.w[j5], A, 4) #Dw*x
+        #@time mul!(xout.w[i5], Dwilson, x.w[j5])
+        #mul!(xout.w[i5], Dwilson, x.w[j5])
         #Dx!(xout.w[i5],U,x.w[j5],A) #Dw*x
         #Wx!(xout.w[i5],U,x.w[j5],temps) #Dw*x
         #1/(2*A.κ)
@@ -365,11 +368,14 @@ function apply_1pD!(
         #     massfactor = 1.0
         # end
 
-        set_wing_fermion!(xout.w[i5])
+        #println("set_wing_fermion!")
+        #@time set_wing_fermion!(xout.w[i5])
         #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
+        #println("add!")
         add!(factor * ratio, xout.w[i5], ratio * massfactor, x.w[j5]) #D = x + Dw*x
         # COMMENT: Factorの位置修正
         # COMMENT : xout = x + factor * Dw * x
+        #println("set_wing_fermion!")
         set_wing_fermion!(xout.w[i5])
     end
 
@@ -853,12 +859,16 @@ function D5DWx!(
 
     factor = coeff_plus
     #xout = (1 + factor*D)*x
+    #println("apply_1pD!")
     apply_1pD!(xout, L5, U, A, x, factor)
 
     #temp2 = F*x
+    #println("apply_F!")
     apply_F!(temp2, L5, m, x, temp1)
+
     factor = coeff_minus
     #xout = (1 + factor*D)*F*x
+    #println("apply_1pD!")
     apply_1pD!(temp1, L5, U, A, temp2, factor)
     for i5 = 1:L5
         # axpy!(-1, temp1.w[i5], xout.w[i5])

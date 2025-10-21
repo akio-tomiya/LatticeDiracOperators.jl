@@ -1,5 +1,5 @@
 import Gaugefields.MPILattice: add_matrix!#, kernel_add_4D!
-import LatticeMatrices: delinearize,shiftindices
+import LatticeMatrices: delinearize, shiftindices
 
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
@@ -17,10 +17,10 @@ end
 
 @inline function kernel_4D_axpby!(i, a, X, b, Y, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
@@ -49,10 +49,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, A, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         e1 = C[ic, 1, indices...]
@@ -98,10 +98,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, A::T, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw,T<:AbstractMatrix}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         row = ntuple(kc -> x[ic, kc, indices...], 4)
@@ -148,10 +148,10 @@ end
 
 @inline function kernel_add_4D!(i, u, v, v2, dindexer, ::Val{NC1}, ::Val{NC2}, α, β, ::Val{nw}) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
@@ -167,10 +167,10 @@ end
 
 @inline function kernel_dot_4D(i, A, B, dindexer, ::Val{NC1}, ::Val{NG}, ::Val{nw}) where {NC1,nw,NG}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     s = zero(eltype(A))
 
     @inbounds for ialpha = 1:NG
@@ -196,10 +196,10 @@ end
 
 function kernel_4Dmatrix_mulsx!(i, C, a, x, ::Val{NC1}, ::Val{NG}, ::Val{nw}, dindexer) where {NC1,NG,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     for ig = 1:NG
         for ic = 1:NC1
             C[ic, ig, indices...] = a * x[ic, ig, indices...]
@@ -218,10 +218,10 @@ Base.size(::Oneγμ{sign,μ}) where {sign,μ} = (4, 4)
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,1}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -240,10 +240,10 @@ end
 #function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, dindexer) where {nw}
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,1}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -261,10 +261,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,2}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -282,10 +282,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,2}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -304,10 +304,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,3}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -325,10 +325,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,3}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -346,10 +346,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,4}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -367,10 +367,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,4}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -389,10 +389,10 @@ end
 
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:plus,5}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         #x1 = x[ic, 1, indices...]
@@ -411,10 +411,10 @@ end
 #function kernel_4Dmatrix_mulxAT!(i, C, A, x, ::Val{3}, ::Val{nw}, dindexer) where {nw}
 function kernel_4Dmatrix_mulxAT!(i, C, ::Oneγμ{:minus,5}, x, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = x[ic, 1, indices...]
@@ -443,10 +443,10 @@ end
 
 function kernel_4Dmatrix_muluxy!(i, C, x, y, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     @inbounds for jc = 1:NC2
         for ic = 1:NC2
             for ik = 1:4
@@ -470,10 +470,10 @@ end
 
 function kernel_4Dmatrix_muluxdagy!(i, C, x, y, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     @inbounds for ik = 1:4
         for jc = 1:NC2
             for ic = 1:NC2
@@ -498,10 +498,10 @@ end
 
 function kernel_4Dmatrix_muluxydag!(i, C, x, y, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     @inbounds for ik = 1:4
         for jc = 1:NC2
             for ic = 1:NC2
@@ -526,10 +526,10 @@ end
 
 function kernel_4Dmatrix_mulyxU!(i, y, x, U, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     for ik = 1:4
         for ic = 1:NC1
@@ -544,12 +544,13 @@ end
 
 #y = xdagshifted*Udag
 function LinearAlgebra.mul!(y::LatticeMatrix{4,T1,AT1,NC1,4,nw},
-    x::Adjoint_Lattice{Shifted_Lattice{LatticeMatrix{4,T1,AT1,NC2,4,nw},shift}},
-    U::Adjoint_Lattice{LatticeMatrix{4,T1,AT1,NC2,NC1,nw}}) where {T1,AT1,NC1,NC2,nw,shift}
+    x::Adjoint_Lattice{Shifted_Lattice{TS}},
+    U::Adjoint_Lattice{LatticeMatrix{4,T1,AT1,NC2,NC1,nw}}) where {T1,AT1,NC1,NC2,nw,TS<:LatticeMatrix{4,T1,AT1,NC2,4,nw}}
 
+    shift = get_shift(x)
     JACC.parallel_for(
         prod(y.PN), kernel_4Dmatrix_mulyxdagshiftedUdag!, y.A, x.data.data.A, U.data.A, Val(NC1), Val(NC2), Val(nw),
-         y.indexer, shift
+        y.indexer, shift
     )
     #set_halo!(C)
 end
@@ -557,10 +558,10 @@ end
 function kernel_4Dmatrix_mulyxdagshiftedUdag!(i, y, x, U, ::Val{NC1}, ::Val{NC2}, ::Val{nw}, dindexer, shift) where {NC1,NC2,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     #ixp = ix + shift[1]
     #iyp = iy + shift[2]
     #izp = iz + shift[3]
@@ -583,9 +584,10 @@ end
 
 #C = xshifted*A^T
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
-    A::TA, x::Shifted_Lattice{LatticeMatrix{4,T1,AT1,NC1,4,nw},shift}) where {T1,AT1,NC1,nw,TA<:AbstractMatrix,shift}
+    A::TA, x::Shifted_Lattice{TS}) where {T1,AT1,NC1,nw,TA<:AbstractMatrix,TS<:LatticeMatrix{4,T1,AT1,NC1,4,nw}}
 
 
+    shift = get_shift(x)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_mulxshiftedAT!, C.A, A, x.data.A, Val(NC1), Val(nw), C.indexer, shift
     )
@@ -597,10 +599,10 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:plus,1}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
     #ixp = ix + shift[1]
     #iyp = iy + shift[2]
     #izp = iz + shift[3]
@@ -623,12 +625,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:minus,1}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -649,12 +651,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:plus,2}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -675,12 +677,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:minus,2}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -702,13 +704,13 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:plus,3}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
     @inbounds for ic = 1:NC1
@@ -728,12 +730,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:minus,3}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -754,12 +756,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:plus,4}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -780,12 +782,12 @@ end
 function kernel_4Dmatrix_mulxshiftedAT!(i, C, ::Oneγμ{:minus,4}, x, ::Val{NC1}, ::Val{nw}, dindexer, shift) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
-  #  ixp = ix + shift[1]
-   # iyp = iy + shift[2]
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
+    #  ixp = ix + shift[1]
+    # iyp = iy + shift[2]
     #izp = iz + shift[3]
     #itp = it + shift[4]
 
@@ -807,10 +809,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,1}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -828,10 +830,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,1}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -849,10 +851,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,2}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -870,10 +872,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,2}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -892,10 +894,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,3}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -913,10 +915,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,3}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -934,10 +936,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,4}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -955,10 +957,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,4}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         x1 = C[ic, 1, indices...]
@@ -978,10 +980,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:plus,5}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
 
@@ -997,10 +999,10 @@ end
 
 function kernel_4Dmatrix_mulA!(i, C, ::Oneγμ{:minus,5}, ::Val{NC1}, ::Val{nw}, dindexer) where {NC1,nw}
     indices = delinearize(dindexer, i, nw)
-#    ix += nw
-#    iy += nw
-#    iz += nw
-#    it += nw
+    #    ix += nw
+    #    iy += nw
+    #    iz += nw
+    #    it += nw
 
     @inbounds for ic = 1:NC1
         #x1 = C[ic, 1, indices...]

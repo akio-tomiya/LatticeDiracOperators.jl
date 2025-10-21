@@ -1,8 +1,8 @@
-import LatticeMatrices: WilsonDiracOperator4D
+import LatticeMatrices: WilsonDiracOperator4D, WilsonDiracOperator4D_Donly
 struct Wilson_Dirac_operator_improved{Dim,T,fermion,TD} <:
        Wilson_Dirac_operators{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D::WilsonDiracOperator4D{TD}
+    D::Union{WilsonDiracOperator4D{TD},WilsonDiracOperator4D_Donly{TD}}
     κ::Float64 #Hopping parameter
     _temporary_fermi::Temporalfields{fermion}#Vector{fermion}
     factor::Float64
@@ -68,7 +68,13 @@ function Wilson_Dirac_operator_improved(
     r = check_parameters(parameters, "r", 1.0)
     @assert r == 1 "In fast Wilson mode, r should be 1. Now r = $r"
 
-    D = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], κ)
+    Donly = check_parameters(parameters, "Donly", false)
+
+    if Donly
+        D = WilsonDiracOperator4D_Donly([U[1].U, U[2].U, U[3].U, U[4].U])
+    else
+        D = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], κ)
+    end
 
     if Dim == 4
         γ, rplusγ, rminusγ = mk_gamma(r)
@@ -108,6 +114,30 @@ function Wilson_Dirac_operator_improved(
     )
 
 
+end
+
+function new_UinDonly(D::Wilson_Dirac_operator_improved{Dim,T,fermion}, U) where {Dim,T,fermion}
+    WD = WilsonDiracOperator4D_Donly([U[1].U, U[2].U, U[3].U, U[4].U])
+    return Wilson_Dirac_operator_improved{Dim,T,fermion,typeof(U[1].U)}(
+        U,
+        WD,
+        D.κ,
+        D._temporary_fermi,
+        D.factor,
+        D.boundarycondition,
+        D.eps_CG,
+        D.MaxCGstep,
+        D.verbose_level,
+        D.method_CG,
+        D.verbose_print,
+        D._temporary_fermion_forCG,
+        D.γ,#::Array{ComplexF64,3}
+        D.rplusγ,#::Array{ComplexF64,3}
+        D.rminusγ,#::Array{ComplexF64,3}
+        D.r,#::Float64 #Wilson term
+        D.hopp,#::Array{ComplexF64,1}
+        D.hopm,#::Array{ComplexF64,1})
+    )
 end
 
 function (D::Wilson_Dirac_operator_improved{Dim,T,fermion})(U) where {Dim,T,fermion}
@@ -152,6 +182,7 @@ function LinearAlgebra.mul!(
 ) where {T1<:AbstractFermionfields,T,Dim,fermion,T3<:AbstractFermionfields}
 
 
+
     clear_fermion!(y)
     temp1, it_temp1 = get_temp(A._temporary_fermi)
 
@@ -179,3 +210,11 @@ function LinearAlgebra.mul!(
     set_wing_fermion!(y)
 end
 
+
+function D4x!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:AbstractGaugefields,
+    TA<:Wilson_Dirac_operator_improved}
+
+    Dwilson = new_UinDonly(A, U)
+    mul!(xout.f, Dwilson.D, x.f)
+    set_wing_fermion!(xout)
+end

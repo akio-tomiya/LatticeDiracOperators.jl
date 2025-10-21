@@ -652,17 +652,18 @@ function D4x!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGa
 
 
     for ν = 1:Dim
+
         xplus = shift_fermion(x, ν)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
-        mul!(temp1, view(A.rminusγ, :, :, ν), temp1)
+        mul!(temp1, A.rminusγ[:, :, ν], temp1)
 
         #
         xminus = shift_fermion(x, -ν)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
-        mul!(temp2, view(A.rplusγ, :, :, ν), temp2)
+        mul!(temp2, A.rplusγ[:, :, ν], temp2)
         add_fermion!(xout, 0.5, temp1, 0.5, temp2)
 
     end
@@ -697,14 +698,14 @@ function D4dagx!(
         xplus = shift_fermion(x, ν)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
-        mul!(temp1, view(A.rplusγ, :, :, ν), temp1)
+        mul!(temp1, A.rplusγ[:, :, ν], temp1)
 
         #
         xminus = shift_fermion(x, -ν)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
-        mul!(temp2, view(A.rminusγ, :, :, ν), temp2)
+        mul!(temp2, A.rminusγ[:, :, ν], temp2)
         add_fermion!(xout, 0.5, temp1, 0.5, temp2)
 
     end
@@ -733,14 +734,14 @@ function Dx!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:Abstrac
         xplus = shift_fermion(x, ν)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
-        mul!(temp1, view(A.rminusγ, :, :, ν), temp1)
+        mul!(temp1, A.rminusγ[:, :, ν], temp1)
 
         #
         xminus = shift_fermion(x, -ν)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
-        mul!(temp2, view(A.rplusγ, :, :, ν), temp2)
+        mul!(temp2, A.rplusγ[:, :, ν], temp2)
         add_fermion!(temp, 0.5, temp1, 0.5, temp2)
 
     end
@@ -775,14 +776,14 @@ function Ddagx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:Abstract
         xplus = shift_fermion(x, ν)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
-        mul!(temp1, view(A.rplusγ, :, :, ν), temp1)
+        mul!(temp1, A.rplusγ[:, :, ν], temp1)
 
         #
         xminus = shift_fermion(x, -ν)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
-        mul!(temp2, view(A.rminusγ, :, :, ν), temp2)
+        mul!(temp2, A.rminusγ[:, :, ν], temp2)
         add_fermion!(temp, 0.5, temp1, 0.5, temp2)
 
     end
@@ -828,7 +829,7 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
         #... Dirac multiplication
 
-        mul!(temp1, view(A.rminusγ, :, :, ν))
+        mul!(temp1, A.rminusγ[:, :, ν])
 
 
 
@@ -841,7 +842,7 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         #
         #fermion_shift!(temp2,U,-ν,x)
         #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2, view(A.rplusγ, :, :, ν))
+        mul!(temp2, A.rplusγ[:, :, ν])
 
         add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
 
@@ -952,7 +953,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
         #... Dirac multiplication
         #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
         #mul!(temp1, view(A.rplusγ, :, :, ν))
-        mul!(temp1, view(A.rminusγ, :, :, ν))
+        mul!(temp1, A.rminusγ[:, :, ν])
 
 
         #
@@ -963,7 +964,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
         #fermion_shift!(temp2,U,-ν,x)
         #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
         #mul!(temp2, view(A.rminusγ, :, :, ν))
-        mul!(temp2, view(A.rplusγ, :, :, ν))
+        mul!(temp2, A.rplusγ[:, :, ν])
 
 
         add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)

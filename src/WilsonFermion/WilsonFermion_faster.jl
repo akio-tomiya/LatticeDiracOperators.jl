@@ -353,6 +353,7 @@ function LinearAlgebra.mul!(
 
 end
 
+
 function LinearAlgebra.mul!(
     y::T1,
     A::Wilson_Dirac_1storder_operator{Dim,T,fermion},
@@ -362,6 +363,7 @@ function LinearAlgebra.mul!(
     apply_Dirac_1storder_ν!(y, x, A.U, A.μ, A.boundarycondition, A._temporary_fermi)
     return
 end
+
 
 function LinearAlgebra.mul!(
     y::T1,
@@ -493,6 +495,7 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     temp1, it_temp1 = get_temp(_temporary_fermi)
     Udagx, it_Udagx = get_temp(_temporary_fermi)
 
+    #println("clear")
     clear_fermion!(y)
 
     #=
@@ -521,16 +524,21 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     end
     =#
 
+    #println("1")
     mul!(Udagx, U[ν]', x)
 
+    #println("2")
 
-    set_wing_fermion!(Udagx)
     #println("Udagx ", dot(Udagx, Udagx))
+    #println("3")
     xplus = shift_fermion(x, ν)
+    #@time shift_fermion(x, ν)
+    #println("4")
     mul!(temp1, U[ν], xplus)
 
 
     #println("temp1 ", dot(temp1, temp1))
+    # println("5")
     mul_1minusγνx!(y, ν, temp1)
     #println("y ", dot(y, y))
 
@@ -544,10 +552,16 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     end
     =#
 
+    #println("6")
+    set_wing_fermion!(Udagx)
     xminus = shift_fermion(Udagx, -ν)
+    #@time shift_fermion(Udagx, -ν)
+    #println("7")
     set_wing_U!(U[ν])
 
+    #println("8")
     Uminus = shift_U(U[ν], -ν)
+    #@time shift_U(U[ν], -ν)
 
     #mul!(Udagx, Uminus', xminus)
     #=
@@ -560,6 +574,7 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     end
     =#
 
+    #println("9")
     mul!(temp1, Uminus', xminus)
 
     #=
@@ -577,13 +592,16 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     #mul_1plusγνx!(temp1, ν, Udagx)
     #add_fermion!(y, 1, temp1)
 
+    #println("10")
     mul_1plusγνx!(Udagx, ν, temp1)
     #
     #println("Udagx3 ", dot(Udagx, Udagx))
     #println("yy ", dot(y, y))
+    #println("11")
     add_fermion!(y, 1, Udagx)
     #println("yy ", dot(y, y))
 
+    #println("12")
     set_wing_fermion!(y)
 
     unused!(_temporary_fermi, it_temp1)
@@ -602,33 +620,44 @@ U_n[ν](1 - γν)*ψ_{n+ν} + U_{n-ν}[-ν]^+ (1 + γν)*ψ_{n-ν}
 function apply_Dirac_1storder_1!(y, x, U, boundarycondition, _temporary_fermi)
 
     ν = 1
+    #println("apply_Dirac_1storder_1!")
     #temp1 = _temporary_fermi[1]
     temp1, it_temp1 = get_temp(_temporary_fermi)
 
     #Udagx = _temporary_fermi[2]
     Udagx, it_Udagx = get_temp(_temporary_fermi)
     #Ux = _temporary_fermi[3]
+    #println("1")
     clear_fermion!(y)
+    #println("2")
     mul!(Udagx, U[ν]', x)
+    #println("3")
     set_wing_fermion!(Udagx)
 
-
+    #println("4")
     xplus = shift_fermion(x, ν)
+    #@time shift_fermion(x, ν)
+    #println("5")
     mul!(temp1, U[ν], xplus)
-
+    #println("6")
     mul_1minusγ1x!(y, temp1)
 
     #mul!(y,view(rminusγ,:,:,ν),temp1)
 
     xminus = shift_fermion(Udagx, -ν)
+    #println("7")
+    shift_fermion(Udagx, -ν)
     #xminus = shift_fermion(x,-ν)
     #Uminus = shift_U(U[ν],-ν)
     #mul!(temp1,Uminus',xminus)
-
+    #println("8")
     mul_1plusγ1x!(temp1, xminus)
     #mul!(temp1,view(rplusγ,:,:,ν),xminus)
     #mul!(temp1,view(rplusγ,:,:,ν),temp1)
+    #println("9 add")
+    #@code_warntype add_fermion!(y, 1, temp1)
     add_fermion!(y, 1, temp1)
+    #println("10")
     set_wing_fermion!(y, boundarycondition)
 
     unused!(_temporary_fermi, it_temp1)
@@ -1194,6 +1223,7 @@ function D4x!(
     for μ = 1:Dim
         #mul!(A._temporary_fermi[1], A.D[μ], x)
         #add_fermion!(xout, 0.5, A._temporary_fermi[1])
+        #println("in D4x  μ = $(μ)")
         mul!(temp1, A.D[μ], x)
         add_fermion!(xout, 0.5, temp1)
     end

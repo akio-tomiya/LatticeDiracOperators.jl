@@ -1,13 +1,14 @@
 
 using Requires
 
-struct D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion} <:
+struct D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    wilsonoperator::Union{
-        Wilson_Dirac_operator{Dim,T,wilsonfermion},
-        Wilson_Dirac_operator_faster{Dim,T,wilsonfermion},
-    }
+    wilsonoperator::Dw
+    #Union{
+    #    Wilson_Dirac_operator{Dim,T,wilsonfermion},
+    #    Wilson_Dirac_operator_faster{Dim,T,wilsonfermion},
+    #}
     mass::Float64
     _temporary_fermi::Temporalfields{fermion}#Array{fermion,1}
     L5::Int64
@@ -63,12 +64,30 @@ function D5DW_MobiusDomainwall_operator(
     parameters_wilson["numtempvec_CG"] = 1
     parameters_wilson["boundarycondition"] = boundarycondition
     x_wilson = x.w[1]
+
     fasterversion = check_parameters(parameters, "faster version", false)
-    if fasterversion
-        wilsonoperator = Wilson_Dirac_operator_faster(U, x_wilson, parameters_wilson)
+    improved_gpu = check_parameters(parameters, "improved gpu", false)
+    #@info fasterversion
+    if improved_gpu && eltype(U) <: Gaugefields_4D_MPILattice
+        wilsonoperator = Wilson_Dirac_operator_improved(U, x_wilson, parameters_wilson)
     else
-        wilsonoperator = Wilson_Dirac_operator(U, x_wilson, parameters_wilson)
+        if fasterversion
+            #println("faster version is used")
+            wilsonoperator = Wilson_Dirac_operator_faster(U, x_wilson, parameters_wilson)
+        else
+            #println("faster version is not used")
+            wilsonoperator = Wilson_Dirac_operator(U, x, parameters_wilson)
+        end
     end
+    Dw = typeof(wilsonoperator)
+
+
+
+    #if fasterversion
+    #    wilsonoperator = Wilson_Dirac_operator_faster(U, x_wilson, parameters_wilson)
+    #else
+    #    wilsonoperator = Wilson_Dirac_operator(U, x_wilson, parameters_wilson)
+    #end
     #--------------------------------
 
 
@@ -98,7 +117,7 @@ function D5DW_MobiusDomainwall_operator(
     #println("xtype ",xtype)
     #println("D ", typeof(wilsonoperator))
 
-    return D5DW_MobiusDomainwall_operator{Dim,T,xtype,typeof(x_wilson)}(
+    return D5DW_MobiusDomainwall_operator{Dim,T,xtype,typeof(x_wilson),Dw}(
         U,
         wilsonoperator,
         mass,
@@ -118,10 +137,10 @@ end
 
 
 
-function (D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion})(
+function (D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw})(
     U,
-) where {Dim,T,fermion,wilsonfermion}
-    return D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion}(
+) where {Dim,T,fermion,wilsonfermion,Dw}
+    return D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}(
         U,
         D.wilsonoperator(U),
         D.mass,
@@ -148,11 +167,11 @@ end
 
 
 
-struct MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion} <:
+struct MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D5DW::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion}
-    D5DW_PV::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion}
+    D5DW::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}
+    D5DW_PV::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}
     mass::Float64
     eps_CG::Float64
     MaxCGstep::Int64
@@ -189,6 +208,11 @@ function MobiusDomainwall_Dirac_operator(
 
     D5DW = D5DW_MobiusDomainwall_operator(U, x, parameters, mass, b, c)
     D5DW_PV = D5DW_MobiusDomainwall_operator(U, x, parameters, 1, b, c)
+    Dw = typeof(D5DW.wilsonoperator)
+
+    #y = similar(x)
+    #println("D5")
+    #mul!(y, D5DW_PV, x)
 
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
@@ -209,7 +233,7 @@ function MobiusDomainwall_Dirac_operator(
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
 
-    return MobiusDomainwall_Dirac_operator{Dim,eltype(U),typeof(x),typeof(x.w[1])}(
+    return MobiusDomainwall_Dirac_operator{Dim,eltype(U),typeof(x),typeof(x.w[1]),Dw}(
         U,
         D5DW,
         D5DW_PV,
@@ -226,10 +250,10 @@ function MobiusDomainwall_Dirac_operator(
 end
 
 
-function (D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion})(
+function (D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw})(
     U,
-) where {Dim,T,fermion,wilsonfermion}
-    return MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion}(
+) where {Dim,T,fermion,wilsonfermion,Dw}
+    return MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw}(
         U,
         D.D5DW(U),
         D.D5DW_PV(U),
@@ -254,9 +278,9 @@ function get_temporaryvectors_forCG(A::T) where {T<:MobiusDomainwall_Dirac_opera
     return A.D5DW._temporary_fermion_forCG
 end
 
-struct Adjoint_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion} <:
+struct Adjoint_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Adjoint_Dirac_operator
-    parent::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion}
+    parent::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw}
 end
 
 function Base.adjoint(A::D5DW_MobiusDomainwall_operator)
@@ -264,29 +288,29 @@ function Base.adjoint(A::D5DW_MobiusDomainwall_operator)
 end
 
 function Base.adjoint(
-    A::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion},
-) where {Dim,T,fermion,wilsonfermion}
-    Adjoint_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion}(A)
+    A::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw},
+) where {Dim,T,fermion,wilsonfermion,Dw}
+    Adjoint_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}(A)
 end
 
 
 
-struct DdagD_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion} <: DdagD_operator
-    dirac::Domainwall_Dirac_operator{Dim,T,fermion,wilsonfermion}
+struct DdagD_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <: DdagD_operator
+    dirac::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw}
     function DdagD_MobiusDomainwall_operator(
         U::Array{<:AbstractGaugefields{NC,Dim},1},
         x,
         parameters,
     ) where {NC,Dim}
-        return new{Dim,eltype(U),typeof(x),typeof(x.w[1])}(
-            MobiusDomainwall_Dirac_operator(U, x, parameters),
-        )
+        dirac = MobiusDomainwall_Dirac_operator(U, x, parameters)
+        Dw = typeof(dirac.D5DW.wilsonoperator)
+        return new{Dim,eltype(U),typeof(x),typeof(x.w[1]),Dw}(dirac)
     end
 
     function DdagD_MobiusDomainwall_operator(
-        D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion},
-    ) where {Dim,T,fermion,wilsonfermion}
-        return new{Dim,T,fermion,wilsonfermion}(D)
+        D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw},
+    ) where {Dim,T,fermion,wilsonfermion,Dw}
+        return new{Dim,T,fermion,wilsonfermion,Dw}(D)
     end
 end
 
@@ -304,15 +328,15 @@ struct MobiusD5DWdagD5DW_Wilson_operator{T} <: DdagD_operator
     end
 
     function MobiusD5DWdagD5DW_Wilson_operator(
-        D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion},
-    ) where {Dim,T,fermion,wilsonfermion}
+        D::MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw},
+    ) where {Dim,T,fermion,wilsonfermion,Dw}
         dtype = typeof(D.D5DW)
         return new{dtype}(D.D5DW)
     end
 
     function MobiusD5DWdagD5DW_Wilson_operator(
-        D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion},
-    ) where {Dim,T,fermion,wilsonfermion}
+        D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw},
+    ) where {Dim,T,fermion,wilsonfermion,Dw}
         dtype = typeof(D)
         return new{dtype}(D)
     end
@@ -368,6 +392,8 @@ function LinearAlgebra.mul!(
         temp3,
         temp4,
     )
+
+
     unused!(temps, it_temp3)
     unused!(temps, it_temp4)
     return
@@ -496,14 +522,14 @@ function Initialize_MobiusDomainwallFermion(
     nowing=false,
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_MobiusDomainwallFermion(u,L5, NC, NN..., nowing=nowing)
+    return Initialize_MobiusDomainwallFermion(u, L5, NC, NN..., nowing=nowing)
 end
 
 
-function Initialize_MobiusDomainwallFermion(u,L5, NC, NN...; nowing=false)
+function Initialize_MobiusDomainwallFermion(u, L5, NC, NN...; nowing=false)
     Dim = length(NN)
     if Dim == 4
-        fermion = MobiusDomainwallFermion_5D(u,L5,;nowing=nowing)
+        fermion = MobiusDomainwallFermion_5D(u, L5, ; nowing=nowing)
         #if nowing
         #    fermion = MobiusDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
         #else

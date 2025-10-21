@@ -333,7 +333,15 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, Ysplus', U[μ]')
 
             # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
+            #mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            if Dwilson.r == 1 && Dim == 4
+                mul_x1plusγμ!(temp1_f, temp0_f, μ)
+            else
+                mul!(temp1_f, temp0_f, view(Dwilson.rplusγ, :, :, μ))
+            end
+
+
 
             # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
             mul!(temp0_f, κ, temp1_f)
@@ -360,7 +368,15 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, U[μ], Zsplus)
 
             # (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp1_f, Dwilson.rminusγ[:, :, μ], temp0_f)
+            #mul!(temp1_f, Dwilson.rminusγ[:, :, μ], temp0_f)
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+            if Dwilson.r == 1 && Dim == 4
+                mul_1minusγμx!(temp1_f, temp0_f, μ)
+            else
+                mul!(temp1_f, view(Dwilson.rminusγ, :, :, μ), temp0_f)
+            end
+
 
             # κ (r-γ_μ) U_{k,μ} X_{k+μ}
             mul!(temp0_f, κ, temp1_f)
@@ -380,7 +396,13 @@ function calc_UdSfdU_fromX!(
             mul!(temp0_f, ϕsplus', U[μ]')
 
             # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f, temp0_f, Dwilson.rplusγ[:, :, μ])
+            #mul!(temp1_f, temp0_f, Dwilson.rplusγ[:, :, μ])
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            if Dwilson.r == 1 && Dim == 4
+                mul_x1plusγμ!(temp1_f, temp0_f, μ)
+            else
+                mul!(temp1_f, temp0_f, view(Dwilson.rplusγ, :, :, μ))
+            end
 
             # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
             mul!(temp0_f, κ, temp1_f)
