@@ -76,7 +76,7 @@ function D5DW_MobiusDomainwall_operator(
             wilsonoperator = Wilson_Dirac_operator_faster(U, x_wilson, parameters_wilson)
         else
             #println("faster version is not used")
-            wilsonoperator = Wilson_Dirac_operator(U, x, parameters_wilson)
+            wilsonoperator = Wilson_Dirac_operator(U, x_wilson, parameters_wilson)
         end
     end
     Dw = typeof(wilsonoperator)

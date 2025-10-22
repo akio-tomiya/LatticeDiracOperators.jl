@@ -504,6 +504,7 @@ function apply_1pDdag!(
     for i5 in irange
         j5 = i5
         D4dagx!(xout.w[i5], U, x.w[j5], A, 4) #Dw*x
+
         #Dx!(xout.w[i5],U,x.w[j5],A) #Dw*x
         #Wx!(xout.w[i5],U,x.w[j5],temps) #Dw*x
         #1/(2*A.κ)

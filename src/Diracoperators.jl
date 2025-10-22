@@ -114,7 +114,10 @@ function Dirac_operator(
     if parameters["Dirac_operator"] == "staggered"
         Staggered_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
-        fasterversion = check_parameters(parameters, "faster version", false)
+        fasterversion = check_parameters(parameters, "faster version", true)
+        #if fasterversion == false
+        #    @warn "now only fasterversion=true is supported. "
+        #end
         improved_gpu = check_parameters(parameters, "improved gpu", false)
         #@info fasterversion
         if improved_gpu && eltype(U) <: Gaugefields_4D_MPILattice

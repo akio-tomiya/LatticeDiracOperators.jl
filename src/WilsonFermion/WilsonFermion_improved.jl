@@ -218,3 +218,15 @@ function D4x!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:Abstra
     mul!(xout.f, Dwilson.D, x.f)
     set_wing_fermion!(xout)
 end
+
+function D4dagx!(
+    xout::T1,
+    U::Array{G,1},
+    x::T2,
+    A::TA,
+    Dim,
+) where {T1,T2,G<:AbstractGaugefields,TA<:Wilson_Dirac_operator_improved}
+    Dwilson = new_UinDonly(A, U)
+    mul!(xout.f, Dwilson.D', x.f)
+    set_wing_fermion!(xout)
+end
