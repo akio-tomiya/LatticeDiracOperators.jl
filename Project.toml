@@ -19,11 +19,11 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 
 [compat]
-Gaugefields = "0.6.10"
+Gaugefields = "0.6.11"
 JACC = "0.5.0"
 JLD2 = "0.4,0.5"
 LatticeMatrices = "0.1.12"
-MPI = "0.20.23"
+MPI = "0.20"
 Requires = "1"
 SparseArrays = "1,2"
 StaticArrays = "1.9.15"
