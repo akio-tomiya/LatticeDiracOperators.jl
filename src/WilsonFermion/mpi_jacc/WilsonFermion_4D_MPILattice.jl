@@ -270,7 +270,7 @@ struct Adjoint_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: Wil
 end
 
 struct Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-    f::Adjoint_Lattice{Shifted_Lattice{Tf}}
+    f::Adjoint_Lattice{Shifted_Lattice{Tf,4}}
 end
 
 function Base.adjoint(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
