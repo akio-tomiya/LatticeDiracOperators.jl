@@ -25,9 +25,7 @@ struct D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <:
     boundarycondition::Vector{Int8}
     b::Float64 #coefficient for MobiusDomainwall
     c::Float64 #coefficient for MobiusDomainwall
-
 end
-
 
 function D5DW_MobiusDomainwall_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},

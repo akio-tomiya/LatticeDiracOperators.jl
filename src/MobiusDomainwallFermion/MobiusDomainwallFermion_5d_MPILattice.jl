@@ -367,6 +367,7 @@ function LinearAlgebra.mul!(
     #println(typeof(c.f))
     #println(typeof(b.f))
     mul!(c.f, a.D, b.f)
+    set_halo!(c.f)
     #@code_warntype mul!(c.f, a.U, b.f)
 end
 
@@ -380,6 +381,7 @@ function LinearAlgebra.mul!(
     #println(typeof(b.f))
     mul!(c.f, a.parent.D', b.f)
     #@code_warntype mul!(c.f, a.U, b.f)
+    set_halo!(c.f)
 end
 
 function set_wing_fermion!(F::MobiusDomainwallFermion_5D_MPILattice)
