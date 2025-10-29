@@ -363,6 +363,7 @@ function apply_1pD!(
         #Wx!(xout.w[i5],U,x.w[j5],temps) #Dw*x
         #1/(2*A.κ)
         massfactor = -(factor / (2 * A.κ) + 1)
+        #println(massfactor)
 
         # if factor == 0 
         #     massfactor = 1.0
@@ -372,6 +373,8 @@ function apply_1pD!(
         #@time set_wing_fermion!(xout.w[i5])
         #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
         #println("add!")
+        #println(factor * ratio)
+        #add!(factor * ratio, xout.w[i5], 0, x.w[j5]) #D = x + Dw*x
         add!(factor * ratio, xout.w[i5], ratio * massfactor, x.w[j5]) #D = x + Dw*x
         # COMMENT: Factorの位置修正
         # COMMENT : xout = x + factor * Dw * x
@@ -442,7 +445,7 @@ function apply_1mD!(
         #     massfactor = 1.0
         # end
 
-        set_wing_fermion!(xout.w[i5])
+        #set_wing_fermion!(xout.w[i5])
         #add!(ratio,xout.w[i5],ratio,x.w[j5]) #D = x + Ddagw*x
         add!(factor * ratio, xout.w[i5], ratio * massfactor, x.w[j5]) #D = x + Dw*x
         # COMMENT: Factorの位置修正
@@ -638,13 +641,14 @@ function apply_F!(
 
     for i5 in irange
         j5 = i5 + 1
+
         if 1 <= j5 <= xout.L5
             #-P_- -> - P_+ :gamma_5 of LTK definition
             if xout.L5 != 2
                 # ((1 + (b-c)/2 DW )*P_-*x)
                 mul_1plusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], ratio * ratio2, temp1.w[i5])
-                set_wing_fermion!(xout.w[i5])
+                #set_wing_fermion!(xout.w[i5])
             end
         end
 
@@ -655,9 +659,12 @@ function apply_F!(
             if xout.L5 != 2
                 mul_1minusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], ratio * ratio2, temp1.w[i5])
-                set_wing_fermion!(xout.w[i5])
+                #set_wing_fermion!(xout.w[i5])
             end
         end
+
+
+
 
         if xout.L5 != 1
             if i5 == 1
@@ -665,16 +672,19 @@ function apply_F!(
                 #mul_1plusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
                 mul_1minusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], -m * ratio * ratio2, temp1.w[i5])
-                set_wing_fermion!(xout.w[i5])
+                #set_wing_fermion!(xout.w[i5])
             end
 
             if i5 == xout.L5
                 j5 = 1
                 mul_1plusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], -m * ratio * ratio2, temp1.w[i5])
-                set_wing_fermion!(xout.w[i5])
+                #println(-m * ratio * ratio2, "\t", dot(temp1.w[i5], temp1.w[i5]))
+
             end
         end
+        set_wing_fermion!(xout.w[i5])
+        #println(dot(xout.w[i5], xout.w[i5]))
     end
 
     #if L5 != xout.L5
@@ -813,6 +823,7 @@ function apply_Fdag!(
                 #mul_1plusγ5x_add!(xout.w[i5],x.w[j5],m*ratio) 
                 mul_1plusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], -m * ratio * ratio2, temp1.w[i5])
+                #add!(ratio, xout.w[i5], 1 * ratio * ratio2, temp1.w[i5])
                 set_wing_fermion!(xout.w[i5])
             end
 
@@ -820,6 +831,7 @@ function apply_Fdag!(
                 j5 = 1
                 mul_1minusγ5x!(temp1.w[i5], x.w[j5])
                 add!(ratio, xout.w[i5], -m * ratio * ratio2, temp1.w[i5])
+                #add!(ratio, xout.w[i5], 1 * ratio * ratio2, temp1.w[i5])
                 set_wing_fermion!(xout.w[i5])
             end
         end
@@ -863,9 +875,12 @@ function D5DWx!(
     #println("apply_1pD!")
     apply_1pD!(xout, L5, U, A, x, factor)
 
+
+
     #temp2 = F*x
     #println("apply_F!")
     apply_F!(temp2, L5, m, x, temp1)
+
 
     factor = coeff_minus
     #xout = (1 + factor*D)*F*x
@@ -874,6 +889,7 @@ function D5DWx!(
     for i5 = 1:L5
         # axpy!(-1, temp1.w[i5], xout.w[i5])
         add!(-1, xout.w[i5], 1, temp1.w[i5])
+        #add!(0, xout.w[i5], 1, temp1.w[i5])
     end
 
     set_wing_fermion!(xout)
@@ -939,6 +955,7 @@ function gauss_distribution_fermion!(
     L5 = length(x.w)
     for iL = 1:L5
         gauss_distribution_fermion!(x.w[iL])
+        set_wing_fermion!(x.w[iL])
     end
     return
 end

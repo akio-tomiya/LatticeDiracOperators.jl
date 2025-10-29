@@ -263,7 +263,8 @@ function Initialize_pseudofermion_fields(
                 x = Initialize_DomainwallFermion(u, L5, nowing=nowing)
             elseif Dirac_operator == "MobiusDomainwall"
                 #@warn "MobiusDomainwall fermion is not well tested!!"
-                x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing)
+
+                x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing, kwargs...)
             elseif Dirac_operator == "GeneralizedDomainwall"
                 #@warn "GeneralizedDomainwall fermion is not well tested!!"
                 x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)
@@ -295,6 +296,8 @@ function Initialize_pseudofermion_fields(
 
     return x
 end
+
+include("AbstractFermion_MPILattice.jl")
 
 function Initialize_pseudofermion_fields(
     u::AbstractGaugefields{NC,Dim},

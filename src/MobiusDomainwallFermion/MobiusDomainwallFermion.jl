@@ -1,6 +1,9 @@
 
 using Requires
 
+import LatticeMatrices: D5DW_MobiusDomainwallOperator5D
+
+
 struct D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
@@ -163,6 +166,9 @@ struct Adjoint_D5DW_MobiusDomainwall_operator{T} <: Adjoint_Dirac_operator
 end
 
 
+include("./MobiusDomainwallFermion_5d.jl")
+
+include("./MobiusDomainwallFermion_5d_MPILattice.jl")
 
 
 
@@ -170,8 +176,10 @@ end
 struct MobiusDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D5DW::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}
-    D5DW_PV::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}
+    D5DW::Union{D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw},
+        D5DW_MobiusDomainwall_operator_MPILattice{Dim,T,fermion,Dw}}
+    D5DW_PV::Union{D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw},
+        D5DW_MobiusDomainwall_operator_MPILattice{Dim,T,fermion,Dw}}
     mass::Float64
     eps_CG::Float64
     MaxCGstep::Int64
@@ -206,13 +214,61 @@ function MobiusDomainwall_Dirac_operator(
         println_verbose_level1(U[1], "scaled Shamir kernel (Mobius DW) is used")
     end
 
-    D5DW = D5DW_MobiusDomainwall_operator(U, x, parameters, mass, b, c)
-    D5DW_PV = D5DW_MobiusDomainwall_operator(U, x, parameters, 1, b, c)
-    Dw = typeof(D5DW.wilsonoperator)
+    improved_gpu = check_parameters(parameters, "improved gpu", false)
 
-    #y = similar(x)
-    #println("D5")
-    #mul!(y, D5DW_PV, x)
+    if improved_gpu
+        @assert typeof(x) <: MobiusDomainwallFermion_5D_MPILattice "type is mismatch. now type is $(typeof(x))"
+        D5DW = D5DW_MobiusDomainwall_operator_MPILattice(U, x, parameters, mass, b, c)
+        D5DW_PV = D5DW_MobiusDomainwall_operator_MPILattice(U, x, parameters, 1, b, c)
+        Dw = typeof(D5DW.D)
+        wilsonfermion = nothing
+    else
+        D5DW = D5DW_MobiusDomainwall_operator(U, x, parameters, mass, b, c)
+        D5DW_PV = D5DW_MobiusDomainwall_operator(U, x, parameters, 1, b, c)
+        Dw = typeof(D5DW.wilsonoperator)
+        wilsonfermion = typeof(x.w[1])
+    end
+
+    #=
+    y = similar(x)
+    xt = similar(x)
+    gauss_distribution_fermion!(xt)
+    println(dot(xt, xt))
+    println("D5")
+    set_wing_fermion!(xt)
+    mul!(y, D5DW, xt)
+    println("D5DW ", dot(y, y))
+    mul!(y, D5DW', xt)
+    println("D5DWdag ", dot(y, y))
+
+
+
+
+
+    M = parameters["M"]
+    b = D5DW.b
+    c = D5DW.c
+    L5 = D5DW.L5
+
+    x5_2 = MobiusDomainwallFermion_5D_MPILattice(U[1], L5)
+
+
+    y5 = similar(x5_2)
+    D5DW5 = D5DW_MobiusDomainwall_operator_MPILattice(U, x5_2, parameters, mass, b, c)
+    substitute_fermion!(x5_2, xt)
+    println(dot(x5_2, x5_2))
+
+    set_wing_fermion!(x5_2)
+    mul!(y5, D5DW5, x5_2)
+    println("D5DW ", dot(y5, y5))
+    mul!(y5, D5DW5', x5_2)
+    println("D5DWdag ", dot(y5, y5))
+
+
+    error("dd")
+
+    =#
+
 
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
@@ -233,7 +289,7 @@ function MobiusDomainwall_Dirac_operator(
 
     method_CG = check_parameters(parameters, "method_CG", "bicg")
 
-    return MobiusDomainwall_Dirac_operator{Dim,eltype(U),typeof(x),typeof(x.w[1]),Dw}(
+    return MobiusDomainwall_Dirac_operator{Dim,eltype(U),typeof(x),wilsonfermion,Dw}(
         U,
         D5DW,
         D5DW_PV,
@@ -511,7 +567,6 @@ function LinearAlgebra.mul!(
     return
 end
 
-include("./MobiusDomainwallFermion_5d.jl")
 
 
 
@@ -519,17 +574,29 @@ include("./MobiusDomainwallFermion_5d.jl")
 function Initialize_MobiusDomainwallFermion(
     u::AbstractGaugefields{NC,Dim},
     L5;
-    nowing=false,
+    nowing=false, kwargs...
 ) where {NC,Dim}
     _, _, NN... = size(u)
-    return Initialize_MobiusDomainwallFermion(u, L5, NC, NN..., nowing=nowing)
+    return Initialize_MobiusDomainwallFermion(u, L5, NC, NN...; nowing, kwargs...)
 end
 
 
-function Initialize_MobiusDomainwallFermion(u, L5, NC, NN...; nowing=false)
+function Initialize_MobiusDomainwallFermion(u, L5, NC, NN...; nowing=false, kwargs...)
     Dim = length(NN)
     if Dim == 4
-        fermion = MobiusDomainwallFermion_5D(u, L5, ; nowing=nowing)
+
+        if haskey(kwargs, :is5D)
+            is5D = kwargs[:is5D]
+        else
+            is5D = false
+        end
+
+
+        if is5D
+            fermion = MobiusDomainwallFermion_5D_MPILattice(u, L5; kwargs...)
+        else
+            fermion = MobiusDomainwallFermion_5D(u, L5, ; nowing=nowing)
+        end
         #if nowing
         #    fermion = MobiusDomainwallFermion_5D(L5, NC, NN..., nowing=nowing)
         #else

@@ -226,8 +226,8 @@ end
 function test1()
     NX = 4
     NY = 4
-    NZ = 4
-    NT = 4
+    NZ = 6
+    NT = 8
     L5 = 6
     Nwing = 1
     Dim = 4
@@ -260,23 +260,25 @@ function test1()
     β = 5.5 / 2
     push!(gauge_action_cpu, β, plaqloop)
 
-    x = Initialize_pseudofermion_fields(U[1], "MobiusDomainwall";L5)
-    xcpu = Initialize_pseudofermion_fields(Ucpu[1], "MobiusDomainwall";L5)
+    is5D = false
+    x = Initialize_pseudofermion_fields(U[1], "MobiusDomainwall"; L5, is5D)
+
+    xcpu = Initialize_pseudofermion_fields(Ucpu[1], "MobiusDomainwall"; L5)
     substitute_fermion!(x, xcpu)
 
     params = Dict()
     params["Dirac_operator"] = "MobiusDomainwall"
     params["κ"] = 0.141139 / 2
-    params["eps_CG"] = 1.0e-18
+    params["eps_CG"] = 1.0e-16
     params["improved gpu"] = false
     params["mass"] = 0.02
     params["L5"] = L5
     params["b"] = 1.0
-    params["c"] = 1.0
+    params["c"] = 0.5
     params["M"] = -1.9
     #params["improved gpu"] = true
     #params["eps_CG"] = 1.0e-1
-    #params["verbose_level"] = 3
+    params["verbose_level"] = 3
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
     params["method_CG"] = "bicg"
@@ -286,11 +288,31 @@ function test1()
     parameters_action = Dict()
     fermi_action = FermiAction(D, parameters_action)
     y = similar(x)
-    ycpu = similar(xcpu)
 
+
+    ycpu = similar(xcpu)
+    params["improved gpu"] = false
     Dcpu = Dirac_operator(Ucpu, xcpu, params)
+
+
+
+
     parameters_actioncpu = Dict()
     fermi_action_cpu = FermiAction(Dcpu, parameters_actioncpu)
+
+    #return
+
+    for i = 1:10
+        gauss_sampling_in_action!(xcpu, Ucpu, fermi_action_cpu)
+        substitute_fermion!(x, xcpu)
+        println("new")
+        @time mul!(y, D, x)
+        println(dot(y, y))
+        println("cpu")
+        @time mul!(ycpu, Dcpu, xcpu)
+        println(dot(ycpu, ycpu))
+    end
+    return
 
     MDtest!(gauge_action, U, Dim, fermi_action, x, y, ycpu, Ucpu, fermi_action_cpu, xcpu, gauge_action_cpu)
 
