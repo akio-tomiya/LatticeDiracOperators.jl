@@ -264,7 +264,7 @@ function Initialize_pseudofermion_fields(
             elseif Dirac_operator == "MobiusDomainwall"
                 #@warn "MobiusDomainwall fermion is not well tested!!"
 
-                x = Initialize_MobiusDomainwallFermion(u, L5, nowing=nowing, kwargs...)
+                x = Initialize_MobiusDomainwallFermion(u, L5; nowing=nowing, kwargs...)
             elseif Dirac_operator == "GeneralizedDomainwall"
                 #@warn "GeneralizedDomainwall fermion is not well tested!!"
                 x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)

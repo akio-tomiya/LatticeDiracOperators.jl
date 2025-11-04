@@ -1,3 +1,4 @@
+ENV["CUDA_LAUNCH_BLOCKING"]="1"
 import JACC
 JACC.@init_backend
 using Gaugefields
@@ -8,7 +9,8 @@ using LatticeDiracOperators
 import Gaugefields: Initialize_4DGaugefields
 using Test
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
-
+using CUDA
+#ENV["JULIA_DEBUG"] = "CUDA" 
 
 function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ, ξcpu, Ucpu,
     fermi_action_cpu, ηcpu, gauge_action_cpu)
@@ -18,7 +20,7 @@ function MDtest!(gauge_action, U, Dim, fermi_action, η, ξ, ξcpu, Ucpu,
     MDsteps = 10 * 4
     temp1 = similar(U[1])
     temp2 = similar(U[1])
-    comb = 2
+    comb = 6
     factor = 1 / (comb * U[1].NV * U[1].NC)
     numaccepted = 0
     Random.seed!(123)
@@ -226,8 +228,8 @@ end
 function test1()
     NX = 4
     NY = 4
-    NZ = 6
-    NT = 8
+    NZ = 4
+    NT = 4
     L5 = 6
     Nwing = 1
     Dim = 4
@@ -236,6 +238,7 @@ function test1()
 
     #U = Initialize_4DGaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold")
     Ucpu = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
+    #U = Initialize_Gaugefields(NC, 0, NX, NY, NZ, NT, condition="cold")
     U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT, condition="cold";
         isMPILattice=true, singleprecision)
 
@@ -260,7 +263,8 @@ function test1()
     β = 5.5 / 2
     push!(gauge_action_cpu, β, plaqloop)
 
-    is5D = false
+    #is5D = false
+    is5D = true
     x = Initialize_pseudofermion_fields(U[1], "MobiusDomainwall"; L5, is5D)
 
     xcpu = Initialize_pseudofermion_fields(Ucpu[1], "MobiusDomainwall"; L5)
@@ -270,7 +274,8 @@ function test1()
     params["Dirac_operator"] = "MobiusDomainwall"
     params["κ"] = 0.141139 / 2
     params["eps_CG"] = 1.0e-16
-    params["improved gpu"] = false
+    params["improved gpu"] = true
+    #params["improved gpu"] = false
     params["mass"] = 0.02
     params["L5"] = L5
     params["b"] = 1.0
@@ -278,7 +283,7 @@ function test1()
     params["M"] = -1.9
     #params["improved gpu"] = true
     #params["eps_CG"] = 1.0e-1
-    params["verbose_level"] = 3
+    #params["verbose_level"] = 3
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
     params["method_CG"] = "bicg"
@@ -302,6 +307,7 @@ function test1()
 
     #return
 
+    #=
     for i = 1:10
         gauss_sampling_in_action!(xcpu, Ucpu, fermi_action_cpu)
         substitute_fermion!(x, xcpu)
@@ -313,6 +319,7 @@ function test1()
         println(dot(ycpu, ycpu))
     end
     return
+    =#
 
     MDtest!(gauge_action, U, Dim, fermi_action, x, y, ycpu, Ucpu, fermi_action_cpu, xcpu, gauge_action_cpu)
 

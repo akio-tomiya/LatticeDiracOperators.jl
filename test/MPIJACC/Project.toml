@@ -1,7 +1,10 @@
 [deps]
+#AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Gaugefields = "a461e10c-0d91-493e-bc41-027b226eee91"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea"
 LatticeDiracOperators = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+#oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"

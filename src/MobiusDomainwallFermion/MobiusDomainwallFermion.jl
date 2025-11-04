@@ -2,7 +2,8 @@
 using Requires
 
 import LatticeMatrices: D5DW_MobiusDomainwallOperator5D
-
+ENV["CUDA_LAUNCH_BLOCKING"] = "1"
+ENV["JULIA_DEBUG"] = "CUDA"
 
 struct D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
@@ -43,6 +44,7 @@ function D5DW_MobiusDomainwall_operator(
     end
 
     if Dim == 4
+
         boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
     elseif Dim == 2
         boundarycondition = check_parameters(parameters, "boundarycondition", [1, -1])
@@ -228,6 +230,7 @@ function MobiusDomainwall_Dirac_operator(
     end
 
     #=
+    
     y = similar(x)
     xt = similar(x)
     gauss_distribution_fermion!(xt)
@@ -238,9 +241,6 @@ function MobiusDomainwall_Dirac_operator(
     println("D5DW ", dot(y, y))
     mul!(y, D5DW', xt)
     println("D5DWdag ", dot(y, y))
-
-
-
 
 
     M = parameters["M"]
@@ -254,24 +254,56 @@ function MobiusDomainwall_Dirac_operator(
     y5 = similar(x5_2)
     D5DW5 = D5DW_MobiusDomainwall_operator_MPILattice(U, x5_2, parameters, mass, b, c)
     substitute_fermion!(x5_2, xt)
-    println(dot(x5_2, x5_2))
+    #println(dot(x5_2, x5_2))
 
     set_wing_fermion!(x5_2)
-    mul!(y5, D5DW5, x5_2)
-    println("D5DW ", dot(y5, y5))
-    mul!(y5, D5DW5', x5_2)
-    println("D5DWdag ", dot(y5, y5))
+    #@code_warntype mul!(y5, D5DW5, x5_2)
+    #error("code")
+    #mul!(y5, D5DW5, x5_2)
+    #println("D5DW ", dot(y5, y5))
+    #mul!(y5, D5DW5', x5_2)
+    #println("D5DWdag ", dot(y5, y5))
+    #@code_warntype dot(x5_2, x5_2)
+    println("loopstart")
+    for i=1:100
+        println("i = $i")
+        #xt = similar(x)
+        gauss_distribution_fermion!(xt)
+        #println(dot(xt, xt))
+        mul!(y, D5DW, xt)
+        println("D5DW c ", dot(y, y))
+        mul!(y, D5DW', xt)
+        println("D5DWdag c ", dot(y, y))
+        #y5 = similar(x5_2)
+        substitute_fermion!(x5_2, xt)
+        v0 = dot(x5_2, x5_2)
+        println(v0)
+        mul!(y5, D5DW5, x5_2)
+        v = dot(y5, y5)
+        println("D5DW ", v)
+        mul!(y5, D5DW5', x5_2)
+        println("D5DWdag ", dot(y5, y5))
+        #if i % 10 == 0
+        #    JACC.synchronize()  # Backend 非依存の同期（JACC が提供）
+        #    GC.gc()             # ホスト側の最終化を走らせてデバイス側も解放させる
+        #end
+    end
 
 
     error("dd")
-
     =#
+
+    
 
 
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
     if Dim == 4
-        boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
+        if improved_gpu
+            boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1,1])
+        else
+            boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
+        end
     elseif Dim == 2
         boundarycondition = check_parameters(parameters, "boundarycondition", [1, -1])
     else
@@ -391,6 +423,13 @@ struct MobiusD5DWdagD5DW_Wilson_operator{T} <: DdagD_operator
     function MobiusD5DWdagD5DW_Wilson_operator(
         D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw},
     ) where {Dim,T,fermion,wilsonfermion,Dw}
+        dtype = typeof(D)
+        return new{dtype}(D)
+    end
+
+    function MobiusD5DWdagD5DW_Wilson_operator(
+        D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD},
+    ) where {Dim,TU,fermion,TD}
         dtype = typeof(D)
         return new{dtype}(D)
     end
