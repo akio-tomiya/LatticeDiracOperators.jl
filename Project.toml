@@ -1,6 +1,6 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
-version = "0.5.8"
+version = "0.5.9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
 
 [deps]
@@ -28,7 +28,7 @@ SparseArrays = "1,2"
 StaticArrays = "1.9.15"
 Wilsonloop = "0.1.5"
 julia = "1.11"
-LatticeMatrices = "0.1.15"
+LatticeMatrices = "0.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
