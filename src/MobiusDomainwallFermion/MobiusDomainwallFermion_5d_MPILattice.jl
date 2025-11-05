@@ -2,7 +2,7 @@
 
 
 
-import LatticeMatrices:apply_F_5D!,apply_δF_5D!
+import LatticeMatrices:apply_F_5D!,apply_δF_5D!,D4x_5D!
 
 abstract type MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: Abstract_MobiusDomainwallFermion_5D{NC,nothing} end
 
@@ -790,4 +790,21 @@ function LinearAlgebra.mul!(
     Tb<:Abstractfields}
     mul!(c.f, a.f, b.U)
     #set_wing_fermion!(c)
+end
+
+function D4x_5D!(C::Tc, U::Vector{Tu}, ψ::Tp, coeff) where {
+    Tc<:MobiusDomainwallFermion_5D_MPILattice,
+    Tu<:AbstractGaugefields,
+    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+
+    D4x_5D!(C.f, [U[1].U,U[2].U,U[3].U,U[4].U], ψ.f, coeff)
+    set_halo!(C.f)
+end
+
+function apply_F_5D!(C::Tc,mass,L5,ψ::Tp) where {
+    Tc<:MobiusDomainwallFermion_5D_MPILattice,
+    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+
+    apply_F_5D!(C.f,mass,L5,ψ.f) 
+    set_halo!(C.f)
 end

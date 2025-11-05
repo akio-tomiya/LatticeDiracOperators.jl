@@ -65,7 +65,10 @@ import .Dirac_operators:
     convert_to_normalvector,
     save_fermionfield,
     load_fermionfield!,
-    substitute_fermion!
+    substitute_fermion!,
+    apply_F_5D!,apply_δF_5D!,D4x_5D!
+
+export apply_F_5D!,apply_δF_5D!,D4x_5D!
 
 export substitute_fermion!
 
