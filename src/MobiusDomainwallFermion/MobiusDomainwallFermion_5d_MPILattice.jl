@@ -808,3 +808,33 @@ function apply_F_5D!(C::Tc,mass,L5,ψ::Tp) where {
     apply_F_5D!(C.f,mass,L5,ψ.f) 
     set_halo!(C.f)
 end
+
+function Z4_distribution_fermi!(x::MobiusDomainwallField_5D_MPILattice)
+    ZN_distribution_fermi!(x,4)
+end
+
+function ZN_distribution_fermi!(
+    x::Tx, N
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+    NG = 4
+    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT, L5)
+    Ninv = 1 / N
+    for it = 1:NT
+        for iz = 1:NZ
+            for iy = 1:NY
+                for ix = 1:NX
+                    for ialpha = 1:NG
+                        @inbounds @simd for ic = 1:NC
+                            θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
+                            work[ic, ialpha, ix, iy, iz, it, 1] = cos(θ) + im * sin(θ)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    PEs = get_PEs(x.f)
+    a = LatticeMatrix(work, 5, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
+    substitute!(x.f, a)
+    return
+end
