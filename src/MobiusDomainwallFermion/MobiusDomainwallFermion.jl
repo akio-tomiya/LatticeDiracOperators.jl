@@ -161,6 +161,27 @@ function (D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw})(
     )
 end
 
+function (D::D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw})(
+    U, b::Float64, c::Float64
+) where {Dim,T,fermion,wilsonfermion,Dw}
+    return D5DW_MobiusDomainwall_operator{Dim,T,fermion,wilsonfermion,Dw}(
+        U,
+        D.wilsonoperator(U),
+        D.mass,
+        D._temporary_fermi,
+        D.L5,
+        D.eps_CG,
+        D.MaxCGstep,
+        D.verbose_level,
+        D.method_CG,
+        D.verbose_print,
+        D._temporary_fermion_forCG,
+        D.boundarycondition,
+        b,
+        c,
+    )
+end
+
 struct Adjoint_D5DW_MobiusDomainwall_operator{T} <: Adjoint_Dirac_operator
     parent::T
 end
@@ -230,7 +251,7 @@ function MobiusDomainwall_Dirac_operator(
     end
 
     #=
-    
+
     y = similar(x)
     xt = similar(x)
     gauss_distribution_fermion!(xt)
@@ -293,14 +314,14 @@ function MobiusDomainwall_Dirac_operator(
     error("dd")
     =#
 
-    
+
 
 
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
     if Dim == 4
         if improved_gpu
-            boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1,1])
+            boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1, 1])
         else
             boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
         end

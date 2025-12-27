@@ -1014,8 +1014,8 @@ function LinearAlgebra.axpby!(
     X::Abstract_MobiusDomainwallFermion_5D,
     b::Number,
     Y::Abstract_MobiusDomainwallFermion_5D,
-) 
-    for i=1:X.L5
+)
+    for i = 1:X.L5
         axpby!(a, X.w[i], b, Y.w[i])
     end
 end
@@ -1029,10 +1029,10 @@ end
 function shift_fermion(F::TF, ν::T1; boundarycondition=[1, 1, 1, -1]) where {TF<:Abstract_MobiusDomainwallFermion_5D,T1<:Integer}
     shiftedwilson = []
     WilsonFermion = typeof(F.w[1])
-    NC= F.NC
-    for i=1:F.L5
+    NC = F.NC
+    for i = 1:F.L5
         x = F.w[i]
-        push!(shiftedwilson,shift_fermion(x,ν;boundarycondition))
+        push!(shiftedwilson, shift_fermion(x, ν; boundarycondition))
     end
     Tw = typeof(shiftedwilson[1])
     return Shifted_MobiusDomainwallFermion_5D{NC,WilsonFermion,Tw}(shiftedwilson)
@@ -1044,8 +1044,8 @@ function LinearAlgebra.mul!(
     b::Tb,
 ) where {Tc<:MobiusDomainwallFermion_5D,
     Tb<:Abstract_MobiusDomainwallFermion_5D,Ta<:Abstractfields}
- 
-    for i=1:c.L5
+
+    for i = 1:c.L5
         mul!(c.w[i], a, b.w[i])
     end
     #set_wing_fermion!(c)
@@ -1057,8 +1057,8 @@ function LinearAlgebra.mul!(
     b::Tb,
 ) where {Tc<:MobiusDomainwallFermion_5D,
     Ta<:Abstract_MobiusDomainwallFermion_5D,Tb<:Abstractfields}
- 
-    for i=1:c.L5
+
+    for i = 1:c.L5
         mul!(c.w[i], a.w[i], b)
     end
     #set_wing_fermion!(c)
@@ -1070,8 +1070,8 @@ function LinearAlgebra.mul!(
     b::Tb,
 ) where {Tc<:MobiusDomainwallFermion_5D,
     Tb<:Abstract_MobiusDomainwallFermion_5D,Ta<:AbstractMatrix}
- 
-    for i=1:c.L5
+
+    for i = 1:c.L5
         mul!(c.w[i], a, b.w[i])
     end
     #set_wing_fermion!(c)
@@ -1083,8 +1083,8 @@ function LinearAlgebra.mul!(
     b::Tb,
 ) where {Tc<:MobiusDomainwallFermion_5D,
     Tb<:Abstract_MobiusDomainwallFermion_5D,Ta<:Number}
- 
-    for i=1:c.L5
+
+    for i = 1:c.L5
         mul!(c.w[i], a, b.w[i])
     end
     #set_wing_fermion!(c)
@@ -1096,11 +1096,11 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {TTa<:Abstract_MobiusDomainwallFermion_5D, 
+) where {TTa<:Abstract_MobiusDomainwallFermion_5D,
     Tc<:MobiusDomainwallFermion_5D,
     Tb<:Abstractfields,Ta<:Adjoint_fermionfields{TTa}}
- 
-    for i=1:c.L5
+
+    for i = 1:c.L5
         mul!(c.w[i], a.parent.w[i]', b)
     end
     #set_wing_fermion!(c)
@@ -1113,8 +1113,8 @@ function LinearAlgebra.mul!(
     b::Tb,
 ) where {Tc<:AbstractGaugefields,
     Tb<:Abstract_MobiusDomainwallFermion_5D,Ta<:Abstract_MobiusDomainwallFermion_5D}
- 
-    for i=1:a.L5
+
+    for i = 1:a.L5
         mul!(c, a.w[i], b.w[i])
     end
     #set_wing_U!(c)
@@ -1124,11 +1124,11 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {TTa<:Abstract_MobiusDomainwallFermion_5D, TTb<:Abstract_MobiusDomainwallFermion_5D,
+) where {TTa<:Abstract_MobiusDomainwallFermion_5D,TTb<:Abstract_MobiusDomainwallFermion_5D,
     Tc<:AbstractGaugefields,
     Tb<:Adjoint_fermionfields{TTb},Ta<:Adjoint_fermionfields{TTa}}
- 
-    for i=1:a.L5
+
+    for i = 1:a.L5
         mul!(c, a.parent.w[i]', b.parent.w[i]')
     end
     #set_wing_U!(c)
@@ -1140,29 +1140,29 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {TTa<:Abstract_MobiusDomainwallFermion_5D, TTb<:Abstract_MobiusDomainwallFermion_5D,
+) where {TTa<:Abstract_MobiusDomainwallFermion_5D,TTb<:Abstract_MobiusDomainwallFermion_5D,
     Tc<:AbstractGaugefields,
     Tb<:TTb,Ta<:Adjoint_fermionfields{TTa}}
- 
-    for i=1:a.L5
+
+    for i = 1:a.L5
         mul!(c, a.parent.w[i]', b.w[i])
     end
     #set_wing_U!(c)
 end
 
-function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {TTf<:MobiusDomainwallFermion_5D,
-     Tf<:Adjoint_fermionfields{TTf}}
-    muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f)
+function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf, temp1_f) where {TTf<:MobiusDomainwallFermion_5D,
+    Tf<:Adjoint_fermionfields{TTf}}
+    muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f)
     #println("s = ",s, " $s1 $s2")
 end
 
-function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf) where {TTf<:MobiusDomainwallFermion_5D,
-     Tf<:Adjoint_fermionfields{TTf}}
+function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf) where {TTf<:MobiusDomainwallFermion_5D,
+    Tf<:Adjoint_fermionfields{TTf}}
     #s = 0.0im
     #s1 = 0.0im
     #s2 = 0.0im
     #abi = zero(UdSfdU[:,:,1,1,1,1])
-    for i=1:temp0_f.L5
+    for i = 1:temp0_f.L5
         mul!(temp0_g, temp0_f.w[i], f.parent.w[i]')
         #s1 += dot(f.parent.w[i],f.parent.w[i])
         #s2 += dot(temp0_f.w[i],temp0_f.w[i])
@@ -1181,14 +1181,14 @@ function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf) where {TTf<:MobiusDoma
     #println("s = ",s, " $s1 $s2")
 end
 
-function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {TTf<:MobiusDomainwallFermion_5D,
-     Tf<:TTf}
-    muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f)
+function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf, temp1_f) where {TTf<:MobiusDomainwallFermion_5D,
+    Tf<:TTf}
+    muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f)
 end
 
-function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf) where {TTf<:MobiusDomainwallFermion_5D,
-     Tf<:TTf}
-    for i=1:temp0_f.L5
+function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf) where {TTf<:MobiusDomainwallFermion_5D,
+    Tf<:TTf}
+    for i = 1:temp0_f.L5
         mul!(temp0_g, temp0_f.w[i], f.w[i])
         add_U!(UdSfdU, coeff, temp0_g)
     end
@@ -1199,11 +1199,11 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {TTa<:Abstract_MobiusDomainwallFermion_5D, TTb<:Abstract_MobiusDomainwallFermion_5D,
+) where {TTa<:Abstract_MobiusDomainwallFermion_5D,TTb<:Abstract_MobiusDomainwallFermion_5D,
     Tc<:AbstractGaugefields,
     Tb<:Adjoint_fermionfields{TTb},Ta<:TTa}
- 
-    for i=1:a.L5
+
+    for i = 1:a.L5
         mul!(c, a.w[i], b.parent.w[i]')
     end
     #set_wing_U!(c)
@@ -1211,15 +1211,15 @@ end
 
 function mul_x1plusγμ!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:Abstract_MobiusDomainwallFermion_5D,
     Tf0<:Abstract_MobiusDomainwallFermion_5D}
-    for i=1:temp1_f.L5
-        mul_x1plusγμ!(temp1_f.w[i],temp0_f.w[i],μ)
+    for i = 1:temp1_f.L5
+        mul_x1plusγμ!(temp1_f.w[i], temp0_f.w[i], μ)
     end
     #set_wing_fermion!(temp1_f)
 end
 
 function mul_1minusγμx!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:Abstract_MobiusDomainwallFermion_5D,
     Tf0<:Abstract_MobiusDomainwallFermion_5D}
-    for i=1:temp1_f.L5
+    for i = 1:temp1_f.L5
         mul_1minusγμx!(temp1_f.w[i], temp0_f.w[i], μ)
     end
     #set_wing_fermion!(temp1_f)

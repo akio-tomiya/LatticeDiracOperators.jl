@@ -66,18 +66,18 @@ end
 
 #C = A B 
 function LinearAlgebra.mul!(C::LatticeMatrix{5,T1,AT1,NC1,NC2,nw,DIC},
-    A::LatticeMatrix{4,T2,AT2,NC1,NC3,nw,DIA}, 
+    A::LatticeMatrix{4,T2,AT2,NC1,NC3,nw,DIA},
     B::LatticeMatrix{5,T3,AT3,NC3,NC2,nw,DIB}) where {T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DIC,DIA,DIB}
 
     JACC.parallel_for(
-        prod(C.PN), kernel_Dmatrix_mul_545!, C.A, A.A, B.A, Val(NC1), Val(NC2),Val(NC3),Val(nw), C.indexer
+        prod(C.PN), kernel_Dmatrix_mul_545!, C.A, A.A, B.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), C.indexer
     )
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mul_545!(i, C, A, B, ::Val{NC1}, ::Val{NC2},::Val{NC3},::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mul_545!(i, C, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
-    ix,iy,iz,it,i5 = indices
+    ix, iy, iz, it, i5 = indices
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
             C[ic, jc, indices...] = zero(eltype(C))
@@ -86,7 +86,7 @@ end
         for kc = 1:NC3
             b = B[kc, jc, indices...]
             for ic = 1:NC1
-                C[ic, jc, indices...] += A[ic, kc, ix,iy,iz,it] * b# B[kc, jc, indices...]
+                C[ic, jc, indices...] += A[ic, kc, ix, iy, iz, it] * b# B[kc, jc, indices...]
             end
         end
     end
@@ -139,25 +139,25 @@ end
 #C = A shiftedB 
 function LinearAlgebra.mul!(C::TC,
     A::TA, B::TB) where {
-        D,T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DI5,DI4,
-        L<:LatticeMatrix{5,T3,AT3,NC3,NC2,nw,DI5},
-        TC<:LatticeMatrix{5,T1,AT1,NC1,NC2,nw,DI5},
-        TA<:LatticeMatrix{4,T2,AT2,NC1,NC3,nw,DI4},
-        TB<:Shifted_Lattice{L,D},
-        }
+    D,T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DI5,DI4,
+    L<:LatticeMatrix{5,T3,AT3,NC3,NC2,nw,DI5},
+    TC<:LatticeMatrix{5,T1,AT1,NC1,NC2,nw,DI5},
+    TA<:LatticeMatrix{4,T2,AT2,NC1,NC3,nw,DI4},
+    TB<:Shifted_Lattice{L,D},
+}
 
     shift = get_shift(B)
     JACC.parallel_for(
-        prod(C.PN), kernel_Dmatrix_mul_54shift5!, C.A, A.A, B.data.A, Val(NC1), Val(NC2),Val(NC3),Val(nw), C.indexer,shift
+        prod(C.PN), kernel_Dmatrix_mul_54shift5!, C.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), C.indexer, shift
     )
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mul_54shift5!(i, C, A, B, ::Val{NC1},  ::Val{NC2}, ::Val{NC3},::Val{nw}, dindexer,shift) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mul_54shift5!(i, C, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer, shift) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
 
-    ix,iy,iz,it,i5 = indices
+    ix, iy, iz, it, i5 = indices
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
             C[ic, jc, indices...] = zero(eltype(C))
@@ -166,7 +166,7 @@ end
         for kc = 1:NC3
             b = B[kc, jc, indices_p...]
             for ic = 1:NC1
-                C[ic, jc, indices...] += A[ic, kc, ix,iy,iz,it] * b# B[kc, jc, indices...]
+                C[ic, jc, indices...] += A[ic, kc, ix, iy, iz, it] * b# B[kc, jc, indices...]
             end
         end
     end
@@ -304,19 +304,19 @@ end
 
 #C = Adag Bdag 
 function LinearAlgebra.mul!(C::LatticeMatrix{5,T1,AT1,NC1,NC2,nw,DIC},
-    A::Adjoint_Lattice{L1}, 
+    A::Adjoint_Lattice{L1},
     B::Adjoint_Lattice{L2}) where {T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DIC,DIA,DIB,
     L1<:LatticeMatrix{5,T2,AT2,NC3,NC2,nw,DIA},L2<:LatticeMatrix{4,T3,AT3,NC1,NC3,nw,DIB}}
 
     JACC.parallel_for(
-        prod(C.PN), kernel_Dmatrix_mul_55dag4dag!, C.A, A.data.A, B.data.A, Val(NC1), Val(NC2),Val(NC3),Val(nw), C.indexer
+        prod(C.PN), kernel_Dmatrix_mul_55dag4dag!, C.A, A.data.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), C.indexer
     )
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mul_55dag4dag!(i, C, A, B, ::Val{NC1}, ::Val{NC2},::Val{NC3},::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mul_55dag4dag!(i, C, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
-    ix,iy,iz,it,i5 = indices
+    ix, iy, iz, it, i5 = indices
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
@@ -325,7 +325,7 @@ end
 
         for kc = 1:NC3
             for ic = 1:NC1
-                C[ic,jc,ix,iy,iz,it,i5] +=  conj(A[kc,jc,ix,iy,iz,it,i5])*conj(B[ic, kc, ix,iy,iz,it])
+                C[ic, jc, ix, iy, iz, it, i5] += conj(A[kc, jc, ix, iy, iz, it, i5]) * conj(B[ic, kc, ix, iy, iz, it])
             end
         end
 
@@ -379,23 +379,23 @@ end
 
 #C = Adagshift Bdag 
 function LinearAlgebra.mul!(C::LatticeMatrix{5,T1,AT1,NC1,NC2,nw,DIC},
-    A::Adjoint_Lattice{Shifted_Lattice{L1,5}}, 
+    A::Adjoint_Lattice{Shifted_Lattice{L1,5}},
     B::Adjoint_Lattice{L2}) where {T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DIC,DIA,DIB,
     L1<:LatticeMatrix{5,T2,AT2,NC3,NC2,nw,DIA},L2<:LatticeMatrix{4,T3,AT3,NC1,NC3,nw,DIB}}
 
     shift = get_shift(A)
     JACC.parallel_for(
-        prod(C.PN), kernel_Dmatrix_mul_55dag4dag!, C.A, A.data.data.A, B.data.A, Val(NC1), Val(NC2),Val(NC3),Val(nw), 
-        C.indexer,shift
+        prod(C.PN), kernel_Dmatrix_mul_55dag4dag!, C.A, A.data.data.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw),
+        C.indexer, shift
     )
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mul_55dag4dag!(i, C, A, B, ::Val{NC1}, ::Val{NC2},::Val{NC3},::Val{nw},
-     dindexer,shift) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mul_55dag4dag!(i, C, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw},
+    dindexer, shift) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
     indices_p = shiftindices(indices, shift)
-    ix,iy,iz,it,i5 = indices
+    ix, iy, iz, it, i5 = indices
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
@@ -404,7 +404,7 @@ end
 
         for kc = 1:NC3
             for ic = 1:NC1
-                C[ic,jc,ix,iy,iz,it,i5] +=  conj(A[kc,jc,indices_p...])*conj(B[ic, kc, ix,iy,iz,it])
+                C[ic, jc, ix, iy, iz, it, i5] += conj(A[kc, jc, indices_p...]) * conj(B[ic, kc, ix, iy, iz, it])
             end
         end
 
@@ -414,25 +414,25 @@ end
 
 #C = A B
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
-    A::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA}, 
+    A::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA},
     B::L) where {T1,T2,T3,AT1,AT2,AT3,NC1,NC2,NC3,nw,DIC,DIA,DIB,L<:LatticeMatrix{5,T3,AT3,NC2,NC3,nw,DIB}}
 
     clear_matrix!(C)
 
     JACC.parallel_for(
-        prod(A.PN), kernel_Dmatrix_mul_455!, C.A, A.A, B.A, Val(NC1), Val(NC2),Val(NC3),Val(nw), A.indexer
+        prod(A.PN), kernel_Dmatrix_mul_455!, C.A, A.A, B.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     )
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mul_455!(i, C, A, B, ::Val{NC1}, ::Val{NC2},::Val{NC3},::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mul_455!(i, C, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
-    ix,iy,iz,it,i5 = indices
+    ix, iy, iz, it, i5 = indices
     @inbounds for jc = 1:NC2
         for kc = 1:NC3
-            b = B[jc, kc, ix,iy,iz,it,i5]
+            b = B[jc, kc, ix, iy, iz, it, i5]
             for ic = 1:NC1
-                C[ic, jc, ix,iy,iz,it] += A[ic, kc, ix,iy,iz,it,i5] * b# B[kc, jc, indices...]
+                C[ic, jc, ix, iy, iz, it] += A[ic, kc, ix, iy, iz, it, i5] * b# B[kc, jc, indices...]
             end
         end
     end
