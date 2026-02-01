@@ -1,6 +1,6 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
-version = "0.5.11"
+version = "0.5.12"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
 
 [deps]

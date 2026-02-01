@@ -181,6 +181,7 @@ function test1()
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
     params["method_CG"] = "bicg"
+    #params["faster version"] = true
     D = Dirac_operator(U, x, params)
 
     parameters_action = Dict()
