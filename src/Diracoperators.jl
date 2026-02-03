@@ -104,6 +104,7 @@ include("./DomainwallFermion/DomainwallFermion.jl")
 include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
 include("./GeneralizedDomainwallFermion/GeneralizedDomainwallFermion.jl")
 include("./action/FermiAction.jl")
+#include("./GeneralFermion/generalDiracoperators.jl")
 
 function Dirac_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
@@ -114,19 +115,20 @@ function Dirac_operator(
     if parameters["Dirac_operator"] == "staggered"
         Staggered_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
-        if Dim==4
+        if Dim == 4
             fasterversion = check_parameters(parameters, "faster version", true)
         else
             fasterversion = check_parameters(parameters, "faster version", false)
-            if fasterversion 
+            if fasterversion
                 error("Faster version of the Wilson Dirac operator can be used only for Dim=4. Now Dim=$Dim")
             end
         end
         #if fasterversion == false
         #    @warn "now only fasterversion=true is supported. "
         #end
-        
-        improved_gpu = check_parameters(parameters, "improved gpu", false)
+
+        #improved_gpu = check_parameters(parameters, "improved gpu", false)
+        improved_gpu = check_parameters(parameters, "improved gpu", true)
         #@info fasterversion
         if improved_gpu && eltype(U) <: Gaugefields_4D_MPILattice
             Wilson_Dirac_operator_improved(U, x, parameters)
@@ -155,6 +157,8 @@ function Dirac_operator(
         MobiusDomainwall_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "GeneralizedDomainwall"
         GeneralizedDomainwall_Dirac_operator(U, x, parameters)
+    elseif parameters["Dirac_operator"] == "GeneralDirac"
+        General_Dirac_operator(U, x, parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -172,6 +176,8 @@ function DdagD_operator(
         DdagD_Wilson_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
         DdagD_Domainwall_operator(U, x, parameters)
+    elseif parameters["Dirac_operator"] == "GeneralDirac"
+        DgagD_General_Dirac_operator(U, x, parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -313,20 +319,49 @@ end
 
 using InteractiveUtils
 
+function get_eps(A::T2) where {T2<:DdagD_operator}
+    return A.dirac.eps_CG
+end
+
+function get_maxsteps(A::T2) where {T2<:DdagD_operator}
+    return A.dirac.MaxCGstep
+end
+
+function get_verbose(A::T2) where {T2<:DdagD_operator}
+    return A.dirac.verbose_print
+end
+
+function get_boundarycondition(A::T2) where {T2<:DdagD_operator}
+    return A.dirac.boundarycondition
+end
+
 function solve_DinvX!(
     y::T1,
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:DdagD_operator,T3<:AbstractFermionfields}
+    eps = get_eps(A)
+    maxsteps = get_maxsteps(A)
+    verbose = get_verbose(A)
+
+    #cg(
+    #    y,
+    #    A,
+    #    x;
+    #    eps=A.dirac.eps_CG,
+    #    maxsteps=A.dirac.MaxCGstep,
+    #    verbose=A.dirac.verbose_print,
+    #)
     cg(
         y,
         A,
         x;
-        eps=A.dirac.eps_CG,
-        maxsteps=A.dirac.MaxCGstep,
-        verbose=A.dirac.verbose_print,
+        eps,
+        maxsteps,
+        verbose,
     )
-    set_wing_fermion!(y, A.dirac.boundarycondition)
+    boundarycondition = get_boundarycondition(A)
+    set_wing_fermion!(y, boundarycondition)
 end
 
 

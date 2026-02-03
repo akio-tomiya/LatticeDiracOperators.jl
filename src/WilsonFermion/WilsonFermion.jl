@@ -555,7 +555,6 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     clear_fermion!(temp)
     set_wing_fermion!(x)
     for ν = 1:Dim
-
         xplus = shift_fermion(x, ν)
         #println(xplus)
 

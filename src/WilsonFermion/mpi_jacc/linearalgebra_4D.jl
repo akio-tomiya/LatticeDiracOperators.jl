@@ -160,10 +160,12 @@ end
     end
 end
 
+#=
 function LinearAlgebra.dot(A::LatticeMatrix{4,T1,AT1,NC1,NG,nw}, B::LatticeMatrix{4,T2,AT2,NC1,NG,nw}) where {NG,T1,T2,AT1,AT2,NC1,nw}
     s = JACC.parallel_reduce(prod(A.PN), +, kernel_dot_4D,
         A.A, B.A, A.indexer, Val(NC1), Val(NG), Val(nw); init=zero(eltype(A.A)))
 end
+=#
 
 @inline function kernel_dot_4D(i, A, B, dindexer, ::Val{NC1}, ::Val{NG}, ::Val{nw}) where {NC1,nw,NG}
     indices = delinearize(dindexer, i, nw)

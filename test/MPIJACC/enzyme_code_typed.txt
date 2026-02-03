@@ -1,0 +1,31 @@
+Any[CodeInfo(
+1 ─ %1  = Core.getfield(#self#, :D)::LatticeMatrices.DiracOp{Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, typeof(apply_wilson!), typeof(apply_wilson_dag!), @NamedTuple{κ::Float64}}
+│   %2  = Base.getfield(%1, :p)::@NamedTuple{κ::Float64}
+│   %3  = Base.getfield(phitemp, :size)::Tuple{Int64}
+│   %4  = $(Expr(:boundscheck, true))::Bool
+│   %5  = Base.getfield(%3, 1, %4)::Int64
+│   %6  = $(Expr(:boundscheck, true))::Bool
+└──       goto #5 if not %6
+2 ─ %8  = Base.sub_int(%5, 1)::Int64
+│   %9  = Base.bitcast(Base.UInt, %8)::UInt64
+│   %10 = Base.getfield(phitemp, :size)::Tuple{Int64}
+│   %11 = $(Expr(:boundscheck, true))::Bool
+│   %12 = Base.getfield(%10, 1, %11)::Int64
+│   %13 = Base.bitcast(Base.UInt, %12)::UInt64
+│   %14 = Base.ult_int(%9, %13)::Bool
+└──       goto #4 if not %14
+3 ─       goto #5
+4 ─ %17 = Core.tuple(%5)::Tuple{Int64}
+│         invoke Base.throw_boundserror(phitemp::Vector{LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}}, %17::Tuple{Int64})::Union{}
+└──       unreachable
+5 ┄ %20 = Base.getfield(phitemp, :ref)::MemoryRef{LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}}
+│   %21 = Base.memoryrefnew(%20, %5, false)::MemoryRef{LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}}
+│   %22 = Base.memoryrefget(%21, :not_atomic, false)::LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}
+└──       goto #6
+6 ─       invoke apply(%22::LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, U1::Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, U2::Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, U3::Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, U4::Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, η::LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, %2::@NamedTuple{κ::Float64}, phitemp::Vector{LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}}, temp::Vector{Gaugefields.AbstractGaugefields_module.Gaugefields_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 3, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}})::Any
+│   %25 = invoke LatticeDiracOperatorsEnzymeExt.dot(χ::LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}}, %22::LatticeDiracOperators.Dirac_operators.WilsonFermion_4D_MPILattice{3, 4, 4, 4, 4, ComplexF64, Array{ComplexF64, 6}, 1, 4, LatticeMatrices.LatticeMatrix_standard{4, ComplexF64, Array{ComplexF64, 6}, 3, 4, 1, LatticeMatrices.DIndexer{4, (4, 4, 4, 4), (1, 4, 16, 64)}}})::ComplexF64
+│   %26 = Base.getfield(%25, :re)::Float64
+│   %27 = Base.mul_float(-2.0, %26)::Float64
+└──       goto #7
+7 ─       return %27
+) => Float64]

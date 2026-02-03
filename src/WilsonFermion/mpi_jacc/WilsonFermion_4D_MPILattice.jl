@@ -170,7 +170,13 @@ function gauss_distribution_fermion!(
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
 
     work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT)
-    work = map(i -> gauss_distribution(σ), work)
+    σ = sqrt(1 / 2)
+    for i = 1:length(work)
+        v = σ * randn() + im * σ * randn()
+        work[i] = v
+    end
+
+    #work = map(i -> gauss_distribution(σ), work)
     PEs = get_PEs(x.f)
     a = LatticeMatrix(work, 4, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
     substitute!(x.f, a)
@@ -242,12 +248,16 @@ function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     #set_halo!(C)
 end
 
+#=
 function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
     A::TA, x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
 
     mul!(C.f, A, x.f)
     #set_halo!(C)
 end
+=#
+
+#=
 
 function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
     x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, A::TA,) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
@@ -255,7 +265,7 @@ function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,N
     mul!(C.f, x.f, A)
     #set_halo!(C)
 end
-
+=#
 #lattice shift
 function shift_fermion(F::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf}, ν::T1; boundarycondition=nothing) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf,T1<:Integer}
 
@@ -778,3 +788,52 @@ function LinearAlgebra.mul!(C::MMatrix{NC,NG,T}, ::Oneγμ{:minus,4}) where {NC,
     end
 end
 
+import LatticeMatrices
+
+function LatticeMatrices.mul_AshiftB!(
+    C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    B::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    LatticeMatrices.mul_AshiftB!(C.f, A.f, B.f, shift)
+
+end
+
+function LatticeMatrices.mul_AshiftB!(
+    C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::Fields_4D_MPILattice,
+    B::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    LatticeMatrices.mul_AshiftB!(C.f, A.U, B.f, shift)
+
+end
+
+function LatticeMatrices.mul_shiftAshiftB!(
+    C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    B::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shiftA, shiftB) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    LatticeMatrices.mul_shiftAshiftB!(C.f, A.f, B.f, shiftA, shiftB)
+end
+
+function LatticeMatrices.mul_shiftAshiftB!(
+    C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::Fields_4D_MPILattice,
+    B::WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, shiftA, shiftB) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+
+    LatticeMatrices.mul_shiftAshiftB!(C.f, A.U, B.f, shiftA, shiftB)
+end
+
+
+#C = A*B A is a matrix.
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::TA, B::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TA<:AbstractMatrix}
+    mul!(C.f, A, B.f)
+end
+
+
+#C = A*B, B is a matrix.
+function LinearAlgebra.mul!(C::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
+    A::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}, B::TB) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG,TB<:AbstractMatrix}
+    mul!(C.f, A.f, B)
+end

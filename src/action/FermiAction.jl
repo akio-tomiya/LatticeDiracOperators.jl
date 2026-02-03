@@ -6,11 +6,12 @@ include("./DomainwallFermiAction.jl")
 include("./MobiusDomainwallFermiAction.jl")
 include("./GeneralizedDomainwallFermiAction.jl")
 include("./WilsontypeFermiAction.jl")
+include("./GeneralFermioAction.jl")
 
 function FermiAction(
     D::Dirac_operator{Dim},
     parameters_action;
-    covneuralnet = nothing,
+    covneuralnet=nothing,
 ) where {Dim}
     diractype = typeof(D)
     if covneuralnet == nothing
@@ -19,7 +20,7 @@ function FermiAction(
         hascovnet = true
     end
 
-    
+
     if diractype <: Staggered_Dirac_operator
         return StaggeredFermiAction(D, hascovnet, covneuralnet, parameters_action)
     elseif diractype <: Wilson_Dirac_operators
