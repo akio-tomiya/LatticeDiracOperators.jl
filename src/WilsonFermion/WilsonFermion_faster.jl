@@ -561,7 +561,6 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     end
     =#
 
-    #println("9")
     substitute_fermion!(temp1, xminus)
     #mul!(temp1, Uminus', xminus)
 
