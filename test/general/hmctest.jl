@@ -194,7 +194,7 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
     Random.seed!(123)
 
 
-    numtrj = 10
+    numtrj = 1000
     for itrj = 1:numtrj
         #@code_warntype MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
         #error("cc")
