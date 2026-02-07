@@ -103,7 +103,12 @@ include("./WilsonFermion/WilsonFermion.jl")
 include("./DomainwallFermion/DomainwallFermion.jl")
 include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
 include("./GeneralizedDomainwallFermion/GeneralizedDomainwallFermion.jl")
+include("./GeneralFermion/generalFermion.jl")
+
+
 include("./action/FermiAction.jl")
+
+
 #include("./GeneralFermion/generalDiracoperators.jl")
 
 function Dirac_operator(

@@ -10,7 +10,7 @@ struct GeneralFermionAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,fe
         gauge = eltype(U)
 
         DdagD = DdagDgeneral(U, x, apply_D, apply_Ddag;
-            numcg, num, numg, eps_CG, maxsteps, verbose_level)
+            numcg, num, numg, eps_CG, maxsteps, verbose_level, numtemp)
         Dirac = typeof(DdagD)
 
         return new{Dim,Dirac,fermion,gauge}(DdagD, numtemp)

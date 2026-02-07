@@ -148,7 +148,6 @@ include("./AbstractFermions_4D.jl")
 include("./AbstractFermions_5D.jl")
 include("./AbstractFermions_2D.jl")
 include("./AbstractFermions_3D.jl")
-include("./GeneralFermion/generalFermion.jl")
 
 
 function __init__()
@@ -468,3 +467,4 @@ function mul_1minusγμx!(y::Abstractfermion, x, μ)
         mul_1minusγ4x!(y, x)
     end
 end
+
