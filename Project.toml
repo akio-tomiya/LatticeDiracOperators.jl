@@ -28,10 +28,10 @@ LatticeDiracOperatorsEnzymeExt = "Enzyme"
 
 [compat]
 Enzyme = "0.13"
-Gaugefields = "0.6.16,0.7"
+Gaugefields = "0.7.0"
 JACC = "0.6,1.0"
 JLD2 = "0.4,0.5"
-LatticeMatrices = "0.3.3"
+LatticeMatrices = "0.3.8"
 MPI = "0.20"
 PreallocatedArrays = "0.0.1,0.1.0"
 Requires = "1"
