@@ -87,6 +87,7 @@ end
 @inline _lm_primal(x::Base.RefValue) = _lm_primal(x[])
 @inline _lm_primal(x::WilsonFermion_4D_MPILattice) = x.f
 @inline _lm_primal(x::Gaugefields_4D_MPILattice) = x.U
+@inline _lm_primal(x::LatticeDiracOperators.GeneralFermion) = x.field
 
 @inline function _shadow(x::Base.RefValue)
     xval = x[]
@@ -98,6 +99,9 @@ end
 @inline _shadow(x::Adjoint_Lattice) = x
 @inline _shadow(x::WilsonFermion_4D_MPILattice) = x.f
 @inline _shadow(x::Gaugefields_4D_MPILattice) = x.U
+@inline _shadow(x::LatticeDiracOperators.GeneralFermion) = x.field
+
+const _ADFermion4D = Union{WilsonFermion_4D_MPILattice, LatticeDiracOperators.GeneralFermion}
 
 @inline function _shadow(x)
     if x isa Base.RefValue
@@ -271,9 +275,9 @@ end
 function ER.augmented_primal(cfg::ER.RevConfig,
     ::ER.Const{typeof(LinearAlgebra.mul!)},
     ::Type{RT},
-    C::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    C::ER.Annotation{<:_ADFermion4D},
     A::ER.Annotation{<:AbstractMatrix},
-    B::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    B::ER.Annotation{<:_ADFermion4D},
 ) where {RT}
     mul!(_lm_primal(C.val), A.val, _lm_primal(B.val))
     return ER.AugmentedReturn(nothing, nothing, A.val)
@@ -282,9 +286,9 @@ end
 function ER.reverse(cfg::ER.RevConfig,
     ::ER.Const{typeof(LinearAlgebra.mul!)},
     dCout, tapeA,
-    C::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    C::ER.Annotation{<:_ADFermion4D},
     A::ER.Annotation{<:AbstractMatrix},
-    B::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    B::ER.Annotation{<:_ADFermion4D},
 )
     dC_struct = _shadow_out(dCout, C)
     dC_struct isa LatticeMatrix || (dC_struct = _shadow(C.dval))
@@ -317,8 +321,8 @@ end
 function ER.augmented_primal(cfg::ER.RevConfig,
     ::ER.Const{typeof(LinearAlgebra.mul!)},
     ::Type{RT},
-    C::ER.Annotation{<:WilsonFermion_4D_MPILattice},
-    A::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    C::ER.Annotation{<:_ADFermion4D},
+    A::ER.Annotation{<:_ADFermion4D},
     B::ER.Annotation{<:AbstractMatrix},
 ) where {RT}
     mul!(_lm_primal(C.val), _lm_primal(A.val), B.val)
@@ -328,8 +332,8 @@ end
 function ER.reverse(cfg::ER.RevConfig,
     ::ER.Const{typeof(LinearAlgebra.mul!)},
     dCout, tapeB,
-    C::ER.Annotation{<:WilsonFermion_4D_MPILattice},
-    A::ER.Annotation{<:WilsonFermion_4D_MPILattice},
+    C::ER.Annotation{<:_ADFermion4D},
+    A::ER.Annotation{<:_ADFermion4D},
     B::ER.Annotation{<:AbstractMatrix},
 )
     dC_struct = _shadow_out(dCout, C)

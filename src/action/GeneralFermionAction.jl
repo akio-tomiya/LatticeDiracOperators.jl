@@ -10,7 +10,7 @@ struct GeneralFermionAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,fe
         gauge = eltype(U)
 
         DdagD = DdagDgeneral(U, x, apply_D, apply_Ddag;
-            numcg, num, numg, eps_CG, maxsteps, verbose_level)
+            numcg, num, numg, eps_CG, maxsteps, verbose_level, numtemp)
         Dirac = typeof(DdagD)
 
         return new{Dim,Dirac,fermion,gauge}(DdagD, numtemp)
@@ -32,6 +32,8 @@ function evaluate_FermiAction(
     #println("diff ", u1 - u2)
 
     η, it_η = get_block(DdagD._temporary_fermion_forCG)
+    # Ensure deterministic initial guess for Krylov solve across backends.
+    clear_fermion!(η)
     solve_DinvX!(η, DdagD, ϕ)
     Sf = dot(ϕ, η)
 
@@ -111,6 +113,8 @@ function calc_UdSfdU!(
     #update_U!(DdagD, U)
 
     η, it_η = get_block(DdagD._temporary_fermion_forCG)
+    # Ensure deterministic initial guess for Krylov solve across backends.
+    clear_fermion!(η)
     solve_DinvX!(η, DdagD, ϕ)
 
     set_wing_fermion!(η)
@@ -227,4 +231,3 @@ function calc_UdSfdU!(
     #dSFdU!(U, dfdU::Vector{TG}, apply_D, apply_Ddag, φ, numtemp, verbose_level)
 
 end
-

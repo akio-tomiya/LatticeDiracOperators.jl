@@ -3,6 +3,7 @@ using LinearAlgebra
 import Gaugefields.AbstractGaugefields_module: Gaugefields_4D_MPILattice, Fields_4D_MPILattice
 using PreallocatedArrays
 
+
 function dSFdU! end
 export dSFdU!
 
@@ -82,6 +83,12 @@ function substitute_fermion!(A::L1, B::AbstractFermionfields_4D) where {L1<:Gene
     set_halo!(A.field)
 
 end
+
+function substitute_fermion!(A::L1, B::WilsonFields_4D_MPILattice) where {L1<:GeneralFermion}
+    substitute!(A.field, B.f)
+    set_halo!(A.field)
+end
+
 
 
 function gauss_distribution_fermion!(
@@ -191,10 +198,11 @@ struct DdagDgeneral{TmulD,TmulDdag,TG,TF} <: DdagD_operator
     MaxCGstep::Int64
     verbose_print::Verbose_print
     boundarycondition::Vector{Int8}
+    numtemp::Int64
 
 
     function DdagDgeneral(U::Vector{TG}, x::TF, apply_D::TmulD, apply_Ddag::TmulDdag;
-        numcg=4, num=5, numg=4, eps_CG=1e-12, maxsteps=10000, verbose_level=2) where {
+        numcg=4, num=5, numg=4, eps_CG=1e-12, maxsteps=10000, verbose_level=2, numtemp=4) where {
         TmulD,TmulDdag,TG<:Fields_4D_MPILattice,TF<:GeneralFermion}
 
         _temporary_gaugefield = PreallocatedArray(U[1]; num=numg)
@@ -207,17 +215,17 @@ struct DdagDgeneral{TmulD,TmulDdag,TG,TF} <: DdagD_operator
 
         return new{TmulD,TmulDdag,TG,TF}(apply_D, apply_Ddag, U,
             _temporary_gaugefield, _temporary_fermion, _temporary_fermion_forCG,
-            eps_CG, maxsteps, verbose_print, boundarycondition)
+            eps_CG, maxsteps, verbose_print, boundarycondition, numtemp)
     end
 
     function DdagDgeneral(apply_D::TmulD, apply_Ddag::TmulDdag, U::Vector{TG},
         _temporary_gaugefield, _temporary_fermion::PreallocatedArray{TF}, _temporary_fermion_forCG,
-        eps_CG, MaxCGstep, verbose_print, boundarycondition) where {
+        eps_CG, MaxCGstep, verbose_print, boundarycondition, numtemp) where {
         TmulD,TmulDdag,TG<:Fields_4D_MPILattice,TF<:GeneralFermion}
 
         return new{TmulD,TmulDdag,TG,TF}(apply_D, apply_Ddag, U,
             _temporary_gaugefield, _temporary_fermion, _temporary_fermion_forCG,
-            eps_CG, MaxCGstep, verbose_print, boundarycondition)
+            eps_CG, MaxCGstep, verbose_print, boundarycondition, numtemp)
     end
 end
 export DdagDgeneral
@@ -225,7 +233,7 @@ export DdagDgeneral
 function (D::DdagDgeneral)(U::Vector{TG}) where {TG<:Fields_4D_MPILattice}
     return DdagDgeneral(D.apply_D, D.apply_Ddag, U,
         D._temporary_gaugefield, D._temporary_fermion, D._temporary_fermion_forCG,
-        D.eps_CG, D.MaxCGstep, D.verbose_print, D.boundarycondition)
+        D.eps_CG, D.MaxCGstep, D.verbose_print, D.boundarycondition, D.numtemp)
 end
 
 function update_U!(DdagD::DdagDgeneral, U)
@@ -258,8 +266,9 @@ end
 
 function LinearAlgebra.mul!(y::L1, DdagD::DdagDgeneral, x::L1) where {L1<:GeneralFermion}
     phitemp1, it_phitemp1 = get_block(DdagD._temporary_fermion)
-    temp, ittemp = get_block(DdagD._temporary_gaugefield, 4)
-    phitemp, itphitemp = get_block(DdagD._temporary_fermion, 4)
+    numtemp = DdagD.numtemp
+    temp, ittemp = get_block(DdagD._temporary_gaugefield, numtemp)
+    phitemp, itphitemp = get_block(DdagD._temporary_fermion, numtemp)
 
     DdagD.apply_D(phitemp1, DdagD.U[1], DdagD.U[2], DdagD.U[3], DdagD.U[4], x, phitemp, temp)
     set_wing_fermion!(phitemp1)

@@ -1,0 +1,6 @@
+[JACC]
+backends = ["cuda"]
+default_backend = "threads"
+
+    [JACC.placement]
+    cuda = "none"
