@@ -199,8 +199,8 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
     for itrj = 1:numtrj
         #@code_warntype MDstep!(gauge_action,U,p,MDsteps,Dim,Uold,fermi_action,η,ξ)
         #error("cc")
-        #@time accepted = MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action,
-        #    ξcpu, Ucpu, fermi_action_cpu, ηcpu, gauge_action_cpu, pcpu, Ucpuold)
+        @time accepted = MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action,
+            ξcpu, Ucpu, fermi_action_cpu, ηcpu, gauge_action_cpu, pcpu, Ucpuold)
 
         if cpumode
             @time accepted = MDstep!(gauge_action_cpu, Ucpu, pcpu, MDsteps, Dim, Ucpuold, ηcpu, ξcpu, fermi_action_cpu)
