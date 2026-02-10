@@ -330,7 +330,7 @@ version = "1.0.0"
 
 [[deps.Gaugefields]]
 deps = ["CLIME_jll", "Distributions", "EzXML", "InteractiveUtils", "JACC", "JLD2", "LatticeMatrices", "LinearAlgebra", "MPI", "NPZ", "PreallocatedArrays", "Random", "Requires", "StableRNGs", "StaticArrays", "Wilsonloop"]
-path = "/home/yuki/Gaugefields.jl/master/Gaugefields.jl/"
+path = "/home/nagai/git/Gaugefields.jl"
 uuid = "a461e10c-0d91-493e-bc41-027b226eee91"
 version = "0.7.0"
 weakdeps = ["Enzyme"]
@@ -480,9 +480,9 @@ weakdeps = ["Enzyme"]
 
 [[deps.LatticeMatrices]]
 deps = ["Enzyme", "InteractiveUtils", "JACC", "LinearAlgebra", "MPI", "MPIPreferences", "PreallocatedArrays", "StaticArrays", "Test"]
-path = "/home/yuki/LatticeMatrices.jl/"
+path = "/home/nagai/git/LatticeMatrices.jl/"
 uuid = "dd6a91e4-736f-4540-ac85-13822ca7b545"
-version = "0.3.8"
+version = "0.3.9"
 
     [deps.LatticeMatrices.extensions]
     LatticeMatricesEnzymeExt = "Enzyme"

@@ -21,10 +21,8 @@ function make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
         _calc_action_step_addsum!(E, C, D, U[μ], U[ν], shift_μ, shift_ν)
         #S += realtrace(Uout)
     end
-    # _hmc_assert_finite_u("make_mu_loop:E_before_exp(mu=$μ)", E)
     UTA = Traceless_AntiHermitian(E)
     exptU!(Uout, UTA, t)
-    # _hmc_assert_finite_u("make_mu_loop:Uout(mu=$μ)", Uout)
 end
 
 function _calc_action_step_addsum!(Uout, C, D, Uμ, Uν, shift_μ, shift_ν)
@@ -85,17 +83,15 @@ function apply_wilson!(y, U1, U2, U3, U4, x, params, phitemps, temp)
     t = params.t
     dim = 4
 
-    
+    #=
     for μ = 1:dim
         shift_μ = ntuple(i -> ifelse(i == μ, 1, 0), dim)
         make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
         mul!(Ufat[μ], Uout, U[μ])
         set_wing_U!(Ufat[μ])
-        # _hmc_assert_finite_u("apply_wilson:Ufat(mu=$μ)", Ufat[μ])
     end
 
-
-    
+    =#
 
     phi1 = phitemps[3]
     phi2 = phitemps[4]
@@ -104,8 +100,8 @@ function apply_wilson!(y, U1, U2, U3, U4, x, params, phitemps, temp)
         shift_p = ntuple(i -> ifelse(i == μ, 1, 0), dim)
         shift_m = ntuple(i -> ifelse(i == μ, -1, 0), dim)
         #substitute_U!(Ufat[μ], U[μ])
-        #shiftedadd(y, U[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
-        shiftedadd(y, Ufat[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
+        shiftedadd(y, U[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
+        #shiftedadd(y, Ufat[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
     end
 end
 
@@ -138,18 +134,15 @@ function apply_wilson_dag!(y, U1, U2, U3, U4, x, params, phitemps, temp)
 
     Ufat = (Ufat1, Ufat2, Ufat3, Ufat4)
     dim = 4
-    
-    
-    for μ = 1:dim
-        shift_μ = ntuple(i -> ifelse(i == μ, 1, 0), dim)
-        make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
-        mul!(Ufat[μ], Uout, U[μ])
-        set_wing_U!(Ufat[μ])
-        # _hmc_assert_finite_u("apply_wilson_dag:Ufat(mu=$μ)", Ufat[μ])
-    end
-    
+    #=
+        for μ = 1:dim
+            shift_μ = ntuple(i -> ifelse(i == μ, 1, 0), dim)
+            make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
+            mul!(Ufat[μ], Uout, U[μ])
+            set_wing_U!(Ufat[μ])
+        end
 
-    
+    =#
 
     clear_fermion!(y)
     add_fermion!(y, 1, x)
@@ -163,8 +156,8 @@ function apply_wilson_dag!(y, U1, U2, U3, U4, x, params, phitemps, temp)
         shift_p = ntuple(i -> ifelse(i == μ, 1, 0), dim)
         shift_m = ntuple(i -> ifelse(i == μ, -1, 0), dim)
         #substitute_U!(Ufat[μ], U[μ])
-        #shifteddagadd(y, U[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
-        shifteddagadd(y, Ufat[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
+        shifteddagadd(y, U[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
+        #shifteddagadd(y, Ufat[μ], x, γs[μ], shift_p, shift_m, phi1, phi2, κ)
     end
 end
 
@@ -188,6 +181,7 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
 
 
     MDsteps = 20
+    #MDsteps = 80
     if cpumode
         temp1 = similar(Ucpu[1])
         temp2 = similar(Ucpu[1])
@@ -207,7 +201,6 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
         #error("cc")
         #@time accepted = MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action,
         #    ξcpu, Ucpu, fermi_action_cpu, ηcpu, gauge_action_cpu, pcpu, Ucpuold)
-
         flush(stdout)
         if cpumode
             @time accepted = MDstep!(gauge_action_cpu, Ucpu, pcpu, MDsteps, Dim, Ucpuold, ηcpu, ξcpu, fermi_action_cpu)
@@ -215,8 +208,6 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
             @time accepted = MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action)
         end
         numaccepted += ifelse(accepted, 1, 0)
-        #error("d")
-
 
         if cpumode
             plaq_t = calculate_Plaquette(Ucpu, temp1, temp2) * factor
@@ -239,130 +230,6 @@ function calc_action(gauge_action, U, p)
     return real(S)
 end
 
-_hmc_env_on(name::AbstractString) = get(ENV, name, "0") == "1"
-
-# function _hmc_assert_finite_u(label::AbstractString, Uμ)
-#     if !_hmc_env_on("HMC_CHECK_FINITE")
-#         return
-#     end
-#     Ah = Array(Uμ.U.A)
-#     bad = any(x -> !isfinite(real(x)) || !isfinite(imag(x)), Ah)
-#     if bad
-#         error("Non-finite detected at $label")
-#     end
-#     return
-# end
-
-function _hmc_maybe_cuda_sync(U)
-    if !_hmc_env_on("HMC_CUDA_SYNC")
-        return
-    end
-    if !isdefined(Main, :CUDA)
-        return
-    end
-    Atype = typeof(U[1].U.A)
-    if occursin("CuArray", string(Atype))
-        Main.CUDA.synchronize()
-    end
-end
-
-function _hmc_add_site_delta!(A, i::Int, j::Int, idx_halo::NTuple{4, Int}, δ)
-    if isdefined(Main, :CUDA) && (A isa Main.CUDA.CuArray)
-        Ah = Array(A)
-        Ah[i, j, idx_halo...] += δ
-        copyto!(A, Ah)
-    else
-        A[i, j, idx_halo...] += δ
-    end
-    return nothing
-end
-
-function _hmc_report_grad_match(label, ref, cand)
-    trans = Dict(
-        "cand" => cand,
-        "-cand" => -cand,
-        "cand'" => cand',
-        "-cand'" => -cand',
-        "conj(cand)" => conj.(cand),
-        "-conj(cand)" => -conj.(cand),
-        "0.5*cand" => 0.5 * cand,
-        "-0.5*cand" => -0.5 * cand,
-        "0.5*cand'" => 0.5 * cand',
-        "-0.5*cand'" => -0.5 * cand',
-    )
-    best_name = ""
-    best_rel = Inf
-    denom = norm(ref) + 1e-14
-    for (name, v) in trans
-        rel = norm(ref - v) / denom
-        if rel < best_rel
-            best_rel = rel
-            best_name = name
-        end
-    end
-    println("$label best_map=$best_name rel=$best_rel")
-    return nothing
-end
-
-function _hmc_log_hsplit(gauge_action, U, p, fermi_action, η, label::AbstractString)
-    if !_hmc_env_on("HMC_PRINT_H_SPLIT")
-        return
-    end
-    _hmc_maybe_cuda_sync(U)
-    Sf = real(evaluate_FermiAction(fermi_action, U, η))
-    Sg = calc_action(gauge_action, U, p)
-    println("Hsplit[$label]: Sg=$Sg Sf=$Sf H=$(Sg + Sf)")
-end
-
-function _hmc_log_u_drift_after_pf(Ubefore, Uafter, istep::Int)
-    if !_hmc_env_on("HMC_CHECK_U_IN_PF")
-        return
-    end
-    maxdrift = 0.0
-    maxmu = 0
-    for μ = 1:length(Uafter)
-        dμ = norm(Array(Uafter[μ].U.A) .- Array(Ubefore[μ].U.A))
-        if dμ > maxdrift
-            maxdrift = dμ
-            maxmu = μ
-        end
-        if _hmc_env_on("HMC_CHECK_U_IN_PF_VERBOSE")
-            println("Udrift[step$istep,mu$μ] = $dμ")
-        end
-    end
-    println("Udrift[step$istep,max] = $maxdrift (mu=$maxmu)")
-end
-
-function _hmc_log_eta_drift_after_pf(etabefore, etaafter, istep::Int)
-    if !_hmc_env_on("HMC_CHECK_ETA_IN_PF")
-        return
-    end
-    n_before = real(dot(etabefore, etabefore))
-    n_after = real(dot(etaafter, etaafter))
-    ovlp = real(dot(etaafter, etabefore))
-    n_diff2 = max(n_after + n_before - 2 * ovlp, 0.0)
-    n_diff = sqrt(n_diff2)
-    denom = max(sqrt(n_before), eps(Float64))
-    rel = n_diff / denom
-    println("Etadrift[step$istep]: abs=$n_diff rel=$rel")
-end
-
-function _hmc_log_sf_recheck(gauge_action, U, p, fermi_action, η, label::AbstractString)
-    if !_hmc_env_on("HMC_CHECK_SF_REEVAL")
-        return
-    end
-    _hmc_maybe_cuda_sync(U)
-    sf1 = real(evaluate_FermiAction(fermi_action, U, η))
-    _hmc_maybe_cuda_sync(U)
-    sf2 = real(evaluate_FermiAction(fermi_action, U, η))
-    dsf = sf2 - sf1
-    println("SFrecheck[$label]: sf1=$sf1 sf2=$sf2 dsf=$dsf")
-    if _hmc_env_on("HMC_CHECK_SF_REEVAL_WITH_H")
-        sg = calc_action(gauge_action, U, p)
-        println("Hrecheck[$label]: H1=$(sg + sf1) H2=$(sg + sf2) dH=$dsf")
-    end
-end
-
 function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action)
     Δτ = 1 / MDsteps
     NC, _, NN... = size(U[1])
@@ -377,7 +244,6 @@ function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action)
 
     sample_pseudofermions!(η, U, fermi_action, ξ)
     println(dot(η, η))
-    _hmc_maybe_cuda_sync(U)
 
     Sfold = real(dot(ξ, ξ))
     #println_verbose_level2(U[1], "Sfold = $Sfold")
@@ -390,66 +256,21 @@ function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action)
     #println_verbose_level2(U[1], "Sfold = $Sfold Sgnew = $Sgold ")
 
     Sold = Sgold + Sfold
-    if _hmc_env_on("HMC_PRINT_H_SPLIT")
-        println("Hsplit[start]: Sg=$Sgold Sf=$Sfold H=$Sold")
-    end
     #println_verbose_level2(U[1], "Sold = ", Sold)
 
     for itrj = 1:MDsteps
         U_update!(U, p, 0.5, Δτ, Dim, gauge_action)
-        if _hmc_env_on("HMC_DH_STEP_TRACE")
-            _hmc_log_hsplit(gauge_action, U, p, fermi_action, η, "step$(itrj)-after-Uhalf1")
-        end
-        if !_hmc_env_on("HMC_ZERO_GAUGE_FORCE")
-            P_update!(U, p, 1.0, Δτ, Dim, gauge_action)
-        end
-        if _hmc_env_on("HMC_DH_STEP_TRACE")
-            _hmc_log_hsplit(gauge_action, U, p, fermi_action, η, "step$(itrj)-after-Pgauge")
-        end
+        P_update!(U, p, 1.0, Δτ, Dim, gauge_action)
 
-        Ubefore_pf = nothing
-        etabefore_pf = nothing
-        if _hmc_env_on("HMC_CHECK_U_IN_PF")
-            Ubefore_pf = similar(U)
-            substitute_U!(Ubefore_pf, U)
-            _hmc_maybe_cuda_sync(U)
-        end
-        if _hmc_env_on("HMC_CHECK_ETA_IN_PF")
-            etabefore_pf = similar(η)
-            substitute_fermion!(etabefore_pf, η)
-            _hmc_maybe_cuda_sync(U)
-        end
-        if !_hmc_env_on("HMC_ZERO_FERMION_FORCE")
-            P_update_fermion!(U, p, 1.0, Δτ, Dim, gauge_action, fermi_action, η)
-        end
-        if _hmc_env_on("HMC_CHECK_U_IN_PF")
-            _hmc_maybe_cuda_sync(U)
-            _hmc_log_u_drift_after_pf(Ubefore_pf, U, itrj)
-        end
-        if _hmc_env_on("HMC_CHECK_ETA_IN_PF")
-            _hmc_maybe_cuda_sync(U)
-            _hmc_log_eta_drift_after_pf(etabefore_pf, η, itrj)
-        end
-        _hmc_log_sf_recheck(gauge_action, U, p, fermi_action, η, "step$(itrj)-after-Pfermion")
-        if _hmc_env_on("HMC_DH_STEP_TRACE")
-            _hmc_log_hsplit(gauge_action, U, p, fermi_action, η, "step$(itrj)-after-Pfermion")
-        end
+        P_update_fermion!(U, p, 1.0, Δτ, Dim, gauge_action, fermi_action, η)
         U_update!(U, p, 0.5, Δτ, Dim, gauge_action)
-        if _hmc_env_on("HMC_DH_STEP_TRACE")
-            _hmc_log_hsplit(gauge_action, U, p, fermi_action, η, "step$(itrj)-after-Uhalf2")
-        end
     end
-    _hmc_maybe_cuda_sync(U)
     Sfnew = evaluate_FermiAction(fermi_action, U, η)
     Sgnew = calc_action(gauge_action, U, p)
 
     #println_verbose_level2(U[1], "Sfnew = $Sfnew Sgnew = $Sgnew ")
     #println("Sfnew = $Sfnew")
     Snew = Sgnew + Sfnew
-    if _hmc_env_on("HMC_PRINT_H_SPLIT")
-        println("Hsplit[end]: Sg=$Sgnew Sf=$Sfnew H=$Snew")
-        println("Hsplit[delta]: dSg=$(Sgnew - Sgold) dSf=$(Sfnew - Sfold) dH=$(Snew - Sold)")
-    end
     #println_verbose_level2(U[1], "Snew = ", Snew)
 
 
@@ -671,8 +492,6 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, fermi_action, η) 
 
     #clear_U!(UdSfdUμ)
     calc_UdSfdU!(UdSfdUμ, fermi_action, U, η)
-    # Disabled by default: finite-difference force diagnostics are not part of HMC dH checks.
-    # maybe_force_sanity_check!(UdSfdUμ, fermi_action, U, η)
 
 
     for μ = 1:Dim
@@ -685,20 +504,17 @@ end
 function Liederivative(X, μ, indices_halo, U, ϵ, η, fermi_action)
     Ut = similar(U)
     substitute_U!(Ut, U)
-    # Finite-difference diagnostic path: evaluate tiny dense matmul on CPU.
-    Ui = Array(U[μ].U.A[:, :, indices_halo...])
+    Ui = U[μ].U.A[:, :, indices_halo...]
     Upi = exp(ϵ * X) * Ui
-    Uview = view(Ut[μ].U.A, :, :, indices_halo...)
-    copyto!(Uview, CUDA.CuArray(Upi))
+    Ut[μ].U.A[:, :, indices_halo...] .= Upi
     set_wing_U!(Ut[μ])
 
     Sp = evaluate_FermiAction(fermi_action, Ut, η)
 
     substitute_U!(Ut, U)
-    Ui = Array(U[μ].U.A[:, :, indices_halo...])
+    Ui = U[μ].U.A[:, :, indices_halo...]
     Umi = exp(-ϵ * X) * Ui
-    Uview = view(Ut[μ].U.A, :, :, indices_halo...)
-    copyto!(Uview, CUDA.CuArray(Umi))
+    Ut[μ].U.A[:, :, indices_halo...] .= Umi
     set_wing_U!(Ut[μ])
 
     Sm = evaluate_FermiAction(fermi_action, Ut, η)
@@ -713,39 +529,6 @@ function TA(M, NC)
     A = (M - M') / 2
     A = A - (tr(A) / NC) * I
     return A
-end
-
-function maybe_force_sanity_check!(UdSfdUμ, fermi_action, U, η)
-    if get(ENV, "HMC_FORCE_DIAG", "0") != "1"
-        return
-    end
-    nsample = tryparse(Int, get(ENV, "HMC_FORCE_DIAG_NSAMPLE", "4"))
-    nsample === nothing && (nsample = 4)
-    eps = tryparse(Float64, get(ENV, "HMC_FORCE_DIAG_EPS", "1e-5"))
-    eps === nothing && (eps = 1e-5)
-    NC = U[1].NC
-    NX = U[1].NX
-    NY = U[1].NY
-    NZ = U[1].NZ
-    NT = U[1].NT
-    sigma = sqrt(0.5)
-    for _ = 1:nsample
-        μ = rand(1:4)
-        ix = rand(1:NX)
-        iy = rand(1:NY)
-        iz = rand(1:NZ)
-        it = rand(1:NT)
-        idx_halo = (ix + 1, iy + 1, iz + 1, it + 1)
-        X = sigma * randn(NC, NC) + im * sigma * randn(NC, NC)
-        X = TA(X, NC)
-        X ./= sqrt(real(tr(X' * X)))
-        # Diagnostic path: keep this on CPU to avoid mixed CuArray/Matrix matmul.
-        F = TA(Array(UdSfdUμ[μ].U.A[:, :, idx_halo...]), NC)
-        d_ad = -2 * real(tr(F * X))
-        d_num = Liederivative(X, μ, idx_halo, U, eps, η, fermi_action)
-        rel = abs(d_ad - d_num) / (abs(d_num) + 1e-14)
-        println("force_check μ=$μ idx=$((ix, iy, iz, it)) ad=$d_ad num=$d_num rel=$rel")
-    end
 end
 
 function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
@@ -780,10 +563,7 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
 
     calc_UdSfdU!(UdSfdUμ, fermi_action, U, η)
     nr = 1000
-    #fp = open("fnorm.txt", "w")
-    #=
-    fp = open("fnorm_cuda_stout.txt", "w")
-
+    fp = open("fnorm.txt", "w")
 
     #for k = 1:nr
     for ix = 1:NX
@@ -801,10 +581,10 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
                         indices_halo = Tuple(collect(indices) .+ 1)
 
                         #μ = rand(1:4)
-                        UdSfdUμi = Array(UdSfdUμ[μ].U.A[:, :, indices_halo...])
+                        UdSfdUμi = UdSfdUμ[μ].U.A[:, :, indices_halo...]
                         F = TA(UdSfdUμi, NC)
 
-                        UdSfdUμicpu = Array(UdSfdUμcpu[μ].U.A[:, :, indices_halo...])
+                        UdSfdUμicpu = UdSfdUμcpu[μ].U.A[:, :, indices_halo...]
                         Fcpu = TA(UdSfdUμicpu, NC)
                         diff = F - Fcpu
                         #display(F)
@@ -821,58 +601,49 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
     close(fp)
 
 
-    error("AD")
-    =#
-    
+    #=
     indices = (1, 2, 1, 3)
     indices_halo = Tuple(collect(indices) .+ 1)
 
-    dS_reim = zeros(ComplexF64, NC, NC)
-    dS_wirt = zeros(ComplexF64, NC, NC)
+    dS = zeros(ComplexF64, NC, NC)
     #dScpu = zeros(ComplexF64, NC, NC)
+    Stest = evaluate_FermiAction(fermi_action, U, η)
     #Stestcpu = evaluate_FermiAction(fermi_action_cpu, Ucpu, ηcpu)
     Ut = similar(U)
     #Utcpu = similar(Ucpu)
 
     for i = 1:NC
         for j = 1:NC
+            substitute_U!(Ut, U)
+            #substitute_U!(Utcpu, Ucpu)
+            set_wing_U!(Ut)
+            #set_wing_U!(Utcpu)
             eta = 1e-4
-            substitute_U!(Ut, U)
+            Ut[1].U.A[i, j, indices_halo...] += eta
             set_wing_U!(Ut)
-            _hmc_add_site_delta!(Ut[1].U.A, i, j, indices_halo, eta)
-            set_wing_U!(Ut)
-            reStest_p = evaluate_FermiAction(fermi_action, Ut, η)
+            #Utcpu[1].U[i, j, indices...] += eta
+            #set_wing_U!(Utcpu)
+            reStest = evaluate_FermiAction(fermi_action, Ut, η)
+            #reStestcpu = evaluate_FermiAction(fermi_action_cpu, Utcpu, ηcpu)
 
             substitute_U!(Ut, U)
             set_wing_U!(Ut)
-            _hmc_add_site_delta!(Ut[1].U.A, i, j, indices_halo, -eta)
+            #substitute_U!(Utcpu, Ucpu)
+            #set_wing_U!(Utcpu)
+            Ut[1].U.A[i, j, indices_halo...] += im * eta
+            #Utcpu[1].U[i, j, indices...] += im * eta
             set_wing_U!(Ut)
-            reStest_m = evaluate_FermiAction(fermi_action, Ut, η)
-
-            substitute_U!(Ut, U)
-            set_wing_U!(Ut)
-            _hmc_add_site_delta!(Ut[1].U.A, i, j, indices_halo, im * eta)
-            set_wing_U!(Ut)
-            imStest_p = evaluate_FermiAction(fermi_action, Ut, η)
-
-            substitute_U!(Ut, U)
-            set_wing_U!(Ut)
-            _hmc_add_site_delta!(Ut[1].U.A, i, j, indices_halo, -im * eta)
-            set_wing_U!(Ut)
-            imStest_m = evaluate_FermiAction(fermi_action, Ut, η)
-
-            dRe = (reStest_p - reStest_m) / (2 * eta)
-            dIm = (imStest_p - imStest_m) / (2 * eta)
-            dS_reim[i, j] = dRe + im * dIm
-            dS_wirt[i, j] = (dRe - im * dIm) / 2
+            #set_wing_U!(Utcpu)
+            imStest = evaluate_FermiAction(fermi_action, Ut, η)
+            #imStestcpu = evaluate_FermiAction(fermi_action_cpu, Utcpu, ηcpu)
+            #println((Stest, reStest, imStest))
+            dS[i, j] = (reStest - Stest) / eta + im * (imStest - Stest) / eta
             #dScpu[i, j] = (reStestcpu - Stestcpu) / eta + im * (imStestcpu - Stestcpu) / eta
         end
     end
 
-    println("dS (dRe + i dIm, central)")
-    display(dS_reim)
-    println("dS (Wirtinger, central)")
-    display(dS_wirt)
+    println("dS")
+    display(dS .* (-0.5))
     #println("dScpu")
     # display(dScpu)
 
@@ -889,10 +660,7 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
     println("U")
     display(U[1].U.A[:, :, indices_halo...])
     println("UdU")
-    UdU = U[1].U.A[:, :, indices_halo...]' * UdSfdUμ[1].U.A[:, :, indices_halo...]
-    display(UdU)
-    _hmc_report_grad_match("match vs dS_reim", dS_reim, Array(UdU))
-    _hmc_report_grad_match("match vs dS_wirt", dS_wirt, Array(UdU))
+    display(U[1].U.A[:, :, indices_halo...]' * UdSfdUμ[1].U.A[:, :, indices_halo...])
     #println("Ucpu")
     #display(Ucpu[1].U[:, :, indices...])
     println(tr(UdSfdUμ[1]))
@@ -904,7 +672,7 @@ function P_update_fermion!(U, p, ϵ, Δτ, Dim, gauge_action, η,
     #display(u' * udsfdu)
     error("d")
 
-    
+    =#
 
     #=
     σ = sqrt(1 / 2)
@@ -991,10 +759,10 @@ end
 
 function test1()
     MPI.Init()
-    NX = 8
-    NY = 8
-    NZ = 8
-    NT = 8
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
     Nwing = 1
     Dim = 4
     NC = 3
