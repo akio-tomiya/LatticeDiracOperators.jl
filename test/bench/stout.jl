@@ -11,6 +11,18 @@ import Gaugefields: Initialize_4DGaugefields
 using Test
 import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
 
+function stoutsmearing_U!(Ufat,U,t,Uout,C, D, E,dim)
+    for μ = 1:dim
+        shift_μ = ntuple(i -> ifelse(i == μ, 1, 0), dim)
+        make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
+        mul!(Ufat[μ], Uout, U[μ])
+        set_wing_U!(Ufat[μ])
+        # _hmc_assert_finite_u("apply_wilson:Ufat(mu=$μ)", Ufat[μ])
+    end
+end
+
+
+
 function make_μloop(Uout, C, D, E, μ, U, shift_μ, dim, t)
     clear_U!(E)
     for ν = μ:dim
@@ -188,6 +200,7 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
 
 
     MDsteps = 20*2
+    MDsteps = 20*2*2
     if cpumode
         temp1 = similar(Ucpu[1])
         temp2 = similar(Ucpu[1])
@@ -199,6 +212,7 @@ function MDtest!(gauge_action, U, Dim, η, ξ, fermi_action, ξcpu, Ucpu,
     factor = 1 / (comb * U[1].NV * U[1].NC)
     numaccepted = 0
     Random.seed!(123)
+    println("MDsteps ",MDsteps)
 
 
     numtrj = 1000
@@ -374,12 +388,16 @@ function MDstep!(gauge_action, U, p, MDsteps, Dim, Uold, η, ξ, fermi_action)
 
     substitute_U!(Uold, U)
     gauss_sampling_in_action!(ξ, U, fermi_action)
-
     sample_pseudofermions!(η, U, fermi_action, ξ)
+
+    Sfold = evaluate_FermiAction(fermi_action, U, η)
+    
     println(dot(η, η))
     _hmc_maybe_cuda_sync(U)
 
+    println("Sfold1 ", Sfold)
     Sfold = real(dot(ξ, ξ))
+    println("Sfold2 ", Sfold)
     #println_verbose_level2(U[1], "Sfold = $Sfold")
 
     #println("Sfold = $Sfold")
@@ -991,6 +1009,10 @@ end
 
 function test1()
     MPI.Init()
+    NX = 4
+    NY = 4
+    NZ = 4
+    NT = 4
     NX = 8
     NY = 8
     NZ = 8
@@ -1016,7 +1038,7 @@ function test1()
     gauge_action = GaugeAction(U)
     plaqloop = make_loops_fromname("plaquette")
     append!(plaqloop, plaqloop')
-    β = 5.5 / 2
+    β = 5.7 / 2
     push!(gauge_action, β, plaqloop)
 
     show(gauge_action)
@@ -1024,7 +1046,7 @@ function test1()
     gauge_action_cpu = GaugeAction(Ucpu)
     plaqloop = make_loops_fromname("plaquette")
     append!(plaqloop, plaqloop')
-    β = 5.5 / 2
+    β = 5.7 / 2
     push!(gauge_action_cpu, β, plaqloop)
 
 
@@ -1044,7 +1066,8 @@ function test1()
     apply_D(y, U1, U2, U3, U4, x, phitemp, temp) = apply_wilson!(y, U1, U2, U3, U4, x, parameters, phitemp, temp)
     apply_Ddag(y, U1, U2, U3, U4, x, phitemp, temp) = apply_wilson_dag!(y, U1, U2, U3, U4, x, parameters, phitemp, temp)
 
-    fermi_action = GeneralFermionAction(U, x, apply_D, apply_Ddag; numtemp=8, eps_CG=1e-15)
+    eps_CG = 1e-8
+    fermi_action = GeneralFermionAction(U, x, apply_D, apply_Ddag; numtemp=8, eps_CG)
 
     #DdagD = DdagDgeneral(U, x, apply_D, apply_Ddag)
 
@@ -1053,14 +1076,14 @@ function test1()
     params = Dict()
     params["Dirac_operator"] = "Wilson"
     params["κ"] = κ
-    params["eps_CG"] = 1.0e-18
+    params["eps_CG"] = eps_CG
     params["improved gpu"] = false
     #params["improved gpu"] = true
     #params["eps_CG"] = 1.0e-1
     #params["verbose_level"] = 3
     #params["method_CG"] = "preconditiond_bicgstab"
     #params["method_CG"] = "bicgstab"
-    params["method_CG"] = "bicg"
+    #params["method_CG"] = "bicg"
     #params["faster version"] = true
 
     Dcpu = Dirac_operator(Ucpu, xcpu, params)

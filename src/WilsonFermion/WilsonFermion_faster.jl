@@ -547,8 +547,6 @@ function apply_Dirac_1storder_ν!(y, x, U, ν, boundarycondition, _temporary_fer
     set_wing_U!(U[ν])
 
     #println("8")
-    Uminus = shift_U(U[ν], -ν)
-    #@time shift_U(U[ν], -ν)
 
     #mul!(Udagx, Uminus', xminus)
     #=
@@ -633,7 +631,6 @@ function apply_Dirac_1storder_1!(y, x, U, boundarycondition, _temporary_fermi)
 
     xminus = shift_fermion(Udagx, -ν)
     #println("7")
-    shift_fermion(Udagx, -ν)
     #xminus = shift_fermion(x,-ν)
     #Uminus = shift_U(U[ν],-ν)
     #mul!(temp1,Uminus',xminus)
@@ -1237,4 +1234,3 @@ function D4dagx!(
     set_wing_fermion!(xout)
     unused!(temps, it_temp1)
 end
-

@@ -1,0 +1,8 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+Gaugefields = "a461e10c-0d91-493e-bc41-027b226eee91"
+JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea"
+LatticeDiracOperators = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
+LatticeMatrices = "dd6a91e4-736f-4540-ac85-13822ca7b545"
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
