@@ -728,6 +728,78 @@ end
 test1()
 ```
 
+# HMC with `GeneralFermion` and Enzyme-based AD (experimental)
+
+`GeneralFermion` is a flexible fermion field type defined in `LatticeDiracOperators.jl`.
+It is useful for writing HMC codes where you define the Dirac operator application explicitly.
+
+**NOTE:** MPI support for `GeneralFermion` is currently **not guaranteed**.  
+Please use `PEs = (1,1,1,1)` (single-process layout).
+
+In this example, **both gauge and fermion forces are computed via automatic differentiation (AD) using `Enzyme.jl`:**
+
+- **Gauge force:** AD of the gauge action `calc_action(...)` w.r.t. link variables.
+- **Fermion force:** AD-based force computed by `calc_UdSfdU!` (internally using Enzyme).
+
+## 1. Define `GeneralFermion`
+
+```julia
+using Gaugefields
+using LatticeDiracOperators
+import JACC
+using Enzyme
+JACC.@init_backend
+
+NX, NY, NZ, NT = 4, 4, 4, 4
+NC = 3
+NG = 4
+gsize = (NX, NY, NZ, NT)
+
+# MPI decomposition is not guaranteed for GeneralFermion
+PEs = (1,1,1,1)
+
+x  = GeneralFermion(NC, NG, gsize, PEs; nw=1, elementtype=ComplexF64)
+η  = similar(x)
+ξ  = similar(x)
+```
+
+## 2. Define a fermion action from custom Dirac operators (Wilson example)
+```julia
+κ = 0.141139
+params = (κ=κ,)
+
+apply_D!(y, U1, U2, U3, U4, x, phitemp, temp) =
+    apply_wilson!(y, U1, U2, U3, U4, x, params, phitemp, temp)
+
+apply_Ddag!(y, U1, U2, U3, U4, x, phitemp, temp) =
+    apply_wilson_dag!(y, U1, U2, U3, U4, x, params, phitemp, temp)
+
+fermi_action = GeneralFermionAction(U, x, apply_D!, apply_Ddag!; numtemp=8, eps_CG=1e-16)
+```
+
+## 3. AD gauge force (Enzyme)
+```julia
+set_wing_U!(U)
+Enzyme_derivative!(
+    calc_action,
+    U1, U2, U3, U4,
+    dSdU[1], dSdU[2], dSdU[3], dSdU[4],
+    nodiff(β), nodiff(NC);
+    temp,
+    dtemp
+)
+```
+
+## 4. AD fermion force (Enzyme)
+The fermion force is obtained by
+```julia
+calc_UdSfdU!(UdSfdUμ, fermi_action, U, η)
+```
+where calc_UdSfdU! computes U dSf/dU using **Enzyme-based AD**.
+Full working example:
+examples/HMC_AD.jl
+
+
 # SLHMC
 
 ```julia
