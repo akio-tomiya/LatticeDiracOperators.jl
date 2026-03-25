@@ -4,12 +4,12 @@
 
 import LatticeMatrices:apply_F_5D!,apply_δF_5D!,D4x_5D!,apply_P_5D!,apply_R_5D!,apply_P_edge_5D!
 
-abstract type MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: Abstract_MobiusDomainwallFermion_5D{NC,nothing} end
+abstract type GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: Abstract_GeneralizedDomainwallFermion_5D{NC,nothing} end
 
 """
-Struct for MobiusDomainwallFermion
+Struct for GeneralizedDomainwallFermion
 """
-struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
+struct GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
     f::Tf#LatticeMatrix{5,T,AT,NC,4}
     NC::Int64
     NX::Int64
@@ -21,7 +21,7 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
     singleprecision::Bool
     L5::Int64
 
-    function MobiusDomainwallFermion_5D_MPILattice(
+    function GeneralizedDomainwallFermion_5D_MPILattice(
         NC::Tn,
         NX::Tn,
         NY::Tn,
@@ -36,7 +36,7 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
 
 
 
-        Dirac_operator = "MobiusDomainwall"
+        Dirac_operator = "GeneralizedDomainwall"
         NG = 4
 
         if MPI.Initialized() == false
@@ -103,12 +103,12 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
             L5)
     end
 
-    function MobiusDomainwallFermion_5D_MPILattice(
+    function GeneralizedDomainwallFermion_5D_MPILattice(
         u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}, L5
         ; boundarycondition=[1, 1, 1, -1, 1], kwargs...) where {NC,NX,NY,NZ,NT,T,AT,NDW}
 
 
-        x = MobiusDomainwallFermion_5D_MPILattice(
+        x = GeneralizedDomainwallFermion_5D_MPILattice(
             NC,
             NX,
             NY,
@@ -124,9 +124,9 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
         return x
     end
 
-    function MobiusDomainwallFermion_5D_MPILattice(
+    function GeneralizedDomainwallFermion_5D_MPILattice(
         u::AbstractGaugefields, L5
-        ; boundarycondition=[1, 1, 1, -1, 1], kwargs...)
+        ; boundarycondition=[1, 1, 1, -1, 1], kwargs...) 
 
         NC = u.NC
         NX = u.NX
@@ -134,7 +134,7 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
         NZ = u.NZ
         NT = u.NT
 
-        x = MobiusDomainwallFermion_5D_MPILattice(
+        x = GeneralizedDomainwallFermion_5D_MPILattice(
             NC,
             NX,
             NY,
@@ -147,33 +147,42 @@ struct MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: M
 
 end
 
-export MobiusDomainwallFermion_5D_MPILattice
+export GeneralizedDomainwallFermion_5D_MPILattice
 
 #Overwrite Y with X*a + Y*b, where a and b are scalars. Return Y.
 function LinearAlgebra.axpby!(
-    a::Number,
+    a::AbstractVector{<:Number},
     X::TX,
-    b::Number,
+    b::AbstractVector{<:Number},
     Y::TY,
-) where {TX<:MobiusDomainwallField_5D_MPILattice,TY<:MobiusDomainwallField_5D_MPILattice}
+) where {TX<:GeneralizedDomainwallField_5D_MPILattice,TY<:GeneralizedDomainwallField_5D_MPILattice}
 
     axpby!(a, X.f, b, Y.f)
     set_halo!(Y.f)
 end
 
-function substitute_fermion!(A::TA, B::TB) where {TA<:MobiusDomainwallFermion_5D_MPILattice,
-    TB<:MobiusDomainwallFermion_5D_MPILattice}
+function LinearAlgebra.axpby!(
+    a::Number,
+    X::TX,
+    b::Number,
+    Y::TY,
+) where {TX<:GeneralizedDomainwallField_5D_MPILattice,TY<:GeneralizedDomainwallField_5D_MPILattice}
+
+    axpby!(a, X.f, b, Y.f)
+    set_halo!(Y.f)
+end
+
+function substitute_fermion!(A::TA, B::TB) where {TA<:GeneralizedDomainwallFermion_5D_MPILattice,
+    TB<:GeneralizedDomainwallFermion_5D_MPILattice}
     substitute!(A.f, B.f)
     set_halo!(A.f)
 end
 
-
-
 function gauss_distribution_fermion!(
     x::Tx
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx <: GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
 
-    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT, L5)
+    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT,L5)
     work = map(i -> gauss_distribution(), work)
     PEs = get_PEs(x.f)
     a = LatticeMatrix(work, 5, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
@@ -186,9 +195,9 @@ function gauss_distribution_fermion!(
     x::Tx,
     randomfunc,
     σ,
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx <: GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
 
-    work = zeros(ComplexF64, NC, 4, NX, NY, NZ, NT, L5)
+    work = zeros(ComplexF64, NC, 4, NX, NY, NZ, NT,L5)
     work = map(i -> gauss_distribution(σ), work)
     PEs = get_PEs(x.f)
     a = LatticeMatrix(work, 5, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
@@ -199,7 +208,7 @@ end
 
 
 
-function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion<:WilsonFermion_4D_MPILattice,TA<:MobiusDomainwallFermion_5D_MPILattice,TB<:MobiusDomainwallFermion_5D{NC,WilsonFermion}}
+function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion<:WilsonFermion_4D_MPILattice,TA<:GeneralizedDomainwallFermion_5D_MPILattice,TB<:GeneralizedDomainwallFermion_5D{NC,WilsonFermion}}
     #dim = 5
     #PEs = A.f.dims
     #phases = A.f.phases
@@ -217,7 +226,7 @@ function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion<:WilsonFermio
     set_halo!(A.f)
 end
 
-function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion,TA<:MobiusDomainwallFermion_5D_MPILattice,TB<:MobiusDomainwallFermion_5D{NC,WilsonFermion}}
+function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion,TA<:GeneralizedDomainwallFermion_5D_MPILattice,TB<:GeneralizedDomainwallFermion_5D{NC,WilsonFermion}}
     dim = 5
     PEs = A.f.dims
     phases = A.f.phases
@@ -244,9 +253,9 @@ end
 
 
 
-function Base.similar(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+function Base.similar(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
 
-    return MobiusDomainwallFermion_5D_MPILattice(
+    return GeneralizedDomainwallFermion_5D_MPILattice(
         NC,
         NX,
         NY,
@@ -260,19 +269,19 @@ function Base.similar(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDoma
         comm=x.f.comm)
 end
 
-struct Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
+struct Shifted_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
     f::Shifted_Lattice{Tf,5}
 end
 
-function Shifted_MobiusDomainwallFermion_5D_MPILattice(x::Tx, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+function Shifted_GeneralizedDomainwallFermion_5D_MPILattice(x::Tx, shift) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
     sx = Shifted_Lattice(x.f, shift)
-    s = Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(sx)
+    s = Shifted_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(sx)
     return s
 end
 
 
 #lattice shift
-function shift_fermion(F::TF, ν::T1; boundarycondition=nothing) where {TF<:MobiusDomainwallFermion_5D_MPILattice,T1<:Integer}
+function shift_fermion(F::TF, ν::T1; boundarycondition=nothing) where {TF<:GeneralizedDomainwallFermion_5D_MPILattice,T1<:Integer}
 
     if boundarycondition != nothing
         @assert F.f.phases ≈ boundarycondition "boundary condition is wrong now the boudnary condition of the fermions is $(F.f.phases) but you want to use $boundarycondition"
@@ -280,25 +289,25 @@ function shift_fermion(F::TF, ν::T1; boundarycondition=nothing) where {TF<:Mobi
     #println(F.f.phases)
 
     if ν == 1
-        shift = (1, 0, 0, 0, 0)
+        shift = (1, 0, 0, 0,0)
     elseif ν == 2
-        shift = (0, 1, 0, 0, 0)
+        shift = (0, 1, 0, 0,0)
     elseif ν == 3
-        shift = (0, 0, 1, 0, 0)
+        shift = (0, 0, 1, 0,0)
     elseif ν == 4
-        shift = (0, 0, 0, 1, 0)
-    elseif ν == 4
-        shift = (0, 0, 0, 0, 1)
+        shift = (0, 0, 0, 1,0)
+    elseif ν == 5
+        shift = (0, 0, 0, 0,1)
     elseif ν == -1
-        shift = (-1, 0, 0, 0, 0)
+        shift = (-1, 0, 0, 0,0)
     elseif ν == -2
-        shift = (0, -1, 0, 0, 0)
+        shift = (0, -1, 0, 0,0)
     elseif ν == -3
-        shift = (0, 0, -1, 0, 0)
+        shift = (0, 0, -1, 0,0)
     elseif ν == -4
-        shift = (0, 0, 0, -1, 0)
+        shift = (0, 0, 0, -1,0)
     elseif ν == -5
-        shift = (0, 0, 0, 0, -1)
+        shift = (0, 0, 0, 0,-1)
     end
 
     s = shift_fermion(F, shift)
@@ -310,39 +319,39 @@ end
 function shift_fermion(
     F::TF,
     shift::NTuple{5,T1},
-) where {T1<:Integer,TF<:MobiusDomainwallFermion_5D_MPILattice}
+) where {T1<:Integer,TF<:GeneralizedDomainwallFermion_5D_MPILattice}
 
-    s = Shifted_MobiusDomainwallFermion_5D_MPILattice(F, shift)
+    s = Shifted_GeneralizedDomainwallFermion_5D_MPILattice(F, shift)
 
     return s
 end
 
-struct Adjoint_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
+struct Adjoint_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
     f::Adjoint_Lattice{Tf}
 end
 
-struct Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
+struct Adjoint_Shifted_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5} <: GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
     f::Adjoint_Lattice{Shifted_Lattice{Tf,5}}
 end
 
-function Base.adjoint(x::MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
-    Adjoint_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
+function Base.adjoint(x::GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}
+    Adjoint_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
 end
 
-function Base.adjoint(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
-    Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
+function Base.adjoint(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:Shifted_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+    Adjoint_Shifted_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
 end
 
-function Base.adjoint(x::Adjoint_MobiusDomainwallFermion_5D_MPILattice)
-    Adjoint_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
+function Base.adjoint(x::Adjoint_GeneralizedDomainwallFermion_5D_MPILattice) 
+    Adjoint_GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
 end
 
-include("linearalgebra_5D.jl")
+# include("../MobiusDomainwallFermion/linearalgebra_5D.jl")
 
 function LinearAlgebra.dot(
     A::TA,
     B::TB,
-) where {TA<:MobiusDomainwallFermion_5D_MPILattice,TB<:MobiusDomainwallFermion_5D_MPILattice}
+) where {TA<:GeneralizedDomainwallFermion_5D_MPILattice,TB<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     s = dot(A.f, B.f)
     return s
@@ -350,10 +359,10 @@ end
 
 
 
-struct D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD} <:
+struct D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD} <:
        Dirac_operator{Dim} where {TU<:AbstractGaugefields}
     U::Array{TU,1}
-    D::TD #D5DW_MobiusDomainwallOperator5D{T,L5}
+    D::TD #D5DW_GeneralizedDomainwallOperator5D{T,L5}
     mass::Float64
     _temporary_fermi::Temporalfields{fermion}#Array{fermion,1}
     L5::Int64
@@ -365,19 +374,19 @@ struct D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD} <:
     _temporary_fermion_forCG::Temporalfields{fermion}# Vector{fermion}
     #_temporary_fermion_forCG::Vector{fermion}
     boundarycondition::Vector{ComplexF64}
-    b::Float64 #coefficient for MobiusDomainwall
-    c::Float64 #coefficient for MobiusDomainwall
+    bs::Vector{Float64} #coefficient for GeneralizedDomainwall
+    cs::Vector{Float64} #coefficient for GeneralizedDomainwall
     M::Float64
 end
 
-function D5DW_MobiusDomainwall_operator_MPILattice(
+function D5DW_GeneralizedDomainwall_operator_MPILattice(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x::Tx,
     parameters,
     mass,
-    b,
-    c,
-) where {NC,Dim,Tx<:MobiusDomainwallFermion_5D_MPILattice}
+    bs,
+    cs,
+) where {NC,Dim,Tx<:GeneralizedDomainwallFermion_5D_MPILattice}
     @assert haskey(parameters, "L5") "parameters should have the keyword L5"
     L5 = parameters["L5"]
     if L5 != x.L5
@@ -390,7 +399,7 @@ function D5DW_MobiusDomainwall_operator_MPILattice(
 
     TU = eltype(U)
     UL = [U[1].U, U[2].U, U[3].U, U[4].U]
-    D = D5DW_MobiusDomainwallOperator5D(UL, L5, mass, M, b, c)
+    D = D5DW_GeneralizedDomainwallOperator5D(UL, L5, mass, M, bs, cs)
     TD = typeof(D)
 
     num = 4
@@ -415,7 +424,7 @@ function D5DW_MobiusDomainwall_operator_MPILattice(
     #println(x.f.phases)
 
 
-    return D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,Tx,TD}(
+    return D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,Tx,TD}(
         U,
         D,
         mass,
@@ -428,13 +437,13 @@ function D5DW_MobiusDomainwall_operator_MPILattice(
         verbose_print,
         _temporary_fermion_forCG,
         boundarycondition,
-        b,
-        c,
+        bs,
+        cs,
         M
     )
     #=
     U::Array{TU,1}
-    D::TD #D5DW_MobiusDomainwallOperator5D{T,L5}
+    D::TD #D5DW_GeneralizedDomainwallOperator5D{T,L5}
     mass::Float64
     _temporary_fermi::Temporalfields{fermion}#Array{fermion,1}
     L5::Int64
@@ -446,19 +455,19 @@ function D5DW_MobiusDomainwall_operator_MPILattice(
     _temporary_fermion_forCG::Temporalfields{fermion}# Vector{fermion}
     #_temporary_fermion_forCG::Vector{fermion}
     boundarycondition::Vector{Int8}
-    b::Float64 #coefficient for MobiusDomainwall
-    c::Float64 #coefficient for MobiusDomainwall
+    b::Float64 #coefficient for GeneralizedDomainwall
+    c::Float64 #coefficient for GeneralizedDomainwall
     =#
 
 end
-export D5DW_MobiusDomainwall_operator_MPILattice
+export D5DW_GeneralizedDomainwall_operator_MPILattice
 
-function (D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
+function (D::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
     U,
 ) where {Dim,TU,fermion,TD}
-    WD = D5DW_MobiusDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, D.b, D.c)
+    WD =D5DW_GeneralizedDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, D.bs, D.cs)
     #WD = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], D.κ)
-    return D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
+    return D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
         U,
         WD,
         D.mass,
@@ -471,18 +480,18 @@ function (D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
         D.verbose_print,
         D._temporary_fermion_forCG,
         D.boundarycondition,
-        D.b,
-        D.c,
+        D.bs,
+        D.cs,
         D.M
     )
 end
 
-function (D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
-    b::Float64, c::Float64,
+function (D::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
+    bs::Vector{Float64}, cs::Vector{Float64},
 ) where {Dim,TU,fermion,TD}
-    WD =D5DW_MobiusDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, b, c)
+    WD =D5DW_GeneralizedDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, bs, cs)
     #WD = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], D.κ)
-    return D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
+    return D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
         D.U,
         WD,
         D.mass,
@@ -495,18 +504,25 @@ function (D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD})(
         D.verbose_print,
         D._temporary_fermion_forCG,
         D.boundarycondition,
-        b,
-        c,
+        bs,
+        cs,
         D.M
     )
 end
 
-function Renew(D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD},
-    b::Float64, c::Float64,
+"""
+    Renew(D::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD},
+    bs::Vector{Float64}, cs::Vector{Float64},
 ) where {Dim,TU,fermion,TD}
-    WD =D5DW_MobiusDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, b, c)
+
+TBW
+"""
+function Renew(D::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD},
+    bs::Vector{Float64}, cs::Vector{Float64},
+) where {Dim,TU,fermion,TD}
+    WD =D5DW_GeneralizedDomainwallOperator5D([U[1].U, U[2].U, U[3].U, U[4].U], D.L5, D.mass, D.M, bs, cs)
     #WD = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], D.κ)
-    return D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
+    return D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD}(
         D.U,
         WD,
         D.mass,
@@ -519,32 +535,32 @@ function Renew(D::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD},
         D.verbose_print,
         D._temporary_fermion_forCG,
         D.boundarycondition,
-        b,
-        c,
+        bs,
+        cs,
         D.M
     )
 end
 
-struct Adjoint_D5DW_MobiusDomainwall_operator_MPILattice{T} <: Adjoint_Dirac_operator
+struct Adjoint_D5DW_GeneralizedDomainwall_operator_MPILattice{T} <: Adjoint_Dirac_operator
     parent::T
 end
 
-function Base.adjoint(A::T) where {T<:D5DW_MobiusDomainwall_operator_MPILattice}
-    Adjoint_D5DW_MobiusDomainwall_operator_MPILattice{typeof(A)}(A)
+function Base.adjoint(A::T) where {T<:D5DW_GeneralizedDomainwall_operator_MPILattice}
+    Adjoint_D5DW_GeneralizedDomainwall_operator_MPILattice{typeof(A)}(A)
 end
 
-struct DdagD_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD} <: DdagD_operator
-    dirac::D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,fermion,TD}
+struct DdagD_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD} <: DdagD_operator
+    dirac::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,fermion,TD}
 end
 
-export DdagD_MobiusDomainwall_operator_MPILattice
+export DdagD_GeneralizedDomainwall_operator_MPILattice
 
 function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tc<:MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},
-    Tb<:MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},Ta<:D5DW_MobiusDomainwall_operator_MPILattice}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tc<:GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},
+    Tb<:GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},Ta<:D5DW_GeneralizedDomainwall_operator_MPILattice}
     #println(typeof(c.f))
     #println(typeof(b.f))
     mul!(c.f, a.D, b.f)
@@ -559,8 +575,8 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tc<:MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},
-    Tb<:MobiusDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},Ta<:Adjoint_D5DW_MobiusDomainwall_operator_MPILattice}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tc<:GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},
+    Tb<:GeneralizedDomainwallField_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},Ta<:Adjoint_D5DW_GeneralizedDomainwall_operator_MPILattice}
     #println(typeof(c.f))
     #println(typeof(b.f))
     mul!(c.f, a.parent.D', b.f)
@@ -570,9 +586,9 @@ function LinearAlgebra.mul!(
 end
 
 function LinearAlgebra.mul!(
-    c::MobiusDomainwallField_5D_MPILattice,
+    c::GeneralizedDomainwallField_5D_MPILattice,
     a::T,
-    b::MobiusDomainwallField_5D_MPILattice,
+    b::GeneralizedDomainwallField_5D_MPILattice,
 ) where {T<:Number}
     #println(typeof(c.f))
     #println(typeof(a.U))
@@ -582,11 +598,11 @@ function LinearAlgebra.mul!(
     #@code_warntype mul!(c.f, a.U, b.f)
 end
 
-function set_wing_fermion!(F::MobiusDomainwallFermion_5D_MPILattice)
+function set_wing_fermion!(F::GeneralizedDomainwallFermion_5D_MPILattice)
     set_halo!(F.f)
 end
 
-function set_wing_fermion!(F::T, boundarycondition) where {T<:MobiusDomainwallFermion_5D_MPILattice}
+function set_wing_fermion!(F::T, boundarycondition) where {T<:GeneralizedDomainwallFermion_5D_MPILattice}
     #@info boundarycondition
     #@info F.f.phases
     @assert boundarycondition ≈ F.f.phases "boundarycondition = $boundarycondition $(F.f.phases)"
@@ -594,7 +610,7 @@ function set_wing_fermion!(F::T, boundarycondition) where {T<:MobiusDomainwallFe
 end
 
 
-function clear_fermion!(a::MobiusDomainwallFermion_5D_MPILattice; sethalo=false)
+function clear_fermion!(a::GeneralizedDomainwallFermion_5D_MPILattice; sethalo=false) 
     clear_matrix!(a.f)
     if sethalo
         set_halo!(a.f)
@@ -607,8 +623,8 @@ function add_fermion!(
     α::Number,
     a::Ta,
 ) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Ta<:MobiusDomainwallField_5D_MPILattice}#c += alpha*a 
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Ta<:GeneralizedDomainwallField_5D_MPILattice}#c += alpha*a 
 
     add_matrix!(c.f, a.f, α)
 end
@@ -619,9 +635,9 @@ function add_fermion!(
     a::Ta,
     β::Number,
     b::Tb) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Ta<:MobiusDomainwallField_5D_MPILattice,
-    Tb<:MobiusDomainwallField_5D_MPILattice}
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Ta<:GeneralizedDomainwallField_5D_MPILattice,
+    Tb<:GeneralizedDomainwallField_5D_MPILattice}
 
     add_matrix!(c.f, a.f, b.f, α, β)
 end
@@ -631,13 +647,12 @@ function apply_F!(
     L5,
     m,
     x::Tx,
-    temp1,
-) where {Tx<:MobiusDomainwallFermion_5D_MPILattice,
-    Txout<:MobiusDomainwallFermion_5D_MPILattice}
+) where {Tx<:GeneralizedDomainwallFermion_5D_MPILattice,
+        Txout <: GeneralizedDomainwallFermion_5D_MPILattice}
     clear_fermion!(xout)
-    @assert L5 == xout.L5 "L5 should be same"
+    # @assert L5 == xout.L5 "L5 should be same"
 
-    apply_F_5D!(xout.f, m, L5, x.f)
+    apply_F_5D!(xout.f,m,L5,x.f)
     set_halo!(xout.f)
 
 end
@@ -648,13 +663,12 @@ function apply_δF!(
     L5,
     m,
     x::Tx,
-    temp1,
-) where {Tx<:MobiusDomainwallFermion_5D_MPILattice,
-    Txout<:MobiusDomainwallFermion_5D_MPILattice}
+) where {Tx<:GeneralizedDomainwallFermion_5D_MPILattice,
+        Txout <: GeneralizedDomainwallFermion_5D_MPILattice}
     clear_fermion!(xout)
-    @assert L5 == xout.L5 "L5 should be same"
+    # @assert L5 == xout.L5 "L5 should be same"
 
-    apply_δF_5D!(xout.f, m, L5, x.f)
+    apply_δF_5D!(xout.f,m,L5,x.f)
     set_halo!(xout.f)
 
 end
@@ -666,27 +680,27 @@ function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Tb<:MobiusDomainwallField_5D_MPILattice,Ta<:Fields_4D_MPILattice}
-
-    mul!(c.f, a.U, b.f)
+) where {Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tb<:GeneralizedDomainwallField_5D_MPILattice,Ta<:Fields_4D_MPILattice}
+ 
+    mul!(c.f,a.U,b.f)
 
     #set_wing_fermion!(c)
 end
 
-function mul_1plusγμx!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:MobiusDomainwallFermion_5D_MPILattice,
-    Tf0<:MobiusDomainwallFermion_5D_MPILattice}
+function mul_1plusγμx!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tf0<:GeneralizedDomainwallFermion_5D_MPILattice}
     substitute!(temp1_f.f, temp0_f.f)
     mul!(temp1_f.f, Oneγμ{:plus,μ}())
 end
 
-function mul_1minusγμx!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:MobiusDomainwallFermion_5D_MPILattice,
-    Tf0<:MobiusDomainwallFermion_5D_MPILattice}
+function mul_1minusγμx!(temp1_f::Tf1, temp0_f::Tf0, μ) where {Tf1<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tf0<:GeneralizedDomainwallFermion_5D_MPILattice}
     substitute!(temp1_f.f, temp0_f.f)
     mul!(temp1_f.f, Oneγμ{:minus,μ}())
 end
 
-function mul_x1plusγμ!(y::MobiusDomainwallFermion_5D_MPILattice, x::MobiusDomainwallFermion_5D_MPILattice, μ)
+function mul_x1plusγμ!(y::GeneralizedDomainwallFermion_5D_MPILattice, x::GeneralizedDomainwallFermion_5D_MPILattice, μ)
     #mul_1plusγμx!(y, x, μ)
     if μ == 1
         mul_1minusγμx!(y, x, 1)
@@ -699,21 +713,40 @@ function mul_x1plusγμ!(y::MobiusDomainwallFermion_5D_MPILattice, x::MobiusDoma
     end
 end
 
+function dot_4dim!(A::Tf, B::Tf) where {Tf<:GeneralizedDomainwallFermion_5D_MPILattice}
+    L5 = A.L5
+    s = dot_4dim!(A.f, B.f, L5)
+    return s
+end
 
-function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf, temp1_f) where {
-    Tf<:Adjoint_MobiusDomainwallFermion_5D_MPILattice}
+
+function muladd_U!(UdSfdU, Cs::AbstractVector{<:Number}, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {
+     Tf<:Adjoint_GeneralizedDomainwallFermion_5D_MPILattice}
 
     #s1 = dot(f.f',f.f')
     #s2 = dot(temp0_f,temp0_f)
 
-    mul_sum!(temp0_g.U, temp0_f.f, f.f, temp1_f.f)
+    mul_sum!(temp0_g.U, Cs, temp0_f.f, f.f,temp1_f.f)
     #println(tr(temp0_g.U)," $s1 $s2")
     #display(temp0_g.U.A[:,:,2,2,2,2])
     add_U!(UdSfdU, coeff, temp0_g)
 end
 
+function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {
+     Tf<:Adjoint_GeneralizedDomainwallFermion_5D_MPILattice}
+
+    #s1 = dot(f.f',f.f')
+    #s2 = dot(temp0_f,temp0_f)
+
+    mul_sum!(temp0_g.U, temp0_f.f, f.f,temp1_f.f)
+    #println(tr(temp0_g.U)," $s1 $s2")
+    #display(temp0_g.U.A[:,:,2,2,2,2])
+    add_U!(UdSfdU, coeff, temp0_g)
+end
+
+using StaticArrays
 #C = A*B'
-function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
+function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC}, Cs::AbstractVector{<:Number},
     A::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA}, B::Adjoint_Lattice{L},
     temp::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA}) where {T1,T2,T3,AT1,AT2,AT3,
     NC1,NC2,NC3,nw,DIA,DIB,DIC,
@@ -721,39 +754,24 @@ function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
 
 
     clear_matrix!(C)
-    #=
-    println("C = A * B'")
-    Ai = A.A[:,:,2,2,2,2,2]
-    Bi = B.data.A[:,:,2,2,2,2,2]
-    display(Bi)
-    ABi = zero(C.A[:,:,2,2,2,2])
-    _,_,N1,N2,N3,N4,Lsize = size(A.A)
-    println(size(A.A))
-    for i=1+nw:Lsize-nw
-        ai = A.A[:,:,2,2,2,2,i]
-        bi = B.data.A[:,:,2,2,2,2,i]
-        println("i = $i")
-        display(ai*bi')
-        ABi += A.A[:,:,2,2,2,2,i]*B.data.A[:,:,2,2,2,2,i]'
-    end
-    display(ABi)
-    =#
 
     #JACC.parallel_for(
     #    prod(A.PN), kernel_Dmatrix_mul_455ABdag!, C.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     #)
+    L5 = length(Cs)
+    Cs_svec = SVector{L5, Float64}(Cs)
     JACC.parallel_for(
-        prod(temp.PN), kernel_Dmatrix_mulsum_455ABdag!, temp.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), temp.indexer
+        prod(temp.PN), kernel_Dmatrix_mulsum_455ABdag!, temp.A, A.A, B.data.A, Cs_svec, Val(NC1), Val(NC2), Val(NC3), Val(nw), temp.indexer
     )
     #=
     tempi = temp.A[1:NC1,1:NC2,2,2,2,2,2]
     display(tempi)
     =#
 
-    _, _, N1, N2, N3, N4, Lsize = size(A.A)
+    _,_,N1,N2,N3,N4,Lsize = size(A.A)
 
-    for i = 1+nw:Lsize-nw
-        C.A[1:NC1, 1:NC2, 1:N1, 1:N2, 1:N3, 1:N4] .+= view(temp.A, 1:NC1, 1:NC2, 1:N1, 1:N2, 1:N3, 1:N4, i)
+    for i=1+nw:Lsize-nw
+        C.A[1:NC1,1:NC2,1:N1,1:N2,1:N3,1:N4] .+= view(temp.A,1:NC1,1:NC2,1:N1,1:N2,1:N3,1:N4,i)
     end
     #=
     Ci = C.A[1:NC1,1:NC2,2,2,2,2]
@@ -763,19 +781,20 @@ function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
 end
 
 
-@inline function kernel_Dmatrix_mulsum_455ABdag!(i, temp, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mulsum_455ABdag!(i, temp, A, B, Cs::AbstractVector{<:Number}, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
-    ix, iy, iz, it, i5 = indices
+    ix,iy,iz,it,i5 = indices
     #println(indices)
+    idx5 = i5 - nw
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
-            temp[ic, jc, ix, iy, iz, it, i5] = zero(eltype(temp))
+            temp[ic, jc, ix,iy,iz,it,i5] = zero(eltype(temp))
         end
 
         for ic = 1:NC1
             for kc = 1:NC3
-                temp[ic, jc, ix, iy, iz, it, i5] += A[ic, kc, indices...] * B[jc, kc, indices...]'
+                temp[ic, jc, ix,iy,iz,it,i5] += A[ic, kc, indices...] * B[jc, kc, indices...]' * Cs[idx5]
             end
         end
     end
@@ -783,14 +802,28 @@ end
 
 
 
-function muladd_U!(UdSfdU, coeff, temp0_g, temp0_f, f::Tf, temp1_f) where {TTf<:MobiusDomainwallFermion_5D_MPILattice,
-    Tf<:TTf}
-    mul_sum!(temp0_g.U, temp0_f.f, f.f, temp1_f.f)
+function muladd_U!(UdSfdU, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {TTf<:GeneralizedDomainwallFermion_5D_MPILattice,
+     Tf<:TTf}
+    mul_sum!(temp0_g.U, temp0_f.f, f.f,temp1_f.f)
+    # @show @which add_U!(UdSfdU, coeff, temp0_g)
+    add_U!(UdSfdU, coeff, temp0_g)
+end
+
+function muladd_U!(UdSfdU, Cs::AbstractVector{<:Number}, coeff, temp0_g,temp0_f, f::Tf,temp1_f) where {
+     Tf<:GeneralizedDomainwallFermion_5D_MPILattice}
+
+    #s1 = dot(f.f',f.f')
+    #s2 = dot(temp0_f,temp0_f)
+
+    mul_sum!(temp0_g.U, Cs, temp0_f.f, f.f,temp1_f.f)
+    #println(tr(temp0_g.U)," $s1 $s2")
+    #display(temp0_g.U.A[:,:,2,2,2,2])
+    # @show @which add_U!(UdSfdU, coeff, temp0_g)
     add_U!(UdSfdU, coeff, temp0_g)
 end
 
 #C = A*B^T
-function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
+function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC}, Cs::AbstractVector{<:Number},
     A::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA}, B::L,
     temp::LatticeMatrix{5,T2,AT2,NC1,NC3,nw,DIA}) where {T1,T2,T3,AT1,AT2,AT3,
     NC1,NC2,NC3,nw,DIA,DIB,DIC,
@@ -805,69 +838,70 @@ function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
     #JACC.parallel_for(
     #    prod(A.PN), kernel_Dmatrix_mul_455ABdag!, C.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     #)
+    L5 = length(Cs)
+    Cs_svec = SVector{L5, Float64}(Cs)
     JACC.parallel_for(
-        prod(A.PN), kernel_Dmatrix_mulsum_455AB!, temp.A, A.A, B.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
+        prod(A.PN), kernel_Dmatrix_mulsum_455AB!, temp.A, A.A, B.A, Cs_svec, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     )
-    _, _, N1, N2, N3, N4, Lsize = size(A.A)
+    _,_,N1,N2,N3,N4,Lsize = size(A.A)
 
-    for i = 1+nw:Lsize-nw
-        C.A[1:NC1, 1:NC2, :, :, :, :] .+= view(temp.A, 1:NC1, 1:NC2, :, :, :, :, i)
+    for i=1+nw:Lsize-nw
+        C.A[1:NC1,1:NC2,:,:,:,:] .+= view(temp.A,1:NC1,1:NC2,:,:,:,:,i)
     end
     #set_halo!(C)
 end
 
-@inline function kernel_Dmatrix_mulsum_455AB!(i, temp, A, B, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
+@inline function kernel_Dmatrix_mulsum_455AB!(i, temp, A, B, Cs, ::Val{NC1}, ::Val{NC2}, ::Val{NC3}, ::Val{nw}, dindexer) where {NC1,NC2,NC3,nw}
     indices = delinearize(dindexer, i, nw)
-    ix, iy, iz, it, i5 = indices
+    ix,iy,iz,it,i5 = indices
+    idx5 = i5 - nw
 
     @inbounds for jc = 1:NC2
         for ic = 1:NC1
-            temp[ic, jc, ix, iy, iz, it, i5] = zero(eltype(temp))
+            temp[ic, jc, ix,iy,iz,it,i5] = zero(eltype(temp))
         end
 
         for ic = 1:NC1
             for kc = 1:NC3
-                temp[ic, jc, ix, iy, iz, it, i5] += A[ic, kc, indices...] * B[jc, kc, indices...]
+                temp[ic, jc, ix,iy,iz,it,i5] += A[ic, kc, indices...] * B[jc, kc, indices...] * Cs[idx5]
             end
         end
     end
 end
 
-
-
 function LinearAlgebra.mul!(
     c::Tc,
     a::Ta,
     b::Tb,
-) where {Ta<:MobiusDomainwallField_5D_MPILattice,
-    Tc<:MobiusDomainwallField_5D_MPILattice,
+) where {Ta<:GeneralizedDomainwallField_5D_MPILattice, 
+    Tc<:GeneralizedDomainwallField_5D_MPILattice,
     Tb<:Abstractfields}
     mul!(c.f, a.f, b.U)
     #set_wing_fermion!(c)
 end
 
 function D4x_5D!(C::Tc, U::Vector{Tu}, ψ::Tp, coeff) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
     Tu<:AbstractGaugefields,
-    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+    Tp<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     clear_fermion!(C)
-    D4x_5D!(C.f, [U[1].U, U[2].U, U[3].U, U[4].U], ψ.f, coeff)
+    D4x_5D!(C.f, [U[1].U,U[2].U,U[3].U,U[4].U], ψ.f, coeff)
     set_halo!(C.f)
 end
 
-function apply_F_5D!(C::Tc, mass, L5, ψ::Tp) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+function apply_F_5D!(C::Tc,mass,L5,ψ::Tp) where {
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tp<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     clear_fermion!(C)
-    apply_F_5D!(C.f, mass, L5, ψ.f)
+    apply_F_5D!(C.f,mass,L5,ψ.f) 
     set_halo!(C.f)
 end
 
 function apply_P!(C::Tc,L5,ψ::Tp) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tp<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     clear_fermion!(C)
     apply_P_5D!(C.f,L5,ψ.f) 
@@ -875,8 +909,8 @@ function apply_P!(C::Tc,L5,ψ::Tp) where {
 end
 
 function apply_R!(C::Tc,L5,ψ::Tp) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tp<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     clear_fermion!(C)
     apply_R_5D!(C.f,L5,ψ.f) 
@@ -884,21 +918,21 @@ function apply_R!(C::Tc,L5,ψ::Tp) where {
 end
 
 function apply_P_edge!(C::Tc,L5,ψ::Tp) where {
-    Tc<:MobiusDomainwallFermion_5D_MPILattice,
-    Tp<:MobiusDomainwallFermion_5D_MPILattice}
+    Tc<:GeneralizedDomainwallFermion_5D_MPILattice,
+    Tp<:GeneralizedDomainwallFermion_5D_MPILattice}
 
     clear_fermion!(C)
     apply_P_edge_5D!(C.f,L5,ψ.f) 
     set_halo!(C.f)
 end
 
-function Z4_distribution_fermi!(x::MobiusDomainwallField_5D_MPILattice)
-    ZN_distribution_fermi!(x, 4)
+function Z4_distribution_fermi!(x::GeneralizedDomainwallField_5D_MPILattice)
+    ZN_distribution_fermi!(x,4)
 end
 
 function ZN_distribution_fermi!(
     x::Tx, N
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
     NG = 4
     work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT, L5)
     Ninv = 1 / N
@@ -922,112 +956,72 @@ function ZN_distribution_fermi!(
     return
 end
 
-function apply_dDdb!(
+function apply_dDdbs!(
+    xout::Tx,
+    U::Array{G,1}, κ,
+    x::Tx,
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},G<:AbstractGaugefields}
+    clear_fermion!(xout)
+
+    # L5 = xout.L5
+
+    # κ = xout.f.wilson_params.κ_wilson
+    # for i5 = 1:L5
+    #     j5 = i5
+        # xout = Dw * x
+    D4x_5D!(xout, U, x, 1.0) #Dw*x
+        # set_wing_fermion!(xout.w[i5])
+    # end
+
+    add_fermion!(xout, 0.5 / κ, x)
+
+    # set_halo!(xout.f)
+end
+
+
+function apply_dDdcs!(
     xout::Tx,
     U::Array{G,1}, κ,
     x::Tx,
     m,
     temp1,
     temp2,
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},G<:AbstractGaugefields}
+) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:GeneralizedDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},G<:AbstractGaugefields}
     clear_fermion!(xout)
 
-    # L5 = xout.L5
+    # L5 = xout.L5 
     # κ = xout.f.wilson_params.κ_wilson
-
-    # for i5 = 1:L5
-    #     j5 = i5
-        # xout = Dw * x
-    D4x_5D!(xout, U, x, -0.5) #Dw*x
-        # set_wing_fermion!(xout.w[i5])
-    # end
-    # add_fermion!(xout, )
-    add_fermion!(xout, 0.25/κ, x)
-
-        
-
     # temp2 = L(m) * x
-    apply_F_5D!(temp2, m, L5, x)
+    # apply_F!(temp2, L5, m, x, temp1)
+    apply_F_5D!(temp1, m, L5, x)
 
-    D4x_5D!(temp1, U, temp2, -0.5)
+    D4x_5D!(temp2, U, temp1, 1.0)
+    add_fermion!(temp2, 0.5/κ, temp1)
 
-    add_fermion!(temp1, 0.25/κ, temp2)
+    # set_halo!(xout.f)
 
-    add_fermion!(xout, 1.0, temp1)
+    add_fermion!(xout, 1.0, temp2)
 
-end
-
-
-function apply_dDdc!(
-    xout::Tx,
-    U::Array{G,1}, κ,
-    x::Tx,
-    m,
-    temp1,
-    temp2,
-) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5},G<:AbstractGaugefields}
-    clear_fermion!(xout)
-
-    # L5 = xout.L5
-    # κ = xout.f.wilson_params.κ_wilson
-
-    # for i5 = 1:L5
-    #     j5 = i5
-        # xout = Dw * x
-    D4x_5D!(xout, U, x, -0.5) #Dw*x
-        # set_wing_fermion!(xout.w[i5])
+    # set_halo!(xout.f)
     # end
-    # add_fermion!(xout, )
-    add_fermion!(xout, 0.25/κ, x)
-
-        
-
-    # temp2 = L(m) * x
-    apply_F_5D!(temp2, m, L5, x)
-
-    D4x_5D!(temp1, U, temp2, 0.5)
-
-    add_fermion!(temp1, -0.25/κ, temp2)
-
-    add_fermion!(xout, 1.0, temp1)
 end
 
-function Renew_MobiusDomainwall_operator(
-    Dx::T,
-    x,
-    b,
-    c,
-) where {Dim,TU,Tx,TD, T<:D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,Tx,TD}}
+# function temporal_fields_release(x::Dx) where {Dx <: GeneralizedDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion,Dw}}
+#     num = 4
+#     # _temporary_fermi = Temporalfields(x; num)
+#     for i = 1:num
+#         f = Dx.D5DW._temporary_fermi[i].f
+#         MPI.free(f.cart)
+#         f = Dx.D5DW_PV._temporary_fermi[i].f
+#         MPI.free(f.cart)
+#     end
 
-    U = Dx.U
-    L5 = Dx.L5
-    mass = Dx.mass
-    M = Dx.M
-
-    UL = [U[1].U, U[2].U, U[3].U, U[4].U]
-
-    D = D5DW_MobiusDomainwallOperator5D(UL, L5, mass, M, b, c)
-    # Tx = typeof(x)
-    # TU = eltype(U)
-    # UL = [U[1].U, U[2].U, U[3].U, U[4].U]
-    # D = D5DW_MobiusDomainwallOperator5D(UL, L5, mass, M, b, c)
-    # TD = typeof(D)
-
-    return D5DW_MobiusDomainwall_operator_MPILattice{Dim,TU,Tx,TD}(
-        Dx.U,
-        D,
-        Dx.mass,
-        Dx._temporary_fermi,
-        Dx.L5,
-        Dx.eps_CG,
-        Dx.MaxCGstep,
-        Dx.verbose_level,
-        Dx.method_CG,
-        Dx.verbose_print,
-        Dx._temporary_fermion_forCG,
-        Dx.boundarycondition,
-        b,
-        c,
-        Dx.M
-    )
-end
+#     numcg = 7
+#     for i = 1:numcg 
+#         f = Dx.D5DW._temporary_fermion_forCG[i].f
+#         MPI.free(f.cart)
+#         f = Dx.D5DW_PV._temporary_fermion_forCG[i].f
+#         MPI.free(f.cart)
+#     end
+#     # _temporary_fermion_forCG = Temporalfields(x; num=numcg)#Array{xtype,1}(undef, numcg)
+# end

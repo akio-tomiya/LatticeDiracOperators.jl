@@ -17,6 +17,11 @@ function add!(Y, a, X) #Y + a*X -> Y
     LinearAlgebra.axpby!(a, X, 1, Y) #X*a + Y -> Y
 end
 
+function add!(bs::AbstractVector{<:Number}, Y, as::AbstractVector{<:Number}, X)
+    LinearAlgebra.axpby!(as, X, bs, Y)
+end
+
+
 
 function add!(b, Y, a, X, iseven::Bool) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a, X, b, Y, iseven) #X*a + Y*b -> Y

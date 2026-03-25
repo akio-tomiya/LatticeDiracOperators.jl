@@ -19,7 +19,8 @@ struct MobiusDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
     ) where {Dim}
         num = 10
         temps = get_temporaryvectors(D)
-        x = temps[1]
+        # x = temps[1]
+        x, it_x = get_temp(temps)
         xtype = typeof(x)
         _temporary_fermionfields = Temporalfields(x; num)
         #_temporary_fermionfields = Array{xtype,1}(undef, num)
@@ -35,6 +36,8 @@ struct MobiusDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
         #for i = 1:numU
         #    _temporary_gaugefields[i] = similar(Utemp)
         #end
+
+        unused!(temps, it_x)
 
 
         return new{Dim,typeof(D),xtype,Utype}(
@@ -223,115 +226,27 @@ function calc_UdSfdU_fromX!(
 
         # (r-γ_μ) U_{k,μ} X_{k+μ}
         mul_1minusγμx!(temp1_f, temp0_f, μ)
-        #mul!(temp1_f, Dwilson.rminusγ[:, :, μ], temp0_f)
 
-        #=
-        println("1_1 ",dot(temp1_f,temp1_f))
-        substitute_fermion!(temp0_f_2, temp0_f)
-        mul_1minusγμx!(temp1_f_2, temp0_f_2, μ)
-        println("1_2 ",dot(temp1_f_2,temp1_f_2))
-        
-        =#
-
-        # κ (r-γ_μ) U_{k,μ} X_{k+μ}
         mul!(temp0_f, κ, temp1_f)
-
-        #=
-        println("2_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(temp1_f_2, temp1_f)
-        mul!(temp0_f_2, κ, temp1_f_2)
-        println("2_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
-
-
-        # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-        #mul!(temp0_g, temp0_f, Ys')
-        #add_U!(UdSfdU[μ], coeff, temp0_g)
-        
-        #=
-        substitute_U!(tempgtemp, UdSfdU[μ])        
-        substitute_fermion!(Ys_2, Ys)
-        substitute_fermion!(temp0_f_2, temp0_f)
-        set_wing_fermion!(temp0_f_2)
-        set_wing_fermion!(Ys_2)
-        
-        display(temp0_f.w[1].f[:,1,1,1,1,:])
-        display(temp0_f_2.f.A[:,:,2,2,2,2,2])
-
-        display(Ys.w[1].f[:,1,1,1,1,:])
-        display(Ys_2.f.A[:,:,2,2,2,2,2])
-        =#
 
         muladd_U!(UdSfdU[μ], coeff, temp0_g,temp0_f, Ys',temp1_f)
         #muladd_U!(UdSfdU[μ], coeff, temp0_g,temp0_f, Ys')
 
-        #=
-        println("3_1 ",tr(UdSfdU[μ]))
-        muladd_U!(tempgtemp, coeff, temp0_g_2,temp0_f_2, Ys_2',temp1_f_2)
-        println("3_2 ",tr(tempgtemp))
-        =#
-
-
-        #println("after1 ", UdSfdU[μ][1, 1, 1, 1, 1, 1])
-        #error("h")
-        #!  Construct P2*U_adj(x,mu)
         # Y_{k+μ}^dag U_{k,μ}^dag
         Ysplus = shift_fermion(Ys, μ)
         mul!(temp0_f, Ysplus', U[μ]')
 
-        #=
-        println("4_1 ",dot(temp0_f,temp0_f))
-        Ysplus_2 = shift_fermion(Ys_2, μ)
-
-        substitute_U!(Umu_2,U[μ])
-        mul!(temp0_f_2, Ysplus_2', Umu_2')
-        #mul!(temp0_f_2, Ysplus_2', U[μ]')
-        println("4_2 ",dot(temp0_f_2,temp0_f_2))
-        
-        =#
-
-        #if Dwilson.r == 1 && Dim == 4
         
         mul_x1plusγμ!(temp1_f, temp0_f, μ)
-        
-        #=
-        println("5_1 ",dot(temp1_f,temp1_f))
-        substitute_fermion!(temp0_f_2,temp0_f)
-        mul_x1plusγμ!(temp1_f_2, temp0_f_2, μ)
-        println("5_2 ",dot(temp1_f_2,temp1_f_2))
-        =#
-
-
 
          # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
         mul!(temp0_f, κ, temp1_f)
         
-        #=
-        println("6_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(temp1_f_2, temp1_f)
-        mul!(temp0_f_2, κ, temp1_f_2)
-        println("6_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
         
 
         # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        #println(getvalue(temp0_g,1,1,1,1,1,1))
-        #println(temp0_g[1,1,1,1,1,1])
-        #mul!(temp0_g, Xs, temp0_f)
-        #add_U!(UdSfdU[μ], -coeff, temp0_g)
-        #substitute_U!(tempgtemp, UdSfdU[μ])
-
         #muladd_U!(UdSfdU[μ], -coeff, temp0_g,Xs, temp0_f)
         muladd_U!(UdSfdU[μ], -coeff, temp0_g,Xs, temp0_f,temp1_f)
-        
-        #=
-        println("7_1 ",tr(UdSfdU[μ]))
-        substitute_fermion!(temp0_f_2, temp0_f)
-        substitute_fermion!(Xs_2, Xs)
-        muladd_U!(tempgtemp, -coeff, temp0_g_2,Xs_2, temp0_f_2,temp1_f_2)
-        println("7_2 ",tr(tempgtemp))
-        =#
-        #println("after2 ", UdSfdU[μ][1, 1, 1, 1, 1, 1])
         
 
         Zs = Z
@@ -343,120 +258,37 @@ function calc_UdSfdU_fromX!(
         #@time mul!(temp0_f,U[μ],X)
         mul!(temp0_f, U[μ], Zsplus)
         
-        #=
-        println("8_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(Zs_2,Zs)
-        Zsplus_2 = shift_fermion(Zs_2, μ)
-        mul!(temp0_f_2, Umu_2, Zsplus_2)
-        println("8_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
-        
-
-        # (r-γ_μ) U_{k,μ} X_{k+μ}
-        #mul!(temp1_f, Dwilson.rminusγ[:, :, μ], temp0_f)
-        # (r-γ_μ) U_{k,μ} X_{k+μ}
-        #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
-        
         mul_1minusγμx!(temp1_f, temp0_f, μ)
-
-        #=
-        println("9_1 ",dot(temp1_f,temp1_f))
-        substitute_fermion!(temp0_f_2, temp0_f)
-        mul_1minusγμx!(temp1_f_2, temp0_f_2, μ)
-        println("9_2 ",dot(temp1_f_2,temp1_f_2))
-        =#
-        
-
-
-
-        # κ (r-γ_μ) U_{k,μ} X_{k+μ}
         mul!(temp0_f, κ, temp1_f)
-        
-        #=
-        println("10_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(temp1_f_2, temp1_f)
-        mul!(temp0_f_2, κ, temp1_f_2)
-        println("10_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
         
 
         # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-        #mul!(temp0_g, temp0_f, ϕs')
-        #add_U!(UdSfdU[μ], coeff * (b - c) / 2, temp0_g)
-        #substitute_U!(tempgtemp, UdSfdU[μ])
-
         muladd_U!(UdSfdU[μ], coeff* (b - c) / 2, temp0_g,temp0_f, ϕs',temp1_f)
         #muladd_U!(UdSfdU[μ], coeff* (b - c) / 2, temp0_g,temp0_f, ϕs')
 
-        #=
-        println("11_1 ",tr(UdSfdU[μ]))
-        substitute_fermion!(temp0_f_2, temp0_f)
-        substitute_fermion!(ϕs_2, ϕs)
-        muladd_U!(tempgtemp, coeff* (b - c) / 2, temp0_g_2,temp0_f_2, ϕs_2',temp1_f_2)
-        println("11_2 ",tr(tempgtemp))
-        =#
-        
 
-
-        #println("after2 ", UdSfdU[μ][1, 1, 1, 1, 1, 1])
-        #println("after3 ", UdSfdU[μ][1, 1, 1, 1, 1, 1])
-        #!  Construct P2*U_adj(x,mu)
         # Y_{k+μ}^dag U_{k,μ}^dag
         ϕsplus = shift_fermion(ϕs, μ)
         mul!(temp0_f, ϕsplus', U[μ]')
-        
-        #=
-        println("12_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(ϕs_2, ϕs)
-        ϕsplus_2 = shift_fermion(ϕs_2, μ)
-        mul!(temp0_f_2, ϕsplus_2', Umu_2')
-        println("12_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
-        
 
         # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
         #mul!(temp1_f, temp0_f, Dwilson.rplusγ[:, :, μ])
         # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
         if Dim == 4
             mul_x1plusγμ!(temp1_f, temp0_f, μ)
-            #=
-            println("13_1 ",dot(temp1_f,temp1_f))
-            substitute_fermion!(temp0_f_2, temp0_f)
-            mul_x1plusγμ!(temp1_f_2, temp0_f_2, μ)
-            println("13_2 ",dot(temp1_f_2,temp1_f_2))
-            =#
-            
+
         else
             mul!(temp1_f, temp0_f, Dwilson.rplusγ[ :, :, μ])
         end
 
         # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
         mul!(temp0_f, κ, temp1_f)
-        #=
-        println("14_1 ",dot(temp0_f,temp0_f))
-        substitute_fermion!(temp1_f_2, temp1_f)
-        mul!(temp0_f_2, κ, temp1_f_2)
-        println("14_2 ",dot(temp0_f_2,temp0_f_2))
-        =#
-        
 
         #mul!(temp0_g, Zs, temp0_f)
         #add_U!(UdSfdU[μ], -coeff * (b - c) / 2, temp0_g)
         #substitute_U!(tempgtemp, UdSfdU[μ])
         muladd_U!(UdSfdU[μ], -coeff * (b - c) / 2, temp0_g,Zs, temp0_f,temp1_f)
         #muladd_U!(UdSfdU[μ], -coeff * (b - c) / 2, temp0_g,Zs, temp0_f)
-
-        #=
-        println("15_1 ",tr(UdSfdU[μ]))
-        substitute_fermion!(temp0_f_2, temp0_f)
-        substitute_fermion!(Zs_2, Zs)
-        muladd_U!(tempgtemp, -coeff * (b - c) / 2, temp0_g_2,Zs_2, temp0_f_2,temp1_f_2)
-        println("15_2 ",tr(tempgtemp))
-        error("end")
-        =#
-        
-        #println("after4 ", UdSfdU[μ][1, 1, 1, 1, 1, 1])
-
 
     end
 
@@ -741,7 +573,79 @@ function calc_p_UdSfdU_fromX!(
 
 end
 
+function calc_mres_and_derivative(fermi_action, U, Nr)
+    temps = fermi_action._temporary_fermionfields
+    p, it_p = get_temp(temps)
+    q, it_q = get_temp(temps)
+    r, it_r = get_temp(temps)
+    s, it_s = get_temp(temps)
+    t, it_t = get_temp(temps)
+    temp3, it_temp3 = get_temp(temps)
+    temp4, it_temp4 = get_temp(temps)
+    mres = 0.0
+    dmdb = 0.0
+    dmdc = 0.0
+    D = fermi_action.diracoperator.D5DW(U)
+    DdagD = DdagD_MobiusDomainwall_operator_MPILattice(D)
+    L5 = D.L5
+    factor = 1.0 / Nr
+    wilson_params = D.D.wilson_params
+    κ = wilson_params.κ_wilson
+    den1 = 0.0
+    num1 = 0.0
 
+    
+
+    for ir = 1:Nr
+        clear_fermion!(p)
+        Z4_distribution_fermi!(p)
+
+        apply_P!(q, L5, p)
+
+        apply_R!(r, L5, q)
+
+        solve_DinvX!(s, D, r)
+
+        apply_P_edge!(t, L5, s)
+
+        den1 += real(dot(t, t))
+        num1 += real(dot(q, s))
+
+        apply_dDdb!(r, U, κ, s, D.mass, temp3, temp4)
+        solve_DinvX!(p, D, r)
+        apply_P_edge!(t, L5, p)
+
+        den2 += 2.0 * real(dot(t, t))
+        num2 -= real(dot(q, p))
+
+
+        apply_dDdc!(r, U, κ, s, D.mass, temp3, temp4)
+        solve_DinvX!(p, D, r)
+        apply_P_edge!(t, L5, p)
+
+        den2 += 2.0 * real(dot(t, t))
+        num2 -= real(dot(q, p))
+
+
+    end
+
+    mres = num1 / den1 * factor
+    dmdb = (num2 * den1 - num1 * den2) / den1^2 * factor
+    dmdc = (num2 * den1 - num1 * den2) / den1^2 * factor
+    # mres *= factor 
+    # dmdb *= factor
+    # dmdc *= factor
+
+    unused!(temps, it_p)
+    unused!(temps, it_q)
+    unused!(temps, it_r)
+    unused!(temps, it_t)
+    unused!(temps, it_s)
+    unused!(temps, it_temp3)
+    unused!(temps, it_temp4)
+
+    return real(mres), real(dmdb), real(dmdc)
+end
 
 function gauss_sampling_in_action!(
     η::AbstractFermionfields,
