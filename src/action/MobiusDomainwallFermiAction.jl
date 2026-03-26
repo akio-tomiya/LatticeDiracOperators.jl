@@ -593,8 +593,10 @@ function calc_mres_and_derivative(fermi_action, U, Nr)
     κ = wilson_params.κ_wilson
     den1 = 0.0
     num1 = 0.0
-
-    
+    den2 = 0.0
+    num2 = 0.0
+    den3 = 0.0
+    num3 = 0.0
 
     for ir = 1:Nr
         clear_fermion!(p)
@@ -623,15 +625,15 @@ function calc_mres_and_derivative(fermi_action, U, Nr)
         solve_DinvX!(p, D, r)
         apply_P_edge!(t, L5, p)
 
-        den2 += 2.0 * real(dot(t, t))
-        num2 -= real(dot(q, p))
+        den3 += 2.0 * real(dot(t, t))
+        num3 -= real(dot(q, p))
 
 
     end
 
     mres = num1 / den1 * factor
     dmdb = (num2 * den1 - num1 * den2) / den1^2 * factor
-    dmdc = (num2 * den1 - num1 * den2) / den1^2 * factor
+    dmdc = (num3 * den1 - num1 * den3) / den1^2 * factor
     # mres *= factor 
     # dmdb *= factor
     # dmdc *= factor
