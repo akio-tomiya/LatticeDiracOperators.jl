@@ -93,6 +93,14 @@ function get_temporaryvectors_forCG(A::T) where {T<:γ5D_operator}
     return A.dirac._temporary_fermion_forCG
 end
 
+function get_boundarycondition(A::T) where {T<:Dirac_operator}
+    return A.boundarycondition
+end
+
+function get_boundarycondition(A::T) where {T<:Adjoint_Dirac_operator}
+    return A.parent.boundarycondition
+end
+
 const default_eps_CG = 1e-19
 const default_MaxCGstep = 3000
 
@@ -389,11 +397,11 @@ function LinearAlgebra.mul!(
     #temp = get_temporaryvectors(A.dirac,5)
     temp, it_temp = get_temp(A.dirac._temporary_fermi)
     #temp = A.dirac._temporary_fermi[5]
-
+    boundarycondition = get_boundarycondition(D)
 
 
     mul!(temp, A.dirac, x)
-    set_wing_fermion!(temp)
+    set_wing_fermion!(temp, boundarycondition)
     #println("dgadg")
 
 
@@ -464,11 +472,14 @@ function construct_sparsematrix(D::Operator) # D_ij = e_i D e_j
     temp2, it_temp2 = get_temp(temps)
     #temp1 = get_temporaryvectors_forCG(D)[1]
     #temp2 = get_temporaryvectors_forCG(D)[2]
-
+    boundarycondition = get_boundarycondition(D)
+    #println(boundarycondition, "boundarycondition")
     for j = 1:NN
         clear_fermion!(temp1)
         temp1[j] = 1
-        set_wing_fermion!(temp1)
+        set_wing_fermion!(temp1, boundarycondition)
+        #println(j, "\t", temp1[j])
+
         mul!(temp2, D, temp1)
         for i = 1:NN
             mat_D[i, j] = temp2[i]

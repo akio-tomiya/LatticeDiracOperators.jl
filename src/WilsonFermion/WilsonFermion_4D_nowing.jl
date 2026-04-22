@@ -97,6 +97,7 @@ function shifted_fermion!(
     factor_y = 1
     factor_x = 1
     bc = boundarycondition
+    #@info bc
 
     #n6 = size(x.f)[6]
     #f = zeros(ComplexF64,4)

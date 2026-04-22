@@ -119,6 +119,7 @@ function Wilson_Dirac_operator(
         error("Dim should be 2 or 4!")
     end
 
+
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
 
     r = check_parameters(parameters, "r", 1.0)
