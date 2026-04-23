@@ -397,7 +397,7 @@ function LinearAlgebra.mul!(
     #temp = get_temporaryvectors(A.dirac,5)
     temp, it_temp = get_temp(A.dirac._temporary_fermi)
     #temp = A.dirac._temporary_fermi[5]
-    boundarycondition = get_boundarycondition(D)
+    boundarycondition = get_boundarycondition(A)
 
 
     mul!(temp, A.dirac, x)
