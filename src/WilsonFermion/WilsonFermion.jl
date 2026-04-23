@@ -118,6 +118,8 @@ function Wilson_Dirac_operator(
     else
         error("Dim should be 2 or 4!")
     end
+    #@info boundarycondition
+
 
 
     #boundarycondition = check_parameters(parameters,"boundarycondition",[1,1,1,-1])
@@ -552,9 +554,11 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     #temp = temps[4]
     #temp1 = temps[1]cc
     #temp2 = temps[2]
+    #@info A.boundarycondition
+    boundarycondition = get_boundarycondition(A)
 
     clear_fermion!(temp)
-    set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
         xplus = shift_fermion(x, ν)
         #println(xplus)
@@ -596,7 +600,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         #end
 
         add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
-        set_wing_fermion!(temp)
+        set_wing_fermion!(temp, boundarycondition)
         #if any(isnan, temp.f)
         #    error("NaN detected in array temp 0!")
         #end
@@ -724,6 +728,7 @@ function Dx!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:Abstrac
     temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
     temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
     temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
+
 
 
     clear_fermion!(temp)
