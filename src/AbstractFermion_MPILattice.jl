@@ -31,7 +31,8 @@ function Initialize_pseudofermion_fields(
             x = Initialize_MobiusDomainwallFermion(u, L5; nowing, kwargs...)
         elseif Dirac_operator == "GeneralizedDomainwall"
             #@warn "GeneralizedDomainwall fermion is not well tested!!"
-            x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)
+            # x = Initialize_GeneralizedDomainwallFermion(u, L5, nowing=nowing)
+            x = Initialize_GeneralizedDomainwallFermion(u, L5; nowing, kwargs...)
 
         else
             error("Dirac_operator = $Dirac_operator is not supported")

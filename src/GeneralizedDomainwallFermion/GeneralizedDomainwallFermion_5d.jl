@@ -84,7 +84,7 @@ function Base.similar(
     return GeneralizedDomainwallFermion_5D(x.L5, NC, x.NX, x.NY, x.NZ, x.NT, nowing = x.nowing)
 end
 
-function apply_J!(
+function apply_R!(
     xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
     x::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
 ) where {NC,WilsonFermion}
@@ -137,6 +137,22 @@ function apply_Pdag!(
         mul_1minusγ5x_add!(xout.w[i5], x.w[j5], 1)
         set_wing_fermion!(xout.w[i5])
     end
+end
+
+function apply_P_edge!(
+    xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    x::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},) where {NC,WilsonFermion}
+
+    clear_fermion!(xout)
+    ratio = 1.0
+
+    i5 = 1
+    # LTK Definition P_- -> P_+
+    mul_1plusγ5x_add!(xout.w[i5], x.w[i5], ratio)
+
+    i5 = xout.L5
+    # LTK Definition P_+ -> P_-
+    mul_1minusγ5x_add!(xout.w[i5], x.w[i5], ratio)
 end
 
 function apply_1pD!(
@@ -655,6 +671,102 @@ function apply_Fdag!(
 
 end
 
+function apply_dDdas!(
+    xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    U::Array{G,1},
+    x::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    m,
+    A,
+    L5,
+    bs,
+    cs,
+    temp1,
+    temp2,
+) where {NC,WilsonFermion,G<:AbstractGaugefields}
+
+
+    #temp = temps[4]
+    #temp1 = temps[1]
+    #temp2 = temps[2]
+    coeffs_plus = bs
+    # coeff_plus = 1
+    coeffs_minus = -cs
+    # coeff_minus  = 0
+    clear_fermion!(xout)
+    ratio = 1
+
+    factors = coeffs_plus
+    #xout = (1 + factor*D)*x
+    apply_1pD!(xout, L5, U, A, x, factors)
+
+    #temp2 = F*x
+    apply_F!(temp2, L5, m, x, temp1)
+    factors = coeffs_minus
+    #xout = (1 + factor*D)*F*x
+    apply_1pD!(temp1, L5, U, A, temp2, factors)
+    for i5 = 1:L5
+        # axpy!(-1, temp1.w[i5], xout.w[i5])
+        # add!(-1, xout.w[i5], 1, temp1.w[i5])
+        add!(-1.0, xout.w[i5], 1.0, temp1.w[i5])
+    end
+
+    set_wing_fermion!(xout)
+
+
+    return
+end
+
+
+function apply_dDdbs!(xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    U::Array{G,1},
+    x::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    A,
+    as,
+) where {NC,WilsonFermion,G<:AbstractGaugefields}
+
+    clear_fermion!(xout)
+
+    L5 = xout.L5
+
+    for i5 = 1:L5 
+        j5 = i5
+
+        D4x!(xout.w[i5], U, x.w[j5], A, 4)
+        set_wing_fermion!(xout.w[i5])
+
+        add!(-as[i5], xout.w[i5], 0.5 * as[i5] /A.κ, x.w[i5])
+        set_wing_fermion!(xout.w[i5])
+    end
+end
+
+function apply_dDdcs!(xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    U::Array{G,1},
+    x::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
+    m,
+    A,
+    as,
+    temp1,
+    temp2,
+) where {NC,WilsonFermion,G<:AbstractGaugefields}
+
+    clear_fermion!(xout)
+
+    L5 = xout.L5
+
+    apply_F!(temp1, L5, m, x, temp2)
+
+    for i5 = 1:L5 
+        j5 = i5
+
+        D4x!(temp2.w[i5], U, temp1.w[j5], A, 4)
+        set_wing_fermion!(temp2.w[i5])
+        add!(-1.0, temp2.w[i5], 0.5/A.κ, temp1.w[i5])
+    end
+
+    for i5 = 1:L5 
+        axpy!(as[i5], temp2.w[i5], xout.w[i5])
+    end
+end
 
 function D5DWx!(
     xout::Abstract_GeneralizedDomainwallFermion_5D{NC,WilsonFermion},
@@ -787,15 +899,16 @@ function Z4_distribution_fermi!(x::Abstract_GeneralizedDomainwallFermion_5D{NC,W
     NZ = x.NZ
     NT = x.NT
     n6 = size(x.w[1].f)[6]
-    θ = 0.0
+    # θ = 0.0
     N::Int32 = 4
     Ninv = Float64(1 / N)
     clear_fermion!(x)
-    for ialpha = 1:n6
+    
     for it = 1:NT
     for iz = 1:NZ
         for iy = 1:NY
             for ix = 1:NX
+                for ialpha = 1:n6
                 @inbounds @simd for ic = 1:NC
                     θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
                     x.w[1][ic, ix, iy, iz, it, ialpha] = cos(θ) + im * sin(θ)

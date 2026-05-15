@@ -194,122 +194,6 @@ function apply_P_edge!(
     mul_1minusγ5x_add!(xout.w[i5], x.w[i5], ratio)
 end
 
-function Chiral_Condensate_Operator!(
-    xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-    L5,
-    A,
-    x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-    temp1, temp2) where {NC,WilsonFermion}
-
-    clear_fermion!(xout)
-
-    apply_P!(temp1, x)
-    apply_R!(temp2, temp1)
-    solve_DinvX!(temp1, A, temp2)
-    apply_Pdag!(xout, temp1)
-
-end
-
-function calc_Δ5x!(Δ5x, D, U,
-    X1::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-    X2::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion}) where {NC,WilsonFermion}
-
-    D5_PV = D.D5DW_PV(U)
-    Q_PV = MobiusD5DWdagD5DW_Wilson_operator(D5_PV)
-    D5_M0 = D.D5DW_M0(U)
-
-    temp1 = similar(X1)
-    temp2 = similar(X2)
-
-    Y1 = similar(X1)
-    Y2 = similar(X2)
-    Z1 = similar(X1)
-    Z2 = similar(X2)
-
-    apply_P!(Y1, X1.L5, X1, temp1)
-    apply_P!(Y2, X2.L5, X2, temp1)
-    mul!(Z1, D5_M0, Y1)
-
-    solve_DinvX!(temp1, Q_PV, Z1)
-    third_term = dot(Z2, temp1)
-
-    mul!(temp1, D5_M0, Y1)
-    solve_DinvX!(temp2, D5_PV, temp1)
-    first_term = dot(Y2, temp2)
-
-    mul!(temp1, D5_M0, Y2)
-    solve_DinvX!(temp2, D5_PV, temp1)
-    second_term = dot(Y1, temp2)
-
-    Δ5x = 0.5 * (first_term + conj(second_term) + third_term)
-end
-
-function expand_4D_FermionField_to_5D!(
-    x5::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-    x4::WilsonFermion) where {NC,WilsonFermion}
-
-    clear_fermion!(x5)
-    # L5 = x5.L5
-
-    i5 = 1
-    substitute_fermion!(x5.w[i5], x4)
-
-end
-
-# function expand_11_FermionField_to_5D!(
-#     xout::Abstract_MobiusDomainwallFermion_5D{NC, WilsonFermion},
-#     x::Abstract_MobiusDomainwallFermion_5D{NC, WilsonFermion}) where {NC, WilsonFermion}
-#     clear_fermion!(xout)
-#     # L5 = xout.L5
-
-#     i5 = 1
-#     # xout[i5] = x.w[i5]
-#     expand_4D_FermionField_to_5D!(xout, x[i5])
-
-# end
-
-# function apply_P!(
-#     xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-#     x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-# ) where {NC,WilsonFermion}
-#     L5 = xout.L5
-#     clear_fermion!(xout)
-
-#     for i5 = 1:L5
-#         j5 = i5
-#         #P_- -> P_+ in this definition
-#         mul_1plusγ5x_add!(xout.w[i5], x.w[j5], 1)
-#         set_wing_fermion!(xout.w[i5])
-
-#         #P_+ -> P_- in this definition
-#         j5 = i5 + 1
-#         j5 += ifelse(j5 > L5, -L5, 0)
-#         mul_1minusγ5x_add!(xout.w[i5], x.w[j5], 1)
-#         set_wing_fermion!(xout.w[i5])
-#     end
-# end
-
-# function apply_Pdag!(
-#     xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-#     x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
-# ) where {NC,WilsonFermion}
-#     L5 = xout.L5
-#     clear_fermion!(xout)
-
-#     for i5 = 1:L5
-#         j5 = i5
-#         #P_- -> P_+ in this definition
-#         mul_1plusγ5x_add!(xout.w[i5], x.w[j5], 1)
-#         set_wing_fermion!(xout.w[i5])
-
-#         #P_+ -> P_- in this definition
-#         j5 = i5 - 1
-#         j5 += ifelse(j5 < 1, L5, 0)
-#         mul_1minusγ5x_add!(xout.w[i5], x.w[j5], 1)
-#         set_wing_fermion!(xout.w[i5])
-#     end
-# end
-
 function apply_1pD!(
     xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
     L5,
@@ -845,6 +729,85 @@ function apply_Fdag!(
 
 end
 
+function apply_dDdb!(
+    xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
+    U::Array{G,1},
+    x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
+    m,
+    A,
+    temp1,
+    temp2,
+) where {NC,WilsonFermion,G<:AbstractGaugefields}
+    clear_fermion!(xout)
+
+    L5 = xout.L5
+
+    for i5 = 1:L5
+        j5 = i5
+        # xout = Dw * x
+        D4x!(xout.w[i5], U, x.w[j5], A, 4) #Dw*x
+        set_wing_fermion!(xout.w[i5])
+    end
+
+        
+
+    # temp2 = L(m) * x
+    apply_F!(temp2, L5, m, x, temp1)
+
+    # for i5 = 1:L5
+    #     j5 = i5 
+
+    #     # D4x!(temp1.w[i5], U, temp2.w[j5], A, 4)
+    #     substitute_fermion!(temp1.w[i5], temp2.w[j5])
+    #     set_wing_fermion!(temp1.w[i5])
+    # end
+        
+    for i5 = 1:L5
+        # axpy!(-1, temp1.w[i5], xout.w[i5])
+        # xout = -0.5 * ( Dw + L(m)) * x
+        add!(0.5, xout.w[i5], 0.5, temp2.w[i5])
+    end
+end
+
+
+function apply_dDdc!(
+    xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
+    U::Array{G,1},
+    x::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},
+    m,
+    A,
+    temp1,
+    temp2,
+) where {NC,WilsonFermion,G<:AbstractGaugefields}
+    clear_fermion!(xout)
+
+    L5 = xout.L5
+    
+    for i5 = 1:L5
+        j5 = i5
+        # xout = Dw * x
+        D4x!(xout.w[i5], U, x.w[j5], A, 4) #Dw*x
+        set_wing_fermion!(xout.w[i5])
+    end
+
+        
+
+    # temp2 = L(m) * x
+    apply_F!(temp2, L5, m, x, temp1)
+
+    # for i5 = 1:L5
+    #     j5 = i5 
+
+    #     D4x!(temp1.w[i5], U, temp2.w[j5], A, 4)
+    #     set_wing_fermion!(temp1.w[i5])
+    # end
+        
+    for i5 = 1:L5
+        # axpy!(-1, temp1.w[i5], xout.w[i5])
+        # xout = -0.5 * ( Dw - L(m)) * x
+        add!(0.5, xout.w[i5], -0.5, temp2.w[i5])
+    end
+end
 
 function D5DWx!(
     xout::Abstract_MobiusDomainwallFermion_5D{NC,WilsonFermion},

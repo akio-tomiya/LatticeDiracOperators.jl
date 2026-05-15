@@ -104,7 +104,8 @@ export sample_pseudofermions!,
     calc_UdSfdU,
     calc_UdSfdU!,
     bicgstab,
-    calc_p_UdSfdU!
+    calc_p_UdSfdU!,
+    calc_mres_and_derivative_gpu
 export Wilson_Dirac_operator_evenodd, Wilson_GeneralDirac_operator, set_wing_fermion!
 export println_verbose_level1, println_verbose_level2, println_verbose_level3, Verbose_print
 export bicg, bicgstab
@@ -117,5 +118,6 @@ export uniform_distribution_fermion!, γ5D
 export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
 export clear_fermion!, add_fermion!
+export Renew
 
 end
