@@ -1,6 +1,8 @@
 
+using Gaugefields
 using LinearAlgebra
 using LatticeDiracOperators
+using Test
 
 function test_staggered()
     NX = 4
@@ -133,5 +135,34 @@ function test_wilson()
 
 
 end
+
+function test_wilson_2d_gamma5()
+    NX = 2
+    NT = 2
+    Nwing = 0
+    NC = 2
+
+    U = Initialize_Gaugefields(NC, Nwing, NX, NT, condition="cold")
+    x = Initialize_pseudofermion_fields(U[1], "Wilson")
+    y = similar(x)
+
+    for I in CartesianIndices(x.f)
+        x.f[I] = ComplexF64(1000 * I[4] + 100 * I[3] + 10 * I[2] + I[1])
+    end
+
+    LatticeDiracOperators.Dirac_operators.mul_γ5x!(y, x)
+    for I in CartesianIndices(x.f)
+        sign = ifelse(I[4] == 2, -1, 1)
+        @test y.f[I] == sign * x.f[I]
+    end
+
+    z = deepcopy(x)
+    LatticeDiracOperators.Dirac_operators.apply_γ5!(z)
+    for I in CartesianIndices(x.f)
+        sign = ifelse(I[4] == 2, -1, 1)
+        @test z.f[I] == sign * x.f[I]
+    end
+end
 #test_staggered()
+test_wilson_2d_gamma5()
 test_wilson()
