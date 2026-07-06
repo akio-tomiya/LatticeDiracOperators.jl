@@ -48,6 +48,7 @@ function Wx!(xout::T,U::Array{G,1},x::T,A)  where  {T <: WilsonFermion_4D,G <: A
 
     clear_fermion!(xout)
     add_fermion!(xout,1,x,-1,temp)
+    add_clover_term!(xout,A,x)
 
     set_wing_fermion!(xout,A.boundarycondition)
 
@@ -217,6 +218,7 @@ function Wdagx!(xout::T,U::Array{G,1},
 
     clear_fermion!(xout)
     add_fermion!(xout,1,x,-1,temp)
+    add_clover_term!(xout,A,x)
     set_wing_fermion!(xout,A.boundarycondition)
 
     #display(xout)

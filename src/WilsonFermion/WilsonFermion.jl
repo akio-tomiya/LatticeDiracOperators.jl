@@ -119,7 +119,7 @@ function Wilson_Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,para
 
     hasclover = check_parameters(parameters,"hasclover",false)
     if hasclover
-        error("notsupported")
+        cloverterm = WilsonClover(U,x,check_parameters(parameters,"cSW",check_parameters(parameters,"clover_coefficient",1.0)))
     else
         cloverterm = nothing
     end
@@ -152,7 +152,7 @@ function (D::Wilson_Dirac_operator{Dim,T,fermion})(U) where {Dim,T,fermion}
         D.hopm,
         D.eps_CG,D.MaxCGstep,D.verbose_level,
         D.method_CG,
-        D.cloverterm,
+        D.cloverterm === nothing ? nothing : WilsonClover(U,D._temporary_fermi[1],D.cloverterm.clover_coefficient),
         D.verbose_print,
         D._temporary_fermion_forCG
         )

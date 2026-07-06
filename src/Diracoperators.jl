@@ -77,6 +77,10 @@ function Dirac_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         Staggered_Dirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         Wilson_Dirac_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "WilsonClover"
+        clover_parameters = copy(parameters)
+        clover_parameters["hasclover"] = true
+        Wilson_Dirac_operator(U,x,clover_parameters)
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
@@ -92,6 +96,10 @@ function DdagD_operator(U::Array{<: AbstractGaugefields{NC,Dim},1},x,parameters)
         DdagD_Staggered_operator(U,x,parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         DdagD_Wilson_operator(U,x,parameters)
+    elseif parameters["Dirac_operator"] == "WilsonClover"
+        clover_parameters = copy(parameters)
+        clover_parameters["hasclover"] = true
+        DdagD_Wilson_operator(U,x,clover_parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
         DdagD_Domainwall_operator(U,x,parameters)
     else

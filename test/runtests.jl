@@ -15,6 +15,9 @@ using LinearAlgebra
         @test true
     end
 
+    @testset "Wilson-clover checkpoints" begin
+        include("wilson_clover_operator_checkpoints.jl")
+    end
 
 
 
