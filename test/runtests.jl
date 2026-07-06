@@ -4,6 +4,9 @@ using Test
 using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
+    @testset "Gamma5 operations" begin
+        include("gamma5.jl")
+    end
     
     @testset "Staggered HMC" begin
         include("hmc.jl")
