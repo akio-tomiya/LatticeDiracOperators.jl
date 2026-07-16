@@ -1,329 +1,158 @@
+const CLOVER_DIRECTION_PAIRS = ((1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4))
 
-using Wilsonloop
-import Wilsonloop: make_cloverloops
-import Gaugefields: AbstractGaugefields_module.Antihermitian!
-
-struct WilsonClover{Dim,TG}
+struct WilsonClover
     cSW::Float64
-    cloverloops::Matrix{Vector{Wilsonline{Dim}}}
-    internal_flags::Array{Bool,1}
-    inn_table::Array{Int64,3}
-    _ftmp_vectors::Array{Array{ComplexF64,3},1}
-    _is1::Array{Int64,1}
-    _is2::Array{Int64,1}
-    CloverFμν::Vector{TG}
-    #CloverFμν::Array{ComplexF64,4}
-    temp_gaugefields::Vector{TG}
-    factor::Float64
-    #dcoverloopsdU::Matrix{Vector{Vector{Wilsonloop.DwDU{Dim}}}}
-    #dcoverloopsdagdU::Matrix{Vector{Vector{Wilsonloop.DwDU{Dim}}}}
-    #σ::Array{Array{ComplexF64,2},2}
+    clover_coefficient::Float64
+    Fmunu::Array{ComplexF64,4}
+    sigma_munu::Array{ComplexF64,3}
 end
-
 
 function WilsonClover(cSW, Dim, NV, U, hop)
-    #σ = make_σμν()
-    cloverloops = Matrix{Vector{Wilsonline{Dim}}}(undef, Dim, Dim)
+    @assert Dim == 4 "Wilson-clover is supported only in four dimensions"
+    NC = U[1].NC
+    expected_NV = U[1].NX * U[1].NY * U[1].NZ * U[1].NT
+    @assert NV == expected_NV "The fermion and gauge-field volumes must agree"
+    clover = WilsonClover(
+        Float64(cSW),
+        Float64(cSW),
+        zeros(ComplexF64, NC, NC, NV, length(CLOVER_DIRECTION_PAIRS)),
+        clover_sigma_matrices(),
+    )
+    update_clover!(clover, U)
+    return clover
+end
 
-    #dcloverloopsdU = Matrix{Vector{Vector{DwDU{Dim}}}}(undef,Dim,Dim)
-    #dcloverloopsdagdU = Matrix{Vector{Vector{DwDU{Dim}}}}(undef,Dim,Dim)
+function (D::WilsonClover)(U)
+    NC = U[1].NC
+    NV = U[1].NX * U[1].NY * U[1].NZ * U[1].NT
+    clover = WilsonClover(
+        D.cSW,
+        D.clover_coefficient,
+        zeros(ComplexF64, NC, NC, NV, length(CLOVER_DIRECTION_PAIRS)),
+        D.sigma_munu,
+    )
+    update_clover!(clover, U)
+    return clover
+end
 
+function clover_sigma_matrices()
+    gamma, _, _ = mk_gamma(1.0)
+    sigma_munu = zeros(ComplexF64, 4, 4, length(CLOVER_DIRECTION_PAIRS))
+    for (ipair, (mu, nu)) in enumerate(CLOVER_DIRECTION_PAIRS)
+        sigma_munu[:, :, ipair] .=
+            0.5 .* (gamma[:, :, mu] * gamma[:, :, nu] - gamma[:, :, nu] * gamma[:, :, mu])
+    end
+    return sigma_munu
+end
 
-    for μ = 1:Dim
-        for ν = 1:Dim
-            #loops = Wilsonline{Dim}[]
-            #loop_righttop = Wilsonline([(μ, 1), (ν, 1), (μ, -1), (ν, -1)])
-            #push!(loops, loop_righttop)
+@inline function _clover_shift(site::NTuple{4,Int}, dir::Int, step::Int, dims::NTuple{4,Int})
+    shifted = (site[1], site[2], site[3], site[4])
+    value = mod(site[dir] - 1 + step, dims[dir]) + 1
+    if dir == 1
+        return (value, shifted[2], shifted[3], shifted[4])
+    elseif dir == 2
+        return (shifted[1], value, shifted[3], shifted[4])
+    elseif dir == 3
+        return (shifted[1], shifted[2], value, shifted[4])
+    end
+    return (shifted[1], shifted[2], shifted[3], value)
+end
 
+@inline function _clover_linear_site(site::NTuple{4,Int}, dims::NTuple{4,Int})
+    ix, iy, iz, it = site
+    NX, NY, NZ, _ = dims
+    return (it - 1) * NX * NY * NZ + (iz - 1) * NX * NY + (iy - 1) * NX + ix
+end
 
-            cloverloops[μ, ν] = make_cloverloops(μ, ν; Dim=Dim)
-            #dcloverloopsdU[μ, ν] = Vector{Vector{DwDU{Dim}}}(undef,Dim) 
-            #dcloverloopsdagdU[μ, ν] = Vector{Vector{DwDU{Dim}}}(undef,Dim) 
-            #=
-            for μd=1:Dim
-                dcloverloopsdU[μ, ν][μd] =  DwDU{Dim}[]
-                dcloverloopsdagdU[μ, ν][μd] =  DwDU{Dim}[]
+function _clover_link_matrix(Udir, site::NTuple{4,Int})
+    NC = Udir.NC
+    ix, iy, iz, it = site
+    mat = Matrix{ComplexF64}(undef, NC, NC)
+    @inbounds for j = 1:NC, i = 1:NC
+        mat[i, j] = Udir[i, j, ix, iy, iz, it]
+    end
+    return mat
+end
+
+function _clover_plaquette_sum(U, site::NTuple{4,Int}, mu::Int, nu::Int, dims::NTuple{4,Int})
+    x = site
+    xpmu = _clover_shift(x, mu, 1, dims)
+    xpnu = _clover_shift(x, nu, 1, dims)
+    xmmu = _clover_shift(x, mu, -1, dims)
+    xmnu = _clover_shift(x, nu, -1, dims)
+    xmmu_pnu = _clover_shift(xmmu, nu, 1, dims)
+    xmmu_mnu = _clover_shift(xmmu, nu, -1, dims)
+    xpmu_mnu = _clover_shift(xpmu, nu, -1, dims)
+
+    U_mu_x = _clover_link_matrix(U[mu], x)
+    U_nu_x = _clover_link_matrix(U[nu], x)
+    U_nu_xpmu = _clover_link_matrix(U[nu], xpmu)
+    U_mu_xpnu = _clover_link_matrix(U[mu], xpnu)
+    U_mu_xmmu = _clover_link_matrix(U[mu], xmmu)
+    U_nu_xmmu = _clover_link_matrix(U[nu], xmmu)
+    U_mu_xmnu = _clover_link_matrix(U[mu], xmnu)
+    U_nu_xmnu = _clover_link_matrix(U[nu], xmnu)
+    U_mu_xmmu_pnu = _clover_link_matrix(U[mu], xmmu_pnu)
+    U_nu_xmmu_mnu = _clover_link_matrix(U[nu], xmmu_mnu)
+    U_mu_xmmu_mnu = _clover_link_matrix(U[mu], xmmu_mnu)
+    U_nu_xpmu_mnu = _clover_link_matrix(U[nu], xpmu_mnu)
+
+    p1 = U_mu_x * U_nu_xpmu * U_mu_xpnu' * U_nu_x'
+    p2 = U_nu_x * U_mu_xmmu_pnu' * U_nu_xmmu' * U_mu_xmmu
+    p3 = U_mu_xmmu' * U_nu_xmmu_mnu' * U_mu_xmmu_mnu * U_nu_xmnu
+    p4 = U_nu_xmnu' * U_mu_xmnu * U_nu_xpmu_mnu * U_mu_x'
+    return p1 + p2 + p3 + p4
+end
+
+function _traceless_antihermitian_part(mat::AbstractMatrix{ComplexF64})
+    NC = size(mat, 1)
+    out = 0.125 .* (mat - mat')
+    trace_part = tr(out) / NC
+    @inbounds for i = 1:NC
+        out[i, i] -= trace_part
+    end
+    return out
+end
+
+function update_clover!(clover::WilsonClover, U::Array{<:AbstractGaugefields{NC,4},1}) where NC
+    dims = (U[1].NX, U[1].NY, U[1].NZ, U[1].NT)
+    for it = 1:dims[4], iz = 1:dims[3], iy = 1:dims[2], ix = 1:dims[1]
+        site = (ix, iy, iz, it)
+        isite = _clover_linear_site(site, dims)
+        for (ipair, (mu, nu)) in enumerate(CLOVER_DIRECTION_PAIRS)
+            fmat = _traceless_antihermitian_part(_clover_plaquette_sum(U, site, mu, nu, dims))
+            @inbounds for j = 1:NC, i = 1:NC
+                clover.Fmunu[i, j, isite, ipair] = fmat[i, j]
             end
-
-            for μd=1:Dim
-                for loop in cloverloops[μ, ν]
-                    dU = derive_U(loop,μd)
-                    for dUi in dU
-                        #show(dUi)
-                        push!(dcloverloopsdU[μ, ν][μd] ,dUi)
-                    end
-                end
-                for loop in cloverloops[μ, ν]
-                    dU = derive_U(loop',μd)
-                    for dUi in dU
-                        #show(dUi)
-                        push!(dcloverloopsdagdU[μ, ν][μd] ,dUi)
-                    end
-                end
-            end
-            =#
         end
     end
-
-
-    #error("dd")
-
-
-    numtemp = 5
-    TG = eltype(U)
-    temp_gaugefields = Vector{TG}(undef, numtemp)
-    for i = 1:numtemp
-        temp_gaugefields[i] = similar(U[1])
-    end
-
-
-    inn_table = zeros(Int64, NV, 4, 2)
-    internal_flags = zeros(Bool, 2)
-    _ftmp_vectors = Array{Array{ComplexF64,3},1}(undef, 6)
-    _is1 = zeros(Int64, NV)
-    _is2 = zeros(Int64, NV)
-
-    factor = cSW * hop
-
-
-    CloverFμν = Make_CloverFμν(U, temp_gaugefields, cloverloops, factor)
-    #asum = 0.0
-    #=
-    asum2 = 0.0
-    temps = eltype(U)[]
-    ni = 4
-    for i=1:ni
-        push!(temps,similar(U[1]))
-    end
-    CloverFμν2 =  Gaugefields.make_Cloverloopterms(U,temps)
-
-    for i=1:length(CloverFμν)
-        asum += sum(abs.(CloverFμν[i].U))
-        asum2 += sum(abs.(CloverFμν2[i].U))*factor*0.125
-    end
-    println("sum(abs.(CloverFμν )) $asum $asum2")
-    =#
-
-
-    return WilsonClover{Dim,TG}(
-        cSW, cloverloops, internal_flags, inn_table, _ftmp_vectors, _is1, _is2, CloverFμν,
-        temp_gaugefields, factor)#,dcloverloopsdU,dcoverloopsdagdU)
-    #return new(cSW, σ)
+    return clover
 end
 
-function (D::WilsonClover{Dim,TG})(U) where {Dim,TG}
-    Make_CloverFμν!(D.CloverFμν, U, D.temp_gaugefields, D.cloverloops, D.factor)
-    #println("clover $(sum(abs.(D.CloverFμν[1].U)))")
-    #println("U ",sum(abs.(U[1].U)))
-    return WilsonClover{Dim,TG}(
-        D.cSW, D.cloverloops, D.internal_flags, D.inn_table, D._ftmp_vectors, D._is1, D._is2, D.CloverFμν,
-        D.temp_gaugefields, D.factor)
-end
+function add_clover_term!(xout, A, x)
+    clover = A.cloverterm
+    clover === nothing && return xout
+    coefficient = A.κ * clover.clover_coefficient
+    iszero(coefficient) && return xout
 
-
-
-
-function Make_CloverFμν(U::Array{<:AbstractGaugefields{NC,Dim},1}, temps::Vector{T}, cloverloops, factor) where {T,NC,Dim}
-    NV = temps[1].NV
-    CloverFμν = Vector{T}(undef, 6)
-    for μν = 1:6
-        CloverFμν[μν] = similar(U[1])
-    end
-    #CloverFμν = zeros(ComplexF64,NC,NC,NV,6)
-    Make_CloverFμν!(CloverFμν, U, temps, cloverloops, factor)
-    return CloverFμν
-end
-
-function Make_CloverFμν!(CloverFμν, U::Array{<:AbstractGaugefields{NC,Dim},1}, temps, cloverloops, factor) where {NC,Dim}
-    @assert Dim == 4 "Only Dim = 4 case is supported. Now Dim = $Dim"
-    work1 = temps[4]
-    work2 = temps[5]
-
-    coe = im * 0.125 * factor
-
-    # ... Calculation of 4 leaves under the counter clock order.
-    μν = 0
-    for μ = 1:3
-        for ν = μ+1:4
-            μν += 1
-            if μν > 6
-                error("μν > 6 ?")
-            end
-
-            loops = cloverloops[μ, ν]
-
-            evaluate_gaugelinks!(work1, loops, U, temps)
-            #println(coe)
-            #for i=1:4
-            #    println("work1 ",work1[:,:,i,1,1,1],"\n")
-            #end
-            #Antihermitian!(CloverFμν[μν],work1,factor=coe) #work - work^+
-
-            Antihermitian!(work2, work1) #work - work^+
-            mul!(CloverFμν[μν], coe, work2)
-            #for i=1:4
-            #    println("c1 ",CloverFμν[μν][:,:,i,1,1,1],"\n")
-            #end
-            #substitute_U!(CloverFμν[μν],work1)
-
-            #loopset = Loops(U,fparam._cloverloops[μ,ν],[work2,work3,work4])
-            #evaluate_loops!(work1,loopset,U)
-            #setFμν!(CloverFμν,μν,work1)
-
-        end
-    end
-    #error("clover")
-
-
-
-end
-
-
-
-function make_σμν()
-    σ = Array{Array{ComplexF64,2},2}(undef, 4, 4)
-    for μ = 1:4
-        γμ = γ_all[:, :, μ]
-        for ν = 1:4
-            γν = γ_all[:, :, ν]
-            σ[μ, ν] = (γμ * γν .- γν * γμ) * (1 / 2)
-        end
-    end
-    return σ
-end
-
-
-
-"""
-    cloverterm_σμν!(vec,cloverterm,x,temp1,temp2)
-
-TBW
-"""
-function cloverterm_σμν!(vec, cloverterm, x, temp1, temp2)
-    μν = 0
-    clear_fermion!(temp1)
-    clear_fermion!(temp2)
-    #println("x ",sum(abs.(x.f)))
-    #println("vec ",sum(abs.(vec.f)))
-    for μ = 1:3
-        for ν = μ+1:4
-            μν += 1
-            #println("$μν $(sum(abs.(cloverterm.CloverFμν[μν].U)))")
-
-            #println("clovr  ",sum(abs.(cloverterm.CloverFμν[μν].U)))
-            mul!(temp1, cloverterm.CloverFμν[μν], x)
-            #println("ff1 ",sum(abs.(temp1.f)))
-            apply_σμν!(temp2, μ, ν, temp1)
-            #println("ff2 ",sum(abs.(temp2.f)))
-            #apply_σμν!(temp1,μ,ν,x)
-            #println(sum(abs.(cloverterm.CloverFμν[μν].U)))
-            #mul!(temp2,cloverterm.CloverFμν[μν],temp1)
-            #println("ffd ",sum(abs.(vec.f)))
-            add_fermion!(vec, 1, temp2)
-            #println("ffc ",sum(abs.(vec.f)))
-        end
-    end
-    #println("ff ",sum(abs.(vec.f)))
-    set_wing_fermion!(vec)
-    #println("ffvv ",sum(abs.(vec.f)))
-end
-
-
-function cloverterm!(vec, cloverterm, x)
-    NT = x.NT
-    NZ = x.NZ
-    NY = x.NY
-    NX = x.NX
+    update_clover!(clover, A.U)
+    dims = (x.NX, x.NY, x.NZ, x.NT)
     NC = x.NC
-    CloverFμν = cloverterm.CloverFμν
-
-
-
-    i = 0
-    for it = 1:NT
-        for iz = 1:NZ
-            for iy = 1:NY
-                for ix = 1:NX
-                    i += 1
-                    for k1 = 1:NC
-                        for k2 = 1:NC
-
-                            c1 = x[k2, ix, iy, iz, it, 1]
-                            c2 = x[k2, ix, iy, iz, it, 2]
-                            c3 = x[k2, ix, iy, iz, it, 3]
-                            c4 = x[k2, ix, iy, iz, it, 4]
-
-                            vec[k1, ix, iy, iz, it, 1] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (-c1) +
-                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (-im * c2) +
-                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (-c2) +
-                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c2) +
-                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (im * c2) +
-                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (-c1)
-
-
-
-                            vec[k1, ix, iy, iz, it, 2] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (c2) +
-                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (im * c1) +
-                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (-c1) +
-                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c1) +
-                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (-im * c1) +
-                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (c2)
-
-                            vec[k1, ix, iy, iz, it, 3] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (-c3) +
-                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (-im * c4) +
-                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (c4) +
-                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c4) +
-                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (-im * c4) +
-                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (c3)
-
-                            vec[k1, ix, iy, iz, it, 4] += CloverFμν[1][k1, k2, ix, iy, iz, it] * (c4) +
-                                                          +CloverFμν[2][k1, k2, ix, iy, iz, it] * (im * c3) +
-                                                          +CloverFμν[3][k1, k2, ix, iy, iz, it] * (c3) +
-                                                          +CloverFμν[4][k1, k2, ix, iy, iz, it] * (-c3) +
-                                                          +CloverFμν[5][k1, k2, ix, iy, iz, it] * (im * c3) +
-                                                          +CloverFμν[6][k1, k2, ix, iy, iz, it] * (-c4)
-
-
-                        end
+    for it = 1:x.NT, iz = 1:x.NZ, iy = 1:x.NY, ix = 1:x.NX
+        isite = _clover_linear_site((ix, iy, iz, it), dims)
+        for alpha = 1:4, color_out = 1:NC
+            accum = zero(ComplexF64)
+            for ipair = 1:length(CLOVER_DIRECTION_PAIRS), beta = 1:4
+                spin_factor = clover.sigma_munu[alpha, beta, ipair]
+                if !iszero(spin_factor)
+                    for color_in = 1:NC
+                        accum += clover.Fmunu[color_out, color_in, isite, ipair] *
+                                 spin_factor * x[color_in, ix, iy, iz, it, beta]
                     end
                 end
             end
-
+            xout[color_out, ix, iy, iz, it, alpha] += coefficient * accum
         end
     end
-
-    #println("vec = ",vec*vec)
-
-end
-
-
-
-
-struct WilsonClover_misc
-    clover_coefficient::Float64
-    internal_flags::Array{Bool,1}
-    inn_table::Array{Int64,3}
-    _ftmp_vectors::Array{Array{ComplexF64,3},1}
-    _is1::Array{Int64,1}
-    _is2::Array{Int64,1}
-
-    function WilsonClover(
-        U::Array{<:AbstractGaugefields{NC,Dim},1},
-        x,
-        clover_coefficient,
-    ) where {NC,Dim}
-        _, _, NN... = size(U[1])
-        NV = prod(NN)
-        inn_table = zeros(Int64, NV, 4, 2)
-        internal_flags = zeros(Bool, 2)
-        _ftmp_vectors = Array{Array{ComplexF64,3},1}(undef, 6)
-        for i = 1:6
-            _ftmp_vectors[i] = zeros(ComplexF64, NC, NV, 4)
-        end
-
-        _is1 = zeros(Int64, NV)
-        _is2 = zeros(Int64, NV)
-
-        return new(clover_coefficient, internal_flags, inn_table, _ftmp_vectors, _is1, _is2)
-    end
+    return xout
 end

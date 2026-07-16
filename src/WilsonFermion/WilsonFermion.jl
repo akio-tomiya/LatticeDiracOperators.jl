@@ -613,19 +613,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     set_wing_fermion!(xout, A.boundarycondition)
 
     if A.cloverterm != nothing
-        #clear_fermion!(xout) #debug
-        #println("xout ",sum(abs.(xout.f)))
-        #println(sum(abs.(x.f)))
-        #println(sum(abs.(xout.f)))
-
-        cloverterm_σμν!(xout, A.cloverterm, x, temp, temp2)
-        #println("after: ",dot(xout,xout))
-
-        #clear_fermion!(xout) #debug
-        #cloverterm!(xout,A.cloverterm,x)
-        #println(sum(abs.(xout.f)))
-        #error("dddd")
-        #add_fermion!(xout, 1, xout, 1, temp2)
+        add_clover_term!(xout, A, x)
     end
 
     set_wing_fermion!(xout, A.boundarycondition)
@@ -932,81 +920,9 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
 end
 
 function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
-    #,temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
-    #temp = A._temporary_fermi[4] #temps[4]
-    #temp1 = A._temporary_fermi[1] #temps[1]
-    #temp2 = A._temporary_fermi[2] #temps[2]
-    temp, it_temp = get_temp(A._temporary_fermi)#[4] #temps[4]
-    temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
-    temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
-
-
-
-    clear_fermion!(temp)
-    set_wing_fermion!(x, A.boundarycondition)
-    x5 = A._temporary_fermi[5]
-    mul_γ5x!(x5, x)
-    #set_wing_fermion!(x5)
-    set_wing_fermion!(x5, A.boundarycondition)
-
-    for ν = 1:Dim
-        xplus = shift_fermion(x5, ν)
-        mul!(temp1, U[ν], xplus)
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-        #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
-        #mul!(temp1, view(A.rplusγ, :, :, ν))
-        mul!(temp1, A.rminusγ[:, :, ν])
-
-
-        #
-        xminus = shift_fermion(x5, -ν)
-        Uminus = shift_U(U[ν], -ν)
-
-        mul!(temp2, Uminus', xminus)
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
-        #mul!(temp2, view(A.rminusγ, :, :, ν))
-        mul!(temp2, A.rplusγ[:, :, ν])
-
-
-        add_fermion!(temp, A.hopp[ν], temp1, A.hopm[ν], temp2)
-
-
-
-    end
-
-    clear_fermion!(temp1)
-    add_fermion!(temp1, 1, x5, -1, temp)
-    set_wing_fermion!(temp1, A.boundarycondition)
-    cloverterm_σμν!(temp1, A.cloverterm, x5, temp, temp2)
-    #println("before ",dot(temp1,temp1))
-    #println("x5 ",dot(x5,x5))
-    #clear_fermion!(temp1)
-    #for ix=1:4
-    #for i=1:6
-    #    println("clover $i $ix", A.cloverterm.CloverFμν[i][:,:,ix,1,1,1])
-    #end
-    #end
-    #error("dd")
-    #cloverterm!(temp1,A.cloverterm,x5)
-    #println("after ",dot(temp1,temp1))
-    #add_fermion!(temp, 1, temp1, 1, temp2)
-    #cloverterm!(temp1,A.cloverterm,x5)
-    #add_fermion!(xout, 1, x, -1, temp)
-    #mul_γ5x!(xout,temp)
-    mul_γ5x!(xout, temp1)
+    Wdagx_noclover!(xout, U, x, A, Dim)
+    add_clover_term!(xout, A, x)
     set_wing_fermion!(xout, A.boundarycondition)
-
-
-    unused!(A._temporary_fermi, it_temp)
-    unused!(A._temporary_fermi, it_temp1)
-    unused!(A._temporary_fermi, it_temp2)
-
-    #display(xout)
-    #    exit()
     return
 end
 
