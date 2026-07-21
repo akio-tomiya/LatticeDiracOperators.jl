@@ -155,13 +155,13 @@ function Dirac_operator(
             end
         end
     elseif parameters["Dirac_operator"] == "WilsonClover"
-        @warn "not implemented completely!!"
         fasterversion = check_parameters(parameters, "faster version", false)
         if fasterversion
             @warn "The faster version is not supported but now \"faster version\" is true. We ignore it. "
         end
-        parameters["hasclover"] = true
-        Wilson_Dirac_operator(U, x, parameters)
+        clover_parameters = copy(parameters)
+        clover_parameters["hasclover"] = true
+        Wilson_Dirac_operator(U, x, clover_parameters)
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
@@ -187,6 +187,10 @@ function DdagD_operator(
         DdagD_Staggered_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         DdagD_Wilson_operator(U, x, parameters)
+    elseif parameters["Dirac_operator"] == "WilsonClover"
+        clover_parameters = copy(parameters)
+        clover_parameters["hasclover"] = true
+        DdagD_Wilson_operator(U, x, clover_parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
         DdagD_Domainwall_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "GeneralDirac"

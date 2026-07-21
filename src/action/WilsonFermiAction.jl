@@ -1,7 +1,6 @@
 import Gaugefields: Traceless_antihermitian_add!, Generator
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
-
 #include("clover_data.jl")
 
 abstract type Wilsontype_FermiAction{Dim,Dirac,fermion,gauge} <:
@@ -55,6 +54,7 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
         x, it_x = get_temp(D._temporary_fermi)
 
         xtype = typeof(x)
+        unused!(D._temporary_fermi, it_x)
         _temporary_fermionfields = Temporalfields(x; num)# Array{xtype,1}(undef, num)
         #for i = 1:num
         #    _temporary_fermionfields[i] = similar(x)
@@ -95,6 +95,212 @@ function evaluate_FermiAction(
     unused!(fermi_action._temporary_fermionfields, it_eta)
     return real(Sf)
 end
+
+function _sun_generator_matrices_for_clover_force(NC)
+    if NC == 2
+        return Matrix{ComplexF64}[
+            ComplexF64[0 1; 1 0],
+            ComplexF64[0 -im; im 0],
+            ComplexF64[1 0; 0 -1],
+        ]
+    elseif NC == 3
+        return Matrix{ComplexF64}[
+            ComplexF64[0 1 0; 1 0 0; 0 0 0],
+            ComplexF64[0 -im 0; im 0 0; 0 0 0],
+            ComplexF64[1 0 0; 0 -1 0; 0 0 0],
+            ComplexF64[0 0 1; 0 0 0; 1 0 0],
+            ComplexF64[0 0 -im; 0 0 0; im 0 0],
+            ComplexF64[0 0 0; 0 0 1; 0 1 0],
+            ComplexF64[0 0 0; 0 0 -im; 0 im 0],
+            (1 / sqrt(3)) .* ComplexF64[1 0 0; 0 1 0; 0 0 -2],
+        ]
+    end
+
+    generators = Matrix{ComplexF64}[]
+    sigma = Matrix{ComplexF64}[
+        ComplexF64[0 1; 1 0],
+        ComplexF64[0 -im; im 0],
+    ]
+    for i = 1:NC, j = i+1:NC
+        for pauli in sigma
+            lambda = zeros(ComplexF64, NC, NC)
+            lambda[i, i] = pauli[1, 1]
+            lambda[i, j] = pauli[1, 2]
+            lambda[j, i] = pauli[2, 1]
+            lambda[j, j] = pauli[2, 2]
+            lambda ./= sqrt(real(tr(lambda * lambda)) / 2)
+            push!(generators, lambda)
+        end
+    end
+    for a = 1:NC-1
+        lambda = zeros(ComplexF64, NC, NC)
+        for i = 1:a
+            lambda[i, i] = 1
+        end
+        lambda[a+1, a+1] = -tr(lambda)
+        lambda ./= sqrt(real(tr(lambda * lambda)) / 2)
+        push!(generators, lambda)
+    end
+    return generators
+end
+
+function _add_generator_component_to_force_matrix!(force_mu, generator, coefficient, site)
+    ix, iy, iz, it = site
+    NC = size(generator, 1)
+    @inbounds for j = 1:NC, i = 1:NC
+        force_mu[i, j, ix, iy, iz, it] += coefficient * (im / 2) * generator[i, j]
+    end
+    return force_mu
+end
+
+function _traceless_antihermitian_unscaled(mat::AbstractMatrix{ComplexF64})
+    NC = size(mat, 1)
+    out = mat - mat'
+    trace_part = tr(out) / NC
+    @inbounds for i = 1:NC
+        out[i, i] -= trace_part
+    end
+    return out
+end
+
+function _clover_color_source_matrix(X, Y, sigma_munu, site, ipair, NC)
+    ix, iy, iz, it = site
+    source = zeros(ComplexF64, NC, NC)
+    @inbounds for b = 1:NC, a = 1:NC
+        accum = zero(ComplexF64)
+        for alpha = 1:4
+            yconj = conj(Y[a, ix, iy, iz, it, alpha])
+            for beta = 1:4
+                spin_factor = sigma_munu[alpha, beta, ipair]
+                if !iszero(spin_factor)
+                    accum += spin_factor * X[b, ix, iy, iz, it, beta] * yconj
+                end
+            end
+        end
+        source[b, a] = accum
+    end
+    return source
+end
+
+function _clover_R_source_matrix(X, Y, clover, site, ipair, NC, kappa)
+    source = _clover_color_source_matrix(X, Y, clover.sigma_munu, site, ipair, NC)
+    return -(kappa * clover.clover_coefficient / 4) .*
+           _traceless_antihermitian_unscaled(source)
+end
+
+function _identity_color_matrix(NC)
+    eye = zeros(ComplexF64, NC, NC)
+    @inbounds for i = 1:NC
+        eye[i, i] = 1
+    end
+    return eye
+end
+
+function _clover_factor_product(factors, first, last, NC)
+    product = _identity_color_matrix(NC)
+    for i = first:last
+        product = product * factors[i].mat
+    end
+    return product
+end
+
+function _clover_link_factor(U, dir, site, dagger)
+    link = _clover_link_matrix(U[dir], site)
+    return (dir=dir, site=site, dagger=dagger, mat=dagger ? link' : link)
+end
+
+function _clover_plaquette_factor_terms(U, site, mu, nu, dims)
+    x = site
+    xpmu = _clover_shift(x, mu, 1, dims)
+    xpnu = _clover_shift(x, nu, 1, dims)
+    xmmu = _clover_shift(x, mu, -1, dims)
+    xmnu = _clover_shift(x, nu, -1, dims)
+    xmmu_pnu = _clover_shift(xmmu, nu, 1, dims)
+    xmmu_mnu = _clover_shift(xmmu, nu, -1, dims)
+    xpmu_mnu = _clover_shift(xpmu, nu, -1, dims)
+
+    return (
+        (
+            _clover_link_factor(U, mu, x, false),
+            _clover_link_factor(U, nu, xpmu, false),
+            _clover_link_factor(U, mu, xpnu, true),
+            _clover_link_factor(U, nu, x, true),
+        ),
+        (
+            _clover_link_factor(U, nu, x, false),
+            _clover_link_factor(U, mu, xmmu_pnu, true),
+            _clover_link_factor(U, nu, xmmu, true),
+            _clover_link_factor(U, mu, xmmu, false),
+        ),
+        (
+            _clover_link_factor(U, mu, xmmu, true),
+            _clover_link_factor(U, nu, xmmu_mnu, true),
+            _clover_link_factor(U, mu, xmmu_mnu, false),
+            _clover_link_factor(U, nu, xmnu, false),
+        ),
+        (
+            _clover_link_factor(U, nu, xmnu, true),
+            _clover_link_factor(U, mu, xmnu, false),
+            _clover_link_factor(U, nu, xpmu_mnu, false),
+            _clover_link_factor(U, mu, x, true),
+        ),
+    )
+end
+
+function _clover_link_gradients(K, generators)
+    return (real(tr(((im / 2) .* generator) * K)) for generator in generators)
+end
+
+function _accumulate_clover_plaquette_term!(destination, factors, Rsrc, generators, coeff, raw)
+    NC = size(Rsrc, 1)
+    for ifactor = 1:length(factors)
+        factor = factors[ifactor]
+        left = _clover_factor_product(factors, 1, ifactor - 1, NC)
+        right = _clover_factor_product(factors, ifactor + 1, length(factors), NC)
+        K = factor.dagger ?
+            -right * Rsrc * left * factor.mat :
+            factor.mat * right * Rsrc * left
+        for (igen, gradient) in enumerate(_clover_link_gradients(K, generators))
+            if raw
+                _add_generator_component_to_force_matrix!(
+                    destination[factor.dir], generators[igen], coeff * gradient, factor.site)
+            else
+                ix, iy, iz, it = factor.site
+                destination[factor.dir][igen, ix, iy, iz, it] += coeff * gradient
+            end
+        end
+    end
+    return destination
+end
+
+function _calc_clover_force_fromX!(destination, Y, W, U, X; coeff=1, raw=false)
+    clover = W.cloverterm
+    clover === nothing && return destination
+    NC = U[1].NC
+    generators = _sun_generator_matrices_for_clover_force(NC)
+    if !raw && length(generators) != destination[1].NumofBasis
+        error("Number of SU($NC) generators does not match momentum basis")
+    end
+
+    dims = (U[1].NX, U[1].NY, U[1].NZ, U[1].NT)
+    for it = 1:dims[4], iz = 1:dims[3], iy = 1:dims[2], ix = 1:dims[1]
+        site = (ix, iy, iz, it)
+        for (ipair, (mu, nu)) in enumerate(CLOVER_DIRECTION_PAIRS)
+            Rsrc = _clover_R_source_matrix(X, Y, clover, site, ipair, NC, W.κ)
+            for factors in _clover_plaquette_factor_terms(U, site, mu, nu, dims)
+                _accumulate_clover_plaquette_term!(
+                    destination, factors, Rsrc, generators, coeff, raw)
+            end
+        end
+    end
+    return destination
+end
+
+calc_p_UdSfdU_clover_fromX!(p, Y, W, U, X; coeff=1) =
+    _calc_clover_force_fromX!(p, Y, W, U, X; coeff=coeff, raw=false)
+
+calc_UdSfdU_clover_fromX!(force, Y, W, U, X; coeff=1) =
+    _calc_clover_force_fromX!(force, Y, W, U, X; coeff=coeff, raw=true)
 
 function calc_UdSfdU!(
     UdSfdU::Vector{<:AbstractGaugefields},
@@ -155,14 +361,6 @@ function calc_UdSfdU_fromX!(
     temp0_g, it_temp0_g = get_temp(fermi_action._temporary_gaugefields)
     #temp0_g = fermi_action._temporary_gaugefields[1]
 
-    if hascloverterm
-        D = fermi_action.diracoperator
-        hop = D.κ
-        Clover_coefficient = D.cloverterm.cSW
-        coe = im * 0.125 * hop * Clover_coefficient
-    end
-
-
     for μ = 1:Dim
         #!  Construct U(x,mu)*P1
 
@@ -214,14 +412,10 @@ function calc_UdSfdU_fromX!(
 
         add_U!(UdSfdU[μ], coeff, temp0_g)
 
-        if hascloverterm
-            clear_U!(temp0_g)
-            dSclover!(temp0_g, μ, X, Y, U, fermi_action)
-            #println(sum(abs.(temp0_g.U)))
-            add_U!(UdSfdU[μ], -coeff * 0, temp0_g)
-            #add!(p[μ],-τ*mdparams.Δτ,c)
-        end
+    end
 
+    if hascloverterm
+        calc_UdSfdU_clover_fromX!(UdSfdU, Y, W, U, X; coeff=coeff)
     end
 
     unused!(fermi_action._temporary_fermionfields, it_temp0_f)
@@ -243,8 +437,8 @@ function calc_p_UdSfdU!(
     #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
-    X = fermi_action._temporary_fermionfields[end]
-    Y = fermi_action._temporary_fermionfields[2]
+    X, it_X = get_temp(fermi_action._temporary_fermionfields)
+    Y, it_Y = get_temp(fermi_action._temporary_fermionfields)
     #X = (D^dag D)^(-1) ϕ 
     #
     #println("Xd ",X[1,1,1,1,1,1])
@@ -253,6 +447,8 @@ function calc_p_UdSfdU!(
     #clear_U!(UdSfdU)
 
     calc_p_UdSfdU_fromX!(p, Y, fermi_action, U, X, coeff=coeff)
+    unused!(fermi_action._temporary_fermionfields, it_X)
+    unused!(fermi_action._temporary_fermionfields, it_Y)
     #println("----aa--")
     #set_wing_U!(UdSfdU)
 end
@@ -269,9 +465,9 @@ function calc_p_UdSfdU_fromX!(
     mul!(Y, W, X)
     #set_wing_fermion!(Y)
 
-    temp0_f = fermi_action._temporary_fermionfields[3]
-    temp1_f = fermi_action._temporary_fermionfields[4]
-    temp0_g = fermi_action._temporary_gaugefields[1]
+    temp0_f, it_temp0_f = get_temp(fermi_action._temporary_fermionfields)
+    temp1_f, it_temp1_f = get_temp(fermi_action._temporary_fermionfields)
+    temp0_g, it_temp0_g = get_temp(fermi_action._temporary_gaugefields)
 
     for μ = 1:Dim
         #!  Construct U(x,mu)*P1
@@ -329,6 +525,13 @@ function calc_p_UdSfdU_fromX!(
 
     end
 
+    if hascloverterm
+        calc_p_UdSfdU_clover_fromX!(p, Y, W, U, X; coeff=coeff)
+    end
+
+    unused!(fermi_action._temporary_fermionfields, it_temp0_f)
+    unused!(fermi_action._temporary_fermionfields, it_temp1_f)
+    unused!(fermi_action._temporary_gaugefields, it_temp0_g)
 
 end
 
@@ -776,7 +979,6 @@ function dSclover!(z, μ, X, Y, U, fermi_action::WilsonFermiAction{Dim,Dirac,
 
 
     end
-
 
 end
 

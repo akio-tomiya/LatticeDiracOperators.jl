@@ -5,6 +5,10 @@ using LinearAlgebra
 
 @testset "LatticeDiracOperators.jl" begin
 
+    @testset "Wilson-clover" begin
+        include("wilson_clover.jl")
+    end
+
     @testset "Wilson HMC" begin
         println("Wilson HMC")
         include("wilsonhmc.jl")
