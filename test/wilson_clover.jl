@@ -14,8 +14,26 @@ const KAPPA = 0.08
 const FORCE_EPSILON = 1.0e-6
 
 function make_gauge(NC; L=2, condition="hot", seed=2026071601)
-    Random.seed!(seed + NC + L)
-    return Initialize_4DGaugefields(NC, 0, L, L, L, L; condition=condition)
+    U = Initialize_4DGaugefields(NC, 0, L, L, L, L; condition="cold")
+    condition == "cold" && return U
+    condition == "hot" || error("unsupported condition: $condition")
+
+    tangent = initialize_TA_Gaugefields(U)
+    clear_U!(tangent)
+    phase = 0.001 * (seed % 1000)
+    for mu in eachindex(U), it in 1:L, iz in 1:L, iy in 1:L, ix in 1:L
+        for igen in 1:(NC^2 - 1)
+            tangent[mu][igen, ix, iy, iz, it] =
+                0.18 * sin(phase + 0.31igen + 0.47mu + 0.19ix + 0.23iy + 0.29iz + 0.37it)
+        end
+    end
+    for mu in eachindex(U)
+        expU, temp1, temp2 = (similar(U[mu]) for _ in 1:3)
+        exptU!(expU, 1.0, tangent[mu], [temp1, temp2])
+        substitute_U!(U[mu], expU)
+    end
+    set_wing_U!(U)
+    return U
 end
 
 function make_spinor(U; seed=2026071602)
@@ -158,15 +176,17 @@ function test_force(NC; L=1, all_generators=true)
 
     generators = LDO._sun_generator_matrices_for_clover_force(NC)
     generator_indices = all_generators ? eachindex(generators) : 1:1
-    site = (1, 1, 1, 1)
-    mu = 1
-    for igen in generator_indices
+    sites = L == 1 ? ((1, 1, 1, 1),) : ((1, 1, 1, 1), (2, 1, 2, 1))
+    directions = L == 1 ? (1,) : eachindex(U)
+    for site in sites, mu in directions, igen in generator_indices
         finite_difference = fixed_xy_finite_difference(action, U, X, Y, mu, igen, site)
         @test p[mu][igen, site...] ≈ finite_difference rtol=2.0e-6 atol=2.0e-7
-        @test projected_force[mu][igen, site...] ≈ p[mu][igen, site...] rtol=1.0e-12 atol=1.0e-12
+        @test projected_force[mu][igen, site...] ≈
+              p[mu][igen, site...] rtol=1.0e-12 atol=1.0e-12
     end
 
     if NC == 2 && L == 1
+        site = only(sites)
         phi = similar(X)
         normal_operator = LDO.DdagD_Wilson_operator(D)
         mul!(phi, normal_operator, X)
@@ -214,7 +234,9 @@ end
         test_force(NC; L=1, all_generators=true)
         test_csw_zero_force(NC)
     end
-    test_force(2; L=2, all_generators=false)
+    for NC in (2, 3)
+        test_force(NC; L=2, all_generators=true)
+    end
 end
 
 end
