@@ -384,16 +384,16 @@ function clear_fermion!(a::WilsonFermion_4D_nowing{NC}, iseven) where {NC}
             for i4 = 1:n4
                 iz = i4
                 for i3 = 1:n3
-                    iy =
-                        i3 - for i2 = 1:n2
-                            ix = i2
-                            evenodd = ifelse((ix + iy + iz + it) % 2 == 0, true, false)
-                            if evenodd == iseven
-                                @simd for i1 = 1:NC
-                                    a.f[i1, i2, i3, i4, i5, i6] = 0
-                                end
+                    iy = i3
+                    for i2 = 1:n2
+                        ix = i2
+                        evenodd = ifelse((ix + iy + iz + it) % 2 == 0, true, false)
+                        if evenodd == iseven
+                            @simd for i1 = 1:NC
+                                a.f[i1, i2, i3, i4, i5, i6] = 0
                             end
                         end
+                    end
                 end
             end
         end
@@ -1453,4 +1453,3 @@ function Ux_afterν!(
         substitute_fermion!(y, x_shifted)
     end
 end
-
