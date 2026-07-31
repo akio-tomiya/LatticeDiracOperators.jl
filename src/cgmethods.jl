@@ -562,6 +562,7 @@ function bicgstab_evenodd(
         c1 = dot(rs, r, iseven)
         mul!(Ap, A, p)
         c2 = dot(rs, Ap, iseven)
+        println_verbose_level3(verbose, "$i-th c1: $c1 c2: $c2")
         α = c1 / c2
         #s = r - α*A*p
         add!(0, s, 1, r, iseven)
@@ -583,6 +584,7 @@ function bicgstab_evenodd(
         mul!(t, A, s)
         d1 = dot(t, s, iseven)
         d2 = dot(t, t, iseven)
+        println_verbose_level3(verbose, "$i-th snorm: $snorm d1: $d1 d2: $d2")
         ω = d1 / d2
 
         #r = (1-ω A)s
@@ -594,6 +596,7 @@ function bicgstab_evenodd(
         add!(x, α, p, iseven)
 
         β = (dot(rs, r, iseven) / c1) * (α / ω)
+        println_verbose_level3(verbose, "$i-th alpha: $α omega: $ω beta: $β")
 
         #p = r + β*(1-ωA)*p
         add!(β, p, 1, r, iseven)
@@ -1421,7 +1424,6 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
 
 
 
