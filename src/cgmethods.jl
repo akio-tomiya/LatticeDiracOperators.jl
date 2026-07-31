@@ -207,6 +207,16 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
 
         for i = 1:maxsteps
             c1 = dot(rs, r)
+            rho_scale = sqrt(real(rs ⋅ rs) * real(r ⋅ r))
+            if abs(c1) <= Base.eps(Float64) * rho_scale
+                substitute_fermion!(rs, r)
+                substitute_fermion!(p, r)
+                c1 = rs ⋅ r
+                println_verbose_level3(
+                    verbose,
+                    "Restarted BiCGStab shadow residual at $i-th step",
+                )
+            end
             mul!(Ap, A, p)
             c2 = dot(rs, Ap)
             α = c1 / c2
@@ -243,12 +253,6 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
             add!(x, ω, s)
             add!(x, α, p)
 
-            β = (dot(rs, r) / c1) * (α / ω)
-
-            #p = r + β*(1-ωA)*p
-            add!(β, p, 1, r)
-            add!(p, -ω * β, Ap)
-
             rnorm = real(r ⋅ r)
             println_verbose_level3(verbose, "$i-th eps: $rnorm")
 
@@ -267,6 +271,12 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     maxsteps,
                 )
             end
+
+            β = (dot(rs, r) / c1) * (α / ω)
+
+            #p = r + β*(1-ωA)*p
+            add!(β, p, 1, r)
+            add!(p, -ω * β, Ap)
         end
 
         error("""
@@ -560,6 +570,17 @@ function bicgstab_evenodd(
 
     for i = 1:maxsteps
         c1 = dot(rs, r, iseven)
+        rho_scale =
+            sqrt(real(dot(rs, rs, iseven)) * real(dot(r, r, iseven)))
+        if abs(c1) <= Base.eps(Float64) * rho_scale
+            add!(0, rs, 1, r, iseven)
+            add!(0, p, 1, r, iseven)
+            c1 = dot(rs, r, iseven)
+            println_verbose_level3(
+                verbose,
+                "Restarted BiCGStab shadow residual at $i-th step",
+            )
+        end
         mul!(Ap, A, p)
         c2 = dot(rs, Ap, iseven)
         println_verbose_level3(verbose, "$i-th c1: $c1 c2: $c2")
@@ -595,13 +616,6 @@ function bicgstab_evenodd(
         add!(x, ω, s, iseven)
         add!(x, α, p, iseven)
 
-        β = (dot(rs, r, iseven) / c1) * (α / ω)
-        println_verbose_level3(verbose, "$i-th alpha: $α omega: $ω beta: $β")
-
-        #p = r + β*(1-ωA)*p
-        add!(β, p, 1, r, iseven)
-        add!(p, -ω * β, Ap, iseven)
-
         rnorm = real(dot(r, r, iseven))
         println_verbose_level3(verbose, "$i-th eps: $rnorm")
 
@@ -617,6 +631,13 @@ function bicgstab_evenodd(
                 maxsteps,
             )
         end
+
+        β = (dot(rs, r, iseven) / c1) * (α / ω)
+        println_verbose_level3(verbose, "$i-th alpha: $α omega: $ω beta: $β")
+
+        #p = r + β*(1-ωA)*p
+        add!(β, p, 1, r, iseven)
+        add!(p, -ω * β, Ap, iseven)
 
 
 
@@ -1424,6 +1445,5 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
 
 
