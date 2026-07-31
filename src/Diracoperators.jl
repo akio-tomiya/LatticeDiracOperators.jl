@@ -226,12 +226,10 @@ function solve_DinvX!(
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Dirac_operator,T3<:AbstractFermionfields}
     #println("print $(A.verbose_print)")
-    if A.method_CG == "bicg"
+    diagnostics = if A.method_CG == "bicg"
         bicg(y, A, x; eps=A.eps_CG, maxsteps=A.MaxCGstep, verbose=A.verbose_print)#set_verbose(A.verbose_level)) 
-        set_wing_fermion!(y, A.boundarycondition)
     elseif A.method_CG == "bicgstab"
         bicgstab(y, A, x; eps=A.eps_CG, maxsteps=A.MaxCGstep, verbose=A.verbose_print)
-        set_wing_fermion!(y, A.boundarycondition)
     elseif A.method_CG == "preconditiond_bicgstab"
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
         WW = Wilson_Dirac_operator_evenodd(A)
@@ -263,11 +261,15 @@ function solve_DinvX!(
 
         #Toex!(y,U,x,A,iseven)
         #xo = K Toe xe + b0
+        nothing
     else
         error("A.method_CG = $(A.method_CG) is not supported")
     end
 
-
+    if A.method_CG != "preconditiond_bicgstab"
+        set_wing_fermion!(y, A.boundarycondition)
+    end
+    return diagnostics
 end
 
 function solve_DinvX!(
@@ -275,7 +277,7 @@ function solve_DinvX!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Dirac_operator,T3<:AbstractFermionfields}
-    if A.parent.method_CG == "bicg"
+    diagnostics = if A.parent.method_CG == "bicg"
         bicg(
             y,
             A,
@@ -328,6 +330,7 @@ function solve_DinvX!(
     end
 
     set_wing_fermion!(y, A.parent.boundarycondition)
+    return diagnostics
 end
 
 using InteractiveUtils
