@@ -96,6 +96,14 @@ diagnostics_bicg =
 @test 0 < diagnostics_bicg.iterations < diagnostics_bicg.maximum_iterations
 @test diagnostics_bicg.recursive_residual_squared <
       diagnostics_bicg.target_residual_squared
+action_bicg = similar(source_diagnostics)
+clear_fermion!(action_bicg)
+mul!(action_bicg, operator_bicg, solution_bicg)
+true_relative_residual_bicg = norm(
+    convert_to_normalvector(action_bicg) -
+    convert_to_normalvector(source_diagnostics),
+) / norm(convert_to_normalvector(source_diagnostics))
+@test true_relative_residual_bicg < 1.0e-10
 
 failed_bicg_solution = similar(source_diagnostics)
 clear_fermion!(failed_bicg_solution)
@@ -113,3 +121,11 @@ clear_fermion!(solution_bicg)
     operator_bicg,
     source_diagnostics,
 ) isa SolverDiagnostics
+
+@info "solver diagnostic metrics" bicgstab_iterations =
+    diagnostics.iterations bicgstab_recursive_residual_squared =
+    diagnostics.recursive_residual_squared bicgstab_true_relative_residual =
+    true_relative_residual bicg_iterations =
+    diagnostics_bicg.iterations bicg_recursive_residual_squared =
+    diagnostics_bicg.recursive_residual_squared bicg_true_relative_residual =
+    true_relative_residual_bicg
