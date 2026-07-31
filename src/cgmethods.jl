@@ -213,6 +213,23 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
             #s = r - α*A*p
             add!(0, s, 1, r)
             add!(s, -α, Ap)
+            snorm = real(s ⋅ s)
+            if snorm < eps
+                add!(x, α, p)
+                println_verbose_level3(
+                    verbose,
+                    "Converged at $i-th step. eps: $snorm",
+                )
+                println_verbose_level3(verbose, "--------------------------------------")
+                return SolverDiagnostics(
+                    :bicgstab,
+                    i,
+                    snorm,
+                    initial_rnorm,
+                    eps,
+                    maxsteps,
+                )
+            end
             mul!(t, A, s)
             d1 = dot(t, s)
             d2 = dot(t, t)
@@ -549,6 +566,20 @@ function bicgstab_evenodd(
         #s = r - α*A*p
         add!(0, s, 1, r, iseven)
         add!(s, -α, Ap, iseven)
+        snorm = real(dot(s, s, iseven))
+        if snorm < eps
+            add!(x, α, p, iseven)
+            println_verbose_level3(verbose, "Converged at $i-th step. eps: $snorm")
+            println_verbose_level3(verbose, "--------------------------------------")
+            return SolverDiagnostics(
+                :preconditiond_bicgstab,
+                i,
+                snorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+            )
+        end
         mul!(t, A, s)
         d1 = dot(t, s, iseven)
         d2 = dot(t, t, iseven)
@@ -1390,7 +1421,6 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
 
 
 
