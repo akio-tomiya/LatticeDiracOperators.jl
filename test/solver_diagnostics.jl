@@ -154,6 +154,14 @@ true_relative_residual_preconditioned = norm(
     convert_to_normalvector(source_diagnostics),
 ) / norm(convert_to_normalvector(source_diagnostics))
 @test true_relative_residual_preconditioned < 1.0e-10
+for _ in 1:3
+    clear_fermion!(solution_preconditioned)
+    @test solve_DinvX!(
+        solution_preconditioned,
+        operator_preconditioned,
+        source_diagnostics,
+    ) isa SolverDiagnostics
+end
 
 @info "solver diagnostic metrics" bicgstab_iterations =
     diagnostics.iterations bicgstab_recursive_residual_squared =

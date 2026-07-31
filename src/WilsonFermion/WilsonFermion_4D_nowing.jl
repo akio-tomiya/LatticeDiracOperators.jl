@@ -322,23 +322,22 @@ function WWx!(
 ) where {T<:WilsonFermion_4D_nowing,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
-    temp = A._temporary_fermi[7]#temps[4]
-    temp2 = A._temporary_fermi[6]#temps[4]
-
-    #println("Wx")
-    #@time Wx!(xout,U,x,A) 
-    clear_fermion!(xout, iseven)
-
-
-    #Tx!(temp,U,x,A) 
-    Toex!(temp, U, x, A, iseven; boundarycondition) #Toe
-    #Tx!(temp2,U,temp,A) 
-    Toex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
-
-    #set_nowing_fermion!(temp,A.boundarycondition)
-    #add_fermion!(xout,1,x,-1,temp2)
-    add_fermion!(xout, 1, x, -1, temp2, iseven)
-    set_wing_fermion!(xout, A.boundarycondition, iseven)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        temp2, it_temp2 = get_temp(temps)
+        try
+            clear_fermion!(xout, iseven)
+            Toex!(temp, U, x, A, iseven; boundarycondition) #Toe
+            Toex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
+            add_fermion!(xout, 1, x, -1, temp2, iseven)
+            set_wing_fermion!(xout, A.boundarycondition, iseven)
+        finally
+            unused!(temps, it_temp2)
+        end
+    finally
+        unused!(temps, it_temp)
+    end
 
 
 
@@ -357,20 +356,22 @@ function WWdagx!(
 ) where {T<:WilsonFermion_4D_nowing,G<:AbstractGaugefields} #(1 - K^2 Teo Toe) xe
     iseven = true
     isodd = false
-    temp = A._temporary_fermi[7]#temps[4]
-    temp2 = A._temporary_fermi[6]#temps[4]
-
-    clear_fermion!(xout)
-
-    #Tx!(temp,U,x,A) 
-    Tdagoex!(temp, U, x, A, iseven; boundarycondition) #Toe
-    #Tx!(temp2,U,temp,A) 
-    Tdagoex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
-
-    #set_nowing_fermion!(temp,A.boundarycondition)
-    #add_fermion!(xout,1,x,-1,temp2)
-    add_fermion!(xout, 1, x, -1, temp2, iseven)
-    set_wing_fermion!(xout, A.boundarycondition)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        temp2, it_temp2 = get_temp(temps)
+        try
+            clear_fermion!(xout)
+            Tdagoex!(temp, U, x, A, iseven; boundarycondition) #Toe
+            Tdagoex!(temp2, U, temp, A, isodd; boundarycondition) #Teo
+            add_fermion!(xout, 1, x, -1, temp2, iseven)
+            set_wing_fermion!(xout, A.boundarycondition)
+        finally
+            unused!(temps, it_temp2)
+        end
+    finally
+        unused!(temps, it_temp)
+    end
 
 
     return

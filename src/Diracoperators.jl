@@ -233,9 +233,7 @@ function solve_DinvX!(
     elseif A.method_CG == "preconditiond_bicgstab"
         #@assert A.Dirac_operator == "Wilson" "preconditiond_bicgstab is supported only in Wilson Dirac operator"
         WW = Wilson_Dirac_operator_evenodd(A)
-        #b = A._temporary_fermi[6]
-        #substitute_fermion!(beff,x)
-        bout = A._temporary_fermi[7]
+        bout = similar(x)
         calc_beff!(bout, A.U, x, A)
         iseven = true
         isodd = false
@@ -251,13 +249,16 @@ function solve_DinvX!(
             maxsteps=A.MaxCGstep,
             verbose=A.verbose_print,
         )
-        Tx = A._temporary_fermi[6]
-        set_wing_fermion!(y, A.boundarycondition, iseven)
-
-        Toex!(Tx, A.U, y, A, iseven)
-        #set_wing_fermion!(Tx,A.boundarycondition)
-        add_fermion!(y, 1, x, 1, Tx, isodd)
-        set_wing_fermion!(y, A.boundarycondition, isodd)
+        temps = A._temporary_fermi
+        Tx, it_Tx = get_temp(temps)
+        try
+            set_wing_fermion!(y, A.boundarycondition, iseven)
+            Toex!(Tx, A.U, y, A, iseven)
+            add_fermion!(y, 1, x, 1, Tx, isodd)
+            set_wing_fermion!(y, A.boundarycondition, isodd)
+        finally
+            unused!(temps, it_Tx)
+        end
 
         #Toex!(y,U,x,A,iseven)
         #xo = K Toe xe + b0

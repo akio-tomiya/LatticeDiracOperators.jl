@@ -59,24 +59,32 @@ end
 
 function calc_beff!(xout, U, x, A) #be + K Teo bo
     isodd = false
-    temp = A._temporary_fermi[4]#temps[4]
-    clear_fermion!(temp, isodd)
-    Toex!(temp, U, x, A, isodd)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        clear_fermion!(temp, isodd)
+        Toex!(temp, U, x, A, isodd)
 
-    iseven = true
-    add_fermion!(xout, 1, x, 1, temp, iseven)
-
+        iseven = true
+        add_fermion!(xout, 1, x, 1, temp, iseven)
+    finally
+        unused!(temps, it_temp)
+    end
 end
 
 function calc_beff_dag!(xout, U, x, A) #be + K Teo bo
     isodd = false
-    temp = A._temporary_fermi[4]#temps[4]
-    clear_fermion!(temp)
-    Tdagoex!(temp, U, x, A, isodd)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        clear_fermion!(temp)
+        Tdagoex!(temp, U, x, A, isodd)
 
-    iseven = true
-    add_fermion!(xout, 1, x, 1, temp, iseven)
-
+        iseven = true
+        add_fermion!(xout, 1, x, 1, temp, iseven)
+    finally
+        unused!(temps, it_temp)
+    end
 end
 
 
