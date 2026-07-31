@@ -13,7 +13,9 @@ Diagnostics returned by a successful iterative solve.
 
 `recursive_residual_squared` is the residual maintained by the algorithm.  A
 caller that needs a convergence gate should independently recompute the true
-residual from the returned solution.
+residual from the returned solution.  `restart_count` records shadow-residual
+restarts, and `convergence_branch` is one of `:initial_residual`,
+`:intermediate_residual`, or `:updated_residual`.
 """
 struct SolverDiagnostics
     method::Symbol
@@ -22,6 +24,8 @@ struct SolverDiagnostics
     initial_residual_squared::Float64
     target_residual_squared::Float64
     maximum_iterations::Int
+    restart_count::Int
+    convergence_branch::Symbol
 end
 
 
@@ -86,6 +90,8 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
                 initial_rnorm,
                 eps,
                 maxsteps,
+                0,
+                :initial_residual,
             )
         end
         #println(rnorm)
@@ -119,6 +125,8 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
                     initial_rnorm,
                     eps,
                     maxsteps,
+                    0,
+                    :updated_residual,
                 )
             end
 
@@ -202,9 +210,12 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                 initial_rnorm,
                 eps,
                 maxsteps,
+                0,
+                :initial_residual,
             )
         end
 
+        restart_count = 0
         for i = 1:maxsteps
             c1 = dot(rs, r)
             rho_scale = sqrt(real(rs ⋅ rs) * real(r ⋅ r))
@@ -212,6 +223,7 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                 substitute_fermion!(rs, r)
                 substitute_fermion!(p, r)
                 c1 = rs ⋅ r
+                restart_count += 1
                 println_verbose_level3(
                     verbose,
                     "Restarted BiCGStab shadow residual at $i-th step",
@@ -238,6 +250,8 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     initial_rnorm,
                     eps,
                     maxsteps,
+                    restart_count,
+                    :intermediate_residual,
                 )
             end
             mul!(t, A, s)
@@ -269,6 +283,8 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     initial_rnorm,
                     eps,
                     maxsteps,
+                    restart_count,
+                    :updated_residual,
                 )
             end
 
@@ -558,6 +574,8 @@ function bicgstab_evenodd(
             initial_rnorm,
             eps,
             maxsteps,
+            0,
+            :initial_residual,
         )
     end
 
@@ -568,6 +586,7 @@ function bicgstab_evenodd(
     t = similar(r)
 
 
+    restart_count = 0
     for i = 1:maxsteps
         c1 = dot(rs, r, iseven)
         rho_scale =
@@ -576,6 +595,7 @@ function bicgstab_evenodd(
             add!(0, rs, 1, r, iseven)
             add!(0, p, 1, r, iseven)
             c1 = dot(rs, r, iseven)
+            restart_count += 1
             println_verbose_level3(
                 verbose,
                 "Restarted BiCGStab shadow residual at $i-th step",
@@ -600,6 +620,8 @@ function bicgstab_evenodd(
                 initial_rnorm,
                 eps,
                 maxsteps,
+                restart_count,
+                :intermediate_residual,
             )
         end
         mul!(t, A, s)
@@ -629,6 +651,8 @@ function bicgstab_evenodd(
                 initial_rnorm,
                 eps,
                 maxsteps,
+                restart_count,
+                :updated_residual,
             )
         end
 
@@ -1445,5 +1469,4 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
 
