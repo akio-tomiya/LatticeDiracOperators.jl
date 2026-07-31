@@ -122,10 +122,46 @@ clear_fermion!(solution_bicg)
     source_diagnostics,
 ) isa SolverDiagnostics
 
+parameters_preconditioned = copy(parameters_diagnostics)
+parameters_preconditioned["method_CG"] = "preconditiond_bicgstab"
+operator_preconditioned = Dirac_operator(
+    U_diagnostics,
+    source_diagnostics,
+    parameters_preconditioned,
+)
+solution_preconditioned = similar(source_diagnostics)
+clear_fermion!(solution_preconditioned)
+diagnostics_preconditioned = solve_DinvX!(
+    solution_preconditioned,
+    operator_preconditioned,
+    source_diagnostics,
+)
+@test diagnostics_preconditioned isa SolverDiagnostics
+@test diagnostics_preconditioned.method === :preconditiond_bicgstab
+@test 0 < diagnostics_preconditioned.iterations <
+          diagnostics_preconditioned.maximum_iterations
+@test diagnostics_preconditioned.recursive_residual_squared <
+      diagnostics_preconditioned.target_residual_squared
+action_preconditioned = similar(source_diagnostics)
+clear_fermion!(action_preconditioned)
+mul!(
+    action_preconditioned,
+    operator_preconditioned,
+    solution_preconditioned,
+)
+true_relative_residual_preconditioned = norm(
+    convert_to_normalvector(action_preconditioned) -
+    convert_to_normalvector(source_diagnostics),
+) / norm(convert_to_normalvector(source_diagnostics))
+@test true_relative_residual_preconditioned < 1.0e-10
+
 @info "solver diagnostic metrics" bicgstab_iterations =
     diagnostics.iterations bicgstab_recursive_residual_squared =
     diagnostics.recursive_residual_squared bicgstab_true_relative_residual =
     true_relative_residual bicg_iterations =
     diagnostics_bicg.iterations bicg_recursive_residual_squared =
     diagnostics_bicg.recursive_residual_squared bicg_true_relative_residual =
-    true_relative_residual_bicg
+    true_relative_residual_bicg preconditioned_iterations =
+    diagnostics_preconditioned.iterations preconditioned_recursive_residual_squared =
+    diagnostics_preconditioned.recursive_residual_squared preconditioned_true_relative_residual =
+    true_relative_residual_preconditioned

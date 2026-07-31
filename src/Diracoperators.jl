@@ -242,7 +242,7 @@ function solve_DinvX!(
 
         #bout = x
         #bicgstab(y,WW,bout;eps=A.eps_CG,maxsteps = A.MaxCGstep,verbose = set_verbose(A.verbose_level)) 
-        bicgstab_evenodd(
+        evenodd_diagnostics = bicgstab_evenodd(
             y,
             WW,
             bout,
@@ -261,7 +261,7 @@ function solve_DinvX!(
 
         #Toex!(y,U,x,A,iseven)
         #xo = K Toe xe + b0
-        nothing
+        evenodd_diagnostics
     else
         error("A.method_CG = $(A.method_CG) is not supported")
     end
