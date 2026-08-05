@@ -110,7 +110,7 @@ function Toex!(
     x::T,
     A,
     iseven;
-    boundarycondition=boundarycondition_default
+    boundarycondition=get_boundarycondition(A)
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
     temps = A._temporary_fermi
     temp1, it_temp1 = get_temp(temps)
@@ -149,7 +149,7 @@ function Tdagoex!(
     x::T,
     A,
     iseven;
-    boundarycondition=boundarycondition_default
+    boundarycondition=get_boundarycondition(A)
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
     temps = A._temporary_fermi
     temp1, it_temp1 = get_temp(temps)

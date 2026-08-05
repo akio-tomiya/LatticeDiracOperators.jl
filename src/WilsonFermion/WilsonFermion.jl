@@ -560,7 +560,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     clear_fermion!(temp)
     set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         #println(xplus)
 
 
@@ -580,7 +580,7 @@ function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
         ##    error("NaN detected in array temp1! 2")
         #end
 
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
 
@@ -651,19 +651,20 @@ function D4x!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGa
     temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
 
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(xout)
-    set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
 
 
     for ν = 1:Dim
 
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
         mul!(temp1, A.rminusγ[:, :, ν], temp1)
 
         #
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
@@ -671,7 +672,7 @@ function D4x!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:AbstractGa
         add_fermion!(xout, 0.5, temp1, 0.5, temp2)
 
     end
-    set_wing_fermion!(xout)
+    set_wing_fermion!(xout, boundarycondition)
 
     unused!(A._temporary_fermi, it_temp)
     unused!(A._temporary_fermi, it_temp1)
@@ -694,18 +695,19 @@ function D4dagx!(
     temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
 
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(xout)
-    set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
 
 
     for ν = 1:Dim
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
         mul!(temp1, A.rplusγ[:, :, ν], temp1)
 
         #
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
@@ -713,7 +715,7 @@ function D4dagx!(
         add_fermion!(xout, 0.5, temp1, 0.5, temp2)
 
     end
-    set_wing_fermion!(xout)
+    set_wing_fermion!(xout, boundarycondition)
 
     unused!(A._temporary_fermi, it_temp)
     unused!(A._temporary_fermi, it_temp1)
@@ -731,18 +733,19 @@ function Dx!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:Abstrac
 
 
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(temp)
     #clear!(temp1)
     #clear!(temp2)
-    set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
         mul!(temp1, A.rminusγ[:, :, ν], temp1)
 
         #
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
@@ -773,18 +776,19 @@ function Ddagx!(xout::T1, U::Array{G,1}, x::T2, A, Dim) where {T1,T2,G<:Abstract
     temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
 
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(temp)
     #clear!(temp1)
     #clear!(temp2)
-    set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
         #... Dirac multiplication
         mul!(temp1, A.rplusγ[:, :, ν], temp1)
 
         #
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
         mul!(temp2, Uminus', xminus)
 
@@ -819,11 +823,12 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
     #temp1 = temps[1]
     #temp2 = temps[2]
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(temp)
-    #set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
 
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         #println(xplus)
 
 
@@ -838,7 +843,7 @@ function Tx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefiel
 
 
 
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
 
@@ -884,10 +889,11 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
     temp1, it_temp1 = get_temp(A._temporary_fermi)#i[1] #temps[1]
     temp2, it_temp2 = get_temp(A._temporary_fermi)#[2] #temps[2]
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(temp)
-    #set_wing_fermion!(x)
+    set_wing_fermion!(x, boundarycondition)
     for ν = 1:Dim
-        xplus = shift_fermion(x, ν)
+        xplus = shift_fermion(x, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
 
 
@@ -903,7 +909,7 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
 
 
         #
-        xminus = shift_fermion(x, -ν)
+        xminus = shift_fermion(x, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
         mul!(temp2, Uminus', xminus)
@@ -920,7 +926,7 @@ function Wdagx_noclover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstr
 
     clear_fermion!(xout)
     add_fermion!(xout, 1, x, -1, temp)
-    set_wing_fermion!(xout, A.boundarycondition)
+    set_wing_fermion!(xout, boundarycondition)
 
     unused!(A._temporary_fermi, it_temp)
     unused!(A._temporary_fermi, it_temp1)
@@ -942,15 +948,16 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
 
 
 
+    boundarycondition = get_boundarycondition(A)
     clear_fermion!(temp)
-    set_wing_fermion!(x, A.boundarycondition)
+    set_wing_fermion!(x, boundarycondition)
     x5 = A._temporary_fermi[5]
     mul_γ5x!(x5, x)
     #set_wing_fermion!(x5)
-    set_wing_fermion!(x5, A.boundarycondition)
+    set_wing_fermion!(x5, boundarycondition)
 
     for ν = 1:Dim
-        xplus = shift_fermion(x5, ν)
+        xplus = shift_fermion(x5, ν; boundarycondition)
         mul!(temp1, U[ν], xplus)
 
         #fermion_shift!(temp1,U,ν,x)
@@ -962,7 +969,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
 
 
         #
-        xminus = shift_fermion(x5, -ν)
+        xminus = shift_fermion(x5, -ν; boundarycondition)
         Uminus = shift_U(U[ν], -ν)
 
         mul!(temp2, Uminus', xminus)
@@ -980,7 +987,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
 
     clear_fermion!(temp1)
     add_fermion!(temp1, 1, x5, -1, temp)
-    set_wing_fermion!(temp1, A.boundarycondition)
+    set_wing_fermion!(temp1, boundarycondition)
     cloverterm_σμν!(temp1, A.cloverterm, x5, temp, temp2)
     #println("before ",dot(temp1,temp1))
     #println("x5 ",dot(x5,x5))
@@ -998,7 +1005,7 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     #add_fermion!(xout, 1, x, -1, temp)
     #mul_γ5x!(xout,temp)
     mul_γ5x!(xout, temp1)
-    set_wing_fermion!(xout, A.boundarycondition)
+    set_wing_fermion!(xout, boundarycondition)
 
 
     unused!(A._temporary_fermi, it_temp)
