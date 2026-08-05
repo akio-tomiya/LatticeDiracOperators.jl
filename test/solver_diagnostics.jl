@@ -41,6 +41,9 @@ diagnostics = solve_DinvX!(
 @test diagnostics.recursive_residual_squared <
       diagnostics.target_residual_squared
 @test diagnostics.target_residual_squared == 1.0e-20
+@test diagnostics.restart_count >= 0
+@test diagnostics.convergence_branch in
+      (:intermediate_residual, :updated_residual)
 
 action_diagnostics = similar(source_diagnostics)
 clear_fermion!(action_diagnostics)
@@ -62,6 +65,8 @@ for _ in 1:3
         solve_DinvX!(zero_solution, operator_diagnostics, zero_source)
     @test zero_diagnostics.iterations == 0
     @test zero_diagnostics.recursive_residual_squared == 0
+    @test zero_diagnostics.restart_count == 0
+    @test zero_diagnostics.convergence_branch === :initial_residual
 end
 
 failed_solution = similar(source_diagnostics)
@@ -96,6 +101,8 @@ diagnostics_bicg =
 @test 0 < diagnostics_bicg.iterations < diagnostics_bicg.maximum_iterations
 @test diagnostics_bicg.recursive_residual_squared <
       diagnostics_bicg.target_residual_squared
+@test diagnostics_bicg.restart_count == 0
+@test diagnostics_bicg.convergence_branch === :updated_residual
 action_bicg = similar(source_diagnostics)
 clear_fermion!(action_bicg)
 mul!(action_bicg, operator_bicg, solution_bicg)
@@ -142,6 +149,9 @@ diagnostics_preconditioned = solve_DinvX!(
           diagnostics_preconditioned.maximum_iterations
 @test diagnostics_preconditioned.recursive_residual_squared <
       diagnostics_preconditioned.target_residual_squared
+@test diagnostics_preconditioned.restart_count >= 0
+@test diagnostics_preconditioned.convergence_branch in
+      (:intermediate_residual, :updated_residual)
 action_preconditioned = similar(source_diagnostics)
 clear_fermion!(action_preconditioned)
 mul!(
