@@ -59,24 +59,32 @@ end
 
 function calc_beff!(xout, U, x, A) #be + K Teo bo
     isodd = false
-    temp = A._temporary_fermi[4]#temps[4]
-    clear_fermion!(temp, isodd)
-    Toex!(temp, U, x, A, isodd)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        clear_fermion!(temp, isodd)
+        Toex!(temp, U, x, A, isodd)
 
-    iseven = true
-    add_fermion!(xout, 1, x, 1, temp, iseven)
-
+        iseven = true
+        add_fermion!(xout, 1, x, 1, temp, iseven)
+    finally
+        unused!(temps, it_temp)
+    end
 end
 
 function calc_beff_dag!(xout, U, x, A) #be + K Teo bo
     isodd = false
-    temp = A._temporary_fermi[4]#temps[4]
-    clear_fermion!(temp)
-    Tdagoex!(temp, U, x, A, isodd)
+    temps = A._temporary_fermi
+    temp, it_temp = get_temp(temps)
+    try
+        clear_fermion!(temp)
+        Tdagoex!(temp, U, x, A, isodd)
 
-    iseven = true
-    add_fermion!(xout, 1, x, 1, temp, iseven)
-
+        iseven = true
+        add_fermion!(xout, 1, x, 1, temp, iseven)
+    finally
+        unused!(temps, it_temp)
+    end
 end
 
 
@@ -104,60 +112,34 @@ function Toex!(
     iseven;
     boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
-    #temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    #temp = temps[4]
-    #temp1 = temps[1]
-    #temp2 = temps[2]
+    temps = A._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
     if iseven
         isodd = false
     else
         isodd = true
     end
 
-    #clear_fermion!(temp,isodd)
-    clear_fermion!(xout, isodd)
-    #set_wing_fermion!(x)
-    for ν = 1:4
+    try
+        clear_fermion!(xout, isodd)
+        for ν = 1:4
+            xplus = shift_fermion(x, ν; boundarycondition)
+            mul!(temp1, U[ν], xplus, isodd)
+            mul!(temp1, view(A.rminusγ, :, :, ν), isodd)
 
-        xplus = shift_fermion(x, ν; boundarycondition)
-        #println(xplus)
+            xminus = shift_fermion(x, -ν; boundarycondition)
+            Uminus = shift_U(U[ν], -ν)
+            mul!(temp2, Uminus', xminus, isodd)
+            mul!(temp2, view(A.rplusγ, :, :, ν), isodd)
 
-
-        mul!(temp1, U[ν], xplus, isodd)
-
-
-
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1, view(A.rminusγ, :, :, ν), isodd)
-
-
-
-        xminus = shift_fermion(x, -ν; boundarycondition)
-        Uminus = shift_U(U[ν], -ν)
-
-
-        mul!(temp2, Uminus', xminus, isodd)
-
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2, view(A.rplusγ, :, :, ν), isodd)
-
-        add_fermion!(xout, A.hopp[ν], temp1, A.hopm[ν], temp2, isodd)
-
+            add_fermion!(xout, A.hopp[ν], temp1, A.hopm[ν], temp2, isodd)
+        end
+        set_wing_fermion!(xout, A.boundarycondition, isodd)
+    finally
+        unused!(temps, it_temp1)
+        unused!(temps, it_temp2)
     end
-
-    #clear_fermion!(xout,isodd)
-    #add_fermion!(xout,1,x,-1,temp)
-
-    set_wing_fermion!(xout, A.boundarycondition, isodd)
 
 end
 
@@ -169,60 +151,34 @@ function Tdagoex!(
     iseven;
     boundarycondition=boundarycondition_default
 ) where {T<:WilsonFermion_4D,G<:AbstractGaugefields} #T_oe xe
-    #temp = A._temporary_fermi[4]#temps[4]
-    temp1 = A._temporary_fermi[1] #temps[1]
-    temp2 = A._temporary_fermi[2] #temps[2]
-
-    #temp = temps[4]
-    #temp1 = temps[1]
-    #temp2 = temps[2]
+    temps = A._temporary_fermi
+    temp1, it_temp1 = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
     if iseven
         isodd = false
     else
         isodd = true
     end
 
-    #clear_fermion!(temp,isodd)
-    clear_fermion!(xout, isodd)
-    #set_wing_fermion!(x)
-    for ν = 1:4
+    try
+        clear_fermion!(xout, isodd)
+        for ν = 1:4
+            xplus = shift_fermion(x, ν; boundarycondition)
+            mul!(temp1, U[ν], xplus, isodd)
+            mul!(temp1, view(A.rplusγ, :, :, ν), isodd)
 
-        xplus = shift_fermion(x, ν; boundarycondition)
-        #println(xplus)
+            xminus = shift_fermion(x, -ν; boundarycondition)
+            Uminus = shift_U(U[ν], -ν)
+            mul!(temp2, Uminus', xminus, isodd)
+            mul!(temp2, view(A.rminusγ, :, :, ν), isodd)
 
-
-        mul!(temp1, U[ν], xplus, isodd)
-
-
-
-
-        #fermion_shift!(temp1,U,ν,x)
-
-        #... Dirac multiplication
-
-        mul!(temp1, view(A.rplusγ, :, :, ν), isodd)
-
-
-
-        xminus = shift_fermion(x, -ν; boundarycondition)
-        Uminus = shift_U(U[ν], -ν)
-
-
-        mul!(temp2, Uminus', xminus, isodd)
-
-        #
-        #fermion_shift!(temp2,U,-ν,x)
-        #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
-        mul!(temp2, view(A.rminusγ, :, :, ν), isodd)
-
-        add_fermion!(xout, A.hopp[ν], temp1, A.hopm[ν], temp2, isodd)
-
+            add_fermion!(xout, A.hopp[ν], temp1, A.hopm[ν], temp2, isodd)
+        end
+        set_wing_fermion!(xout, A.boundarycondition)
+    finally
+        unused!(temps, it_temp1)
+        unused!(temps, it_temp2)
     end
-
-    #clear_fermion!(xout,isodd)
-    #add_fermion!(xout,1,x,-1,temp)
-
-    set_wing_fermion!(xout, A.boundarycondition)
 
 end
 

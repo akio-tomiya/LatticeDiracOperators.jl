@@ -520,10 +520,18 @@ function bicgstab_evenodd(
     add!(r, -1, temp1, iseven)
 
     rnorm = real(dot(r, r, iseven))
+    initial_rnorm = rnorm
 
 
     if rnorm < eps
-        return
+        return SolverDiagnostics(
+            :preconditiond_bicgstab,
+            0,
+            rnorm,
+            initial_rnorm,
+            eps,
+            maxsteps,
+        )
     end
 
     rs = deepcopy(r)
@@ -566,7 +574,14 @@ function bicgstab_evenodd(
         if rnorm < eps
             println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "--------------------------------------")
-            return
+            return SolverDiagnostics(
+                :preconditiond_bicgstab,
+                i,
+                rnorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+            )
         end
 
 
@@ -1375,7 +1390,6 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
 
 
 
