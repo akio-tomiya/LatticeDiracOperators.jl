@@ -44,6 +44,7 @@ import .Dirac_operators:
     Initialize_4DWilsonFermion,
     DdagD_operator,
     solve_DinvX!,
+    SolverDiagnostics,
     FermiAction,
     shift_fermion,
     bicg,
@@ -95,7 +96,11 @@ export substitute_fermion!
 export Initialize_pseudofermion_fields,
     Dirac_operator, gauss_distribution_fermion!, cg, bicg
 export Initialize_WilsonFermion, Initialize_4DWilsonFermion
-export DdagD_operator, solve_DinvX!, FermiAction, GeneralFermionAction
+export DdagD_operator,
+    solve_DinvX!,
+    SolverDiagnostics,
+    FermiAction,
+    GeneralFermionAction
 export shift_fermion
 export WilsonFermion_4D_wing
 export sample_pseudofermions!,
