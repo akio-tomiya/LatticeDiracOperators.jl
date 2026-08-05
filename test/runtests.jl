@@ -9,6 +9,10 @@ using LinearAlgebra
         include("solver_diagnostics.jl")
     end
 
+    @testset "Wilson boundary conditions" begin
+        include("wilson_boundary_conditions.jl")
+    end
+
     @testset "Wilson HMC" begin
         println("Wilson HMC")
         include("wilsonhmc.jl")
