@@ -74,7 +74,8 @@ end
 
 @testset "non-cubic even-odd lower-z halo parity" begin
     NX, NY, NZ, NT = 2, 2, 3, 2
-    fundamental = WilsonFermion_4D_wing{3}(NX, NY, NZ, NT)
+    fundamental =
+        Initialize_WilsonFermion(3, NX, NY, NZ, NT; nowing=false)
     check_lower_z_evenodd_halo!(fundamental, true)
     check_lower_z_evenodd_halo!(fundamental, false)
 
