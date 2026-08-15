@@ -14,6 +14,8 @@ import LatticeMatrices
         include("wilson_boundary_conditions.jl")
     end
 
+    include("readme_examples.jl")
+
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
         include("hisq_hmc_example.jl")

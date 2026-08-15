@@ -85,6 +85,7 @@ function calc_UdSfdU(
         UdSfdU[μ] = similar(x)
     end
     calc_UdSfdU!(UdSfdU, fermi_action, U, ϕ)
+    return UdSfdU
 end
 
 function calc_UdSfdU!(
