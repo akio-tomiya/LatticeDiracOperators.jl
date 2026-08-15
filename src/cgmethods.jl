@@ -8,6 +8,26 @@ import Gaugefields.Verboseprint_mpi:
 
 #export bicg,bicgstag,shiftedcg,bicgstab_evenodd,reducedshiftedcg,cg
 
+"""
+Diagnostics returned by a successful iterative solve.
+
+`recursive_residual_squared` is the residual maintained by the algorithm.  A
+caller that needs a convergence gate should independently recompute the true
+residual from the returned solution.  `restart_count` records shadow-residual
+restarts, and `convergence_branch` is one of `:initial_residual`,
+`:intermediate_residual`, or `:updated_residual`.
+"""
+struct SolverDiagnostics
+    method::Symbol
+    iterations::Int
+    recursive_residual_squared::Float64
+    initial_residual_squared::Float64
+    target_residual_squared::Float64
+    maximum_iterations::Int
+    restart_count::Int
+    convergence_branch::Symbol
+end
+
 
 function add!(b, Y, a, X) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a, X, b, Y) #X*a + Y*b -> Y
@@ -59,66 +79,79 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     #q = temps[5]
     #s = temps[6]
 
+    try
+        rnorm = real(res ⋅ res)
+        initial_rnorm = rnorm
+        if rnorm < eps
+            return SolverDiagnostics(
+                :bicg,
+                0,
+                rnorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+                0,
+                :initial_residual,
+            )
+        end
+        #println(rnorm)
 
+        mul!(p, A', res)
+        c1 = p ⋅ p
 
-    rnorm = real(res ⋅ res)
-    if rnorm < eps
+        for i = 1:maxsteps
+            mul!(q, A, p)
+            #! ...  c2 = < q | q >
+            c2 = q ⋅ q
+
+            alpha = c1 / c2
+            #! ...  x   = x   + alpha * p
+            add!(x, alpha, p)
+            #...  res = res - alpha * q
+            add!(res, -alpha, q)
+            rnorm = real(res ⋅ res)
+            println_verbose_level3(verbose, "$i-th eps: $rnorm")
+
+            if rnorm < eps
+                println_verbose_level3(
+                    verbose,
+                    "Converged at $i-th step. eps: $rnorm",
+                )
+                println_verbose_level3(verbose, "--------------------------------------")
+                return SolverDiagnostics(
+                    :bicg,
+                    i,
+                    rnorm,
+                    initial_rnorm,
+                    eps,
+                    maxsteps,
+                    0,
+                    :updated_residual,
+                )
+            end
+
+            mul!(s, A', res)
+
+            #c3 = s * s
+            c3 = s ⋅ s
+
+            beta = c3 / c1
+            c1 = c3
+
+            add!(beta, p, 1, s) #p = beta*p + s
+        end
+
+        error("""
+        The BICG is not converged! with maxsteps = $(maxsteps)
+        residual is $rnorm
+        maxsteps should be larger.""")
+    finally
         unused!(temps, it_res)
         unused!(temps, it_temp1)
         unused!(temps, it_p)
         unused!(temps, it_q)
         unused!(temps, it_s)
-        return
     end
-    #println(rnorm)
-
-    mul!(p, A', res)
-    c1 = p ⋅ p
-
-    for i = 1:maxsteps
-        mul!(q, A, p)
-        #! ...  c2 = < q | q >
-        c2 = q ⋅ q
-
-        alpha = c1 / c2
-        #! ...  x   = x   + alpha * p  
-        add!(x, alpha, p)
-        #...  res = res - alpha * q 
-        add!(res, -alpha, q)
-        rnorm = real(res ⋅ res)
-        println_verbose_level3(verbose, "$i-th eps: $rnorm")
-
-        if rnorm < eps
-            #println("Converged at $i-th step. eps: $rnorm")
-            println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
-            println_verbose_level3(verbose, "--------------------------------------")
-            unused!(temps, it_res)
-            unused!(temps, it_temp1)
-            unused!(temps, it_p)
-            unused!(temps, it_q)
-            unused!(temps, it_s)
-            return
-        end
-
-        mul!(s, A', res)
-
-        #c3 = s * s
-        c3 = s ⋅ s
-
-        beta = c3 / c1
-        c1 = c3
-
-        add!(beta, p, 1, s) #p = beta*p + s
-
-    end
-
-
-    error("""
-    The BICG is not converged! with maxsteps = $(maxsteps)
-    residual is $rnorm
-    maxsteps should be larger.""")
-
-
 end
 
 function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
@@ -165,69 +198,116 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
 
 
 
-    rnorm = real(r ⋅ r)
-
-    if rnorm < eps
-        return
-    end
-
-
-    for i = 1:maxsteps
-        c1 = dot(rs, r)
-        mul!(Ap, A, p)
-        c2 = dot(rs, Ap)
-        α = c1 / c2
-        #s = r - α*A*p
-        add!(0, s, 1, r)
-        add!(s, -α, Ap)
-        mul!(t, A, s)
-        d1 = dot(t, s)
-        d2 = dot(t, t)
-        ω = d1 / d2
-
-        #r = (1-ω A)s
-        add!(0, r, 1, s)
-        add!(r, -ω, t)
-
-        #x = x + ωs+ αp
-        add!(x, ω, s)
-        add!(x, α, p)
-
-        β = (dot(rs, r) / c1) * (α / ω)
-
-        #p = r + β*(1-ωA)*p
-        add!(β, p, 1, r)
-        add!(p, -ω * β, Ap)
-
+    try
         rnorm = real(r ⋅ r)
-        println_verbose_level3(verbose, "$i-th eps: $rnorm")
+        initial_rnorm = rnorm
 
         if rnorm < eps
-            println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
-            println_verbose_level3(verbose, "--------------------------------------")
-
-            unused!(temps, it_r)
-            unused!(temps, it_temp1)
-            unused!(temps, it_rs)
-            unused!(temps, it_p)
-            unused!(temps, it_Ap)
-            unused!(temps, it_s)
-            unused!(temps, it_t)
-            return
+            return SolverDiagnostics(
+                :bicgstab,
+                0,
+                rnorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+                0,
+                :initial_residual,
+            )
         end
 
+        restart_count = 0
+        for i = 1:maxsteps
+            c1 = dot(rs, r)
+            rho_scale = sqrt(real(rs ⋅ rs) * real(r ⋅ r))
+            if abs(c1) <= Base.eps(Float64) * rho_scale
+                substitute_fermion!(rs, r)
+                substitute_fermion!(p, r)
+                c1 = rs ⋅ r
+                restart_count += 1
+                println_verbose_level3(
+                    verbose,
+                    "Restarted BiCGStab shadow residual at $i-th step",
+                )
+            end
+            mul!(Ap, A, p)
+            c2 = dot(rs, Ap)
+            α = c1 / c2
+            #s = r - α*A*p
+            add!(0, s, 1, r)
+            add!(s, -α, Ap)
+            snorm = real(s ⋅ s)
+            if snorm < eps
+                add!(x, α, p)
+                println_verbose_level3(
+                    verbose,
+                    "Converged at $i-th step. eps: $snorm",
+                )
+                println_verbose_level3(verbose, "--------------------------------------")
+                return SolverDiagnostics(
+                    :bicgstab,
+                    i,
+                    snorm,
+                    initial_rnorm,
+                    eps,
+                    maxsteps,
+                    restart_count,
+                    :intermediate_residual,
+                )
+            end
+            mul!(t, A, s)
+            d1 = dot(t, s)
+            d2 = dot(t, t)
+            ω = d1 / d2
 
+            #r = (1-ω A)s
+            add!(0, r, 1, s)
+            add!(r, -ω, t)
 
+            #x = x + ωs+ αp
+            add!(x, ω, s)
+            add!(x, α, p)
+
+            rnorm = real(r ⋅ r)
+            println_verbose_level3(verbose, "$i-th eps: $rnorm")
+
+            if rnorm < eps
+                println_verbose_level3(
+                    verbose,
+                    "Converged at $i-th step. eps: $rnorm",
+                )
+                println_verbose_level3(verbose, "--------------------------------------")
+                return SolverDiagnostics(
+                    :bicgstab,
+                    i,
+                    rnorm,
+                    initial_rnorm,
+                    eps,
+                    maxsteps,
+                    restart_count,
+                    :updated_residual,
+                )
+            end
+
+            β = (dot(rs, r) / c1) * (α / ω)
+
+            #p = r + β*(1-ωA)*p
+            add!(β, p, 1, r)
+            add!(p, -ω * β, Ap)
+        end
+
+        error("""
+        The BICGstab is not converged! with maxsteps = $(maxsteps)
+        residual is $rnorm
+        maxsteps should be larger.""")
+    finally
+        unused!(temps, it_r)
+        unused!(temps, it_temp1)
+        unused!(temps, it_rs)
+        unused!(temps, it_p)
+        unused!(temps, it_Ap)
+        unused!(temps, it_s)
+        unused!(temps, it_t)
     end
-
-
-
-    error("""
-    The BICGstab is not converged! with maxsteps = $(maxsteps)
-    residual is $rnorm
-    maxsteps should be larger.""")
-
-
 end
 
 function bicgstab_3(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
@@ -483,10 +563,20 @@ function bicgstab_evenodd(
     add!(r, -1, temp1, iseven)
 
     rnorm = real(dot(r, r, iseven))
+    initial_rnorm = rnorm
 
 
     if rnorm < eps
-        return
+        return SolverDiagnostics(
+            :preconditiond_bicgstab,
+            0,
+            rnorm,
+            initial_rnorm,
+            eps,
+            maxsteps,
+            0,
+            :initial_residual,
+        )
     end
 
     rs = deepcopy(r)
@@ -496,17 +586,48 @@ function bicgstab_evenodd(
     t = similar(r)
 
 
+    restart_count = 0
     for i = 1:maxsteps
         c1 = dot(rs, r, iseven)
+        rho_scale =
+            sqrt(real(dot(rs, rs, iseven)) * real(dot(r, r, iseven)))
+        if abs(c1) <= Base.eps(Float64) * rho_scale
+            add!(0, rs, 1, r, iseven)
+            add!(0, p, 1, r, iseven)
+            c1 = dot(rs, r, iseven)
+            restart_count += 1
+            println_verbose_level3(
+                verbose,
+                "Restarted BiCGStab shadow residual at $i-th step",
+            )
+        end
         mul!(Ap, A, p)
         c2 = dot(rs, Ap, iseven)
+        println_verbose_level3(verbose, "$i-th c1: $c1 c2: $c2")
         α = c1 / c2
         #s = r - α*A*p
         add!(0, s, 1, r, iseven)
         add!(s, -α, Ap, iseven)
+        snorm = real(dot(s, s, iseven))
+        if snorm < eps
+            add!(x, α, p, iseven)
+            println_verbose_level3(verbose, "Converged at $i-th step. eps: $snorm")
+            println_verbose_level3(verbose, "--------------------------------------")
+            return SolverDiagnostics(
+                :preconditiond_bicgstab,
+                i,
+                snorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+                restart_count,
+                :intermediate_residual,
+            )
+        end
         mul!(t, A, s)
         d1 = dot(t, s, iseven)
         d2 = dot(t, t, iseven)
+        println_verbose_level3(verbose, "$i-th snorm: $snorm d1: $d1 d2: $d2")
         ω = d1 / d2
 
         #r = (1-ω A)s
@@ -517,20 +638,30 @@ function bicgstab_evenodd(
         add!(x, ω, s, iseven)
         add!(x, α, p, iseven)
 
-        β = (dot(rs, r, iseven) / c1) * (α / ω)
-
-        #p = r + β*(1-ωA)*p
-        add!(β, p, 1, r, iseven)
-        add!(p, -ω * β, Ap, iseven)
-
         rnorm = real(dot(r, r, iseven))
         println_verbose_level3(verbose, "$i-th eps: $rnorm")
 
         if rnorm < eps
             println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
             println_verbose_level3(verbose, "--------------------------------------")
-            return
+            return SolverDiagnostics(
+                :preconditiond_bicgstab,
+                i,
+                rnorm,
+                initial_rnorm,
+                eps,
+                maxsteps,
+                restart_count,
+                :updated_residual,
+            )
         end
+
+        β = (dot(rs, r, iseven) / c1) * (α / ω)
+        println_verbose_level3(verbose, "$i-th alpha: $α omega: $ω beta: $β")
+
+        #p = r + β*(1-ωA)*p
+        add!(β, p, 1, r, iseven)
+        add!(p, -ω * β, Ap, iseven)
 
 
 
@@ -1338,11 +1469,3 @@ function fgmres(x, A, b, M; eps = 1e-5, maxsteps = 1000, restart=50, verbose = V
     Residual: $(beta^2)
     Consider increasing maxsteps or adjusting restart parameter.""")
 end
-
-
-
-
-
-
-
-

@@ -305,7 +305,11 @@ function getvalue(
     @inbounds return F.parent.fshifted[i1, i2, i3, i4, i5, i6]
 end
 
-function shift_fermion(F::WilsonFermion_4D_nowing_mpi{NC}, ν::T) where {T<:Integer,NC}
+function shift_fermion(
+    F::WilsonFermion_4D_nowing_mpi{NC},
+    ν::T;
+    boundarycondition=boundarycondition_default,
+) where {T<:Integer,NC}
     if ν == 1
         shift = (1, 0, 0, 0)
     elseif ν == 2
@@ -324,7 +328,7 @@ function shift_fermion(F::WilsonFermion_4D_nowing_mpi{NC}, ν::T) where {T<:Inte
         shift = (0, 0, 0, -1)
     end
 
-    return Shifted_fermionfields_4D_nowing_mpi(F, shift)
+    return Shifted_fermionfields_4D_nowing_mpi(F, shift; boundarycondition)
 end
 
 
@@ -2369,7 +2373,6 @@ function mul_1plusγ3x!(y::WilsonFermion_4D_nowing_mpi{NC}, x) where {NC}#(1+gam
 end
 
 
-
 """
                (     -i   )              (     -1   )
      GAMMA3 =  (       +i )     GAMMA4 = (       -1 )
@@ -2444,5 +2447,4 @@ function mul_1plusγ4x!(y::WilsonFermion_4D_nowing_mpi{NC}, x) where {NC}#(1+gam
         end
     end
 end
-
 

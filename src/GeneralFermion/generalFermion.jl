@@ -58,6 +58,22 @@ function Base.similar(a::L1) where {L1<:GeneralFermion}
     return zero(a)
 end
 
+"""
+    mul!(result::GeneralFermion, operator, input::GeneralFermion)
+
+Apply a `LatticeMatrices` operator directly to `GeneralFermion` fields.
+The underlying `LatticeMatrix` storage is passed to the operator, while the
+`GeneralFermion` wrapper is retained for use by LatticeDiracOperators actions.
+"""
+function LinearAlgebra.mul!(
+    result::GeneralFermion,
+    operator::LatticeMatrices.OperatorOnKernel,
+    input::GeneralFermion,
+)
+    mul!(result.field, operator, input.field)
+    return result
+end
+
 function substitute_fermion!(
     A::L1,
     B::L2,
@@ -208,7 +224,7 @@ struct DdagDgeneral{TmulD,TmulDdag,TG,TF} <: DdagD_operator
         _temporary_gaugefield = PreallocatedArray(U[1]; num=numg)
         _temporary_fermion_forCG = PreallocatedArray(x; num=numcg)
         _temporary_fermion = PreallocatedArray(x; num=num)
-        boundarycondition = zeros(Int8, length(U))
+        boundarycondition = zeros(Int8, length(x.field.phases))
         boundarycondition .= x.field.phases
 
         verbose_print = Verbose_print(verbose_level, myid=get_myrank(x))

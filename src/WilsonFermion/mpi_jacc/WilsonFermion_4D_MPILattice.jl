@@ -227,6 +227,23 @@ function Base.adjoint(x::Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT
     Adjoint_Shifted_WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf}(x.f')
 end
 
+@static if isdefined(LatticeMatrices, :release!)
+    function LatticeMatrices.release!(x::Shifted_WilsonFermion_4D_MPILattice)
+        LatticeMatrices.release!(x.f)
+        return nothing
+    end
+
+    function LatticeMatrices.release!(x::Adjoint_Shifted_WilsonFermion_4D_MPILattice)
+        LatticeMatrices.release!(x.f)
+        return nothing
+    end
+
+    Base.close(x::Shifted_WilsonFermion_4D_MPILattice) = LatticeMatrices.release!(x)
+    Base.close(x::Adjoint_Shifted_WilsonFermion_4D_MPILattice) = LatticeMatrices.release!(x)
+    Base.isopen(x::Shifted_WilsonFermion_4D_MPILattice) = isopen(x.f)
+    Base.isopen(x::Adjoint_Shifted_WilsonFermion_4D_MPILattice) = isopen(x.f)
+end
+
 
 function LinearAlgebra.mul!(
     c::WilsonFields_4D_MPILattice,
@@ -598,6 +615,7 @@ end
 
 function Wdagx_noclover_ν_p!(temp::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG},
     x, ν, Uν, Ahoppν, Ahopmν) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    _mark_halo_dirty!(temp.f)
     JACC.parallel_for(
         prod(temp.f.PN), kernel_Wdagx_noclover_ν!, temp.f.A, x.f.A, Val(ν),
         Uν.U.A, Ahoppν, Ahopmν, temp.f.PN, Val(NC), Val(NG), Val(NDW))

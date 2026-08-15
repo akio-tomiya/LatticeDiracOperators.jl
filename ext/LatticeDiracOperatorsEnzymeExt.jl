@@ -3,7 +3,7 @@ using LinearAlgebra
 using LatticeMatrices
 using Enzyme
 using JACC
-import LatticeMatrices: Wiltinger_derivative!, toann, DiffArg, NoDiffArg, Enzyme_derivative!, fold_halo_to_core_grad!, dSFdU
+import LatticeMatrices: toann, DiffArg, NoDiffArg, Enzyme_derivative!, fold_halo_to_core_grad!, dSFdU
 using LatticeDiracOperators
 #import LatticeDiracOperators.Dirac_operators: General_Dirac_operator, DgagD_General_Dirac_operator
 using PreallocatedArrays
