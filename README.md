@@ -733,6 +733,12 @@ test1()
 `GeneralFermion` is a flexible fermion field type defined in `LatticeDiracOperators.jl`.
 It is useful for writing HMC codes where you define the Dirac operator application explicitly.
 
+The built-in `LatticeMatrices` operator registration examples in this section,
+including cached clover/HISQ differentiation and the HMC example, require
+**LatticeMatrices v1.0.0 or later**. LDO's compatibility with
+LatticeMatrices 0.3 is retained for the older API, but the v1 integration
+below is enabled only when the v1 operator API is available.
+
 `GeneralFermion`, the built-in `LatticeMatrices` operators, and the
 `GeneralFermionAction`/Enzyme HMC workflow support MPI process grids. Set
 `PEs` to a process grid whose product is the number of MPI processes.
@@ -932,8 +938,208 @@ hisq_action = GeneralFermionAction(
 ```
 
 The cached HISQ pullback differentiates through level-1 smearing,
-reunitarization, level-2 smearing, and the Naik links to the thin links. A
-complete `4^4` HMC example using this registration is in
+reunitarization, level-2 smearing, and the Naik links to the thin links.
+
+#### Complete `4^4` HISQ HMC example
+
+The following is a complete HMC driver. In particular, `apply_D` and
+`apply_Ddag` below are the callable objects registered in
+`GeneralFermionAction`; `calc_UdSfdU!` differentiates that same `apply_D`
+through the LatticeMatrices v1 HISQ cache to the thin links.
+
+```julia
+import JACC
+JACC.@init_backend
+
+using Enzyme
+using Gaugefields
+using LatticeDiracOperators
+using LatticeMatrices
+using LinearAlgebra
+using MPI
+using Random
+
+const HMC_DIM = 4
+const HMC_NC = 3
+const HMC_SIZE = (4, 4, 4, 4)
+const HMC_PES = (1, 1, 1, 1)
+
+struct ApplyHISQForHMC{Adjoint,C}
+    cache::C
+end
+
+ApplyHISQForHMC{Adjoint}(cache::C) where {Adjoint,C} =
+    ApplyHISQForHMC{Adjoint,C}(cache)
+
+function (apply::ApplyHISQForHMC{false})(
+    y, U1, U2, U3, U4, x, fermion_temps, gauge_temps,
+)
+    mul_cached_hisq!(
+        y.field, apply.cache, U1.U, U2.U, U3.U, U4.U, x.field)
+    return y
+end
+
+function (apply::ApplyHISQForHMC{true})(
+    y, U1, U2, U3, U4, x, fermion_temps, gauge_temps,
+)
+    mul_cached_hisq_adjoint!(
+        y.field, apply.cache, U1.U, U2.U, U3.U, U4.U, x.field)
+    return y
+end
+
+function make_hmc_gauge_action(U, beta)
+    action = GaugeAction(U)
+    plaquette_loops = make_loops_fromname("plaquette")
+    append!(plaquette_loops, plaquette_loops')
+    push!(action, beta / 2, plaquette_loops)
+    return action
+end
+
+function hmc_hamiltonian(gauge, U, momentum, fermion_action_value)
+    Sg = -evaluate_GaugeAction(gauge, U) / U[1].NC
+    Sp = momentum * momentum / 2
+    return real(Sg + Sp + fermion_action_value)
+end
+
+function hmc_update_links!(U, momentum, step, gauge)
+    temps = get_temporary_gaugefields(gauge)
+    temp1, temp2, exponential, work = temps[1:4]
+    for mu in 1:HMC_DIM
+        exptU!(exponential, step, momentum[mu], [temp1, temp2])
+        mul!(work, exponential, U[mu])
+        substitute_U!(U[mu], work)
+    end
+    return U
+end
+
+function hmc_update_gauge_momentum!(momentum, U, step, gauge)
+    temps = get_temporary_gaugefields(gauge)
+    derivative = temps[end]
+    factor = -step / U[1].NC
+    for mu in 1:HMC_DIM
+        calc_dSdUμ!(derivative, gauge, mu, U)
+        mul!(temps[1], U[mu], derivative)
+        Traceless_antihermitian_add!(momentum[mu], factor, temps[1])
+    end
+    return momentum
+end
+
+function hmc_update_fermion_momentum!(
+    momentum, U, step, gauge, fermion, pseudofermion,
+)
+    UdSfdU = get_temporary_gaugefields(gauge)[1:HMC_DIM]
+    calc_UdSfdU!(UdSfdU, fermion, U, pseudofermion)
+    for mu in 1:HMC_DIM
+        Traceless_antihermitian_add!(momentum[mu], -step, UdSfdU[mu])
+    end
+    return momentum
+end
+
+function hisq_hmc_trajectory!(
+    U, momentum, old_U, pseudofermion, gaussian_fermion, gauge, fermion;
+    mdsteps, trajectory_length,
+)
+    step = trajectory_length / mdsteps
+
+    gauss_distribution!(momentum)
+    gauss_sampling_in_action!(gaussian_fermion, U, fermion)
+    sample_pseudofermions!(pseudofermion, U, fermion, gaussian_fermion)
+    old_Sf = real(dot(gaussian_fermion, gaussian_fermion))
+
+    substitute_U!(old_U, U)
+    old_H = hmc_hamiltonian(gauge, U, momentum, old_Sf)
+
+    for _ in 1:mdsteps
+        hmc_update_links!(U, momentum, step / 2, gauge)
+        hmc_update_gauge_momentum!(momentum, U, step, gauge)
+        hmc_update_fermion_momentum!(
+            momentum, U, step, gauge, fermion, pseudofermion)
+        hmc_update_links!(U, momentum, step / 2, gauge)
+    end
+
+    new_Sf = evaluate_FermiAction(fermion, U, pseudofermion)
+    new_H = hmc_hamiltonian(gauge, U, momentum, new_Sf)
+    delta_H = new_H - old_H
+    accepted = log(rand()) < -delta_H
+    accepted || substitute_U!(U, old_U)
+    return (; accepted, delta_H)
+end
+
+function run_hisq_hmc_4x4(;
+    trajectories=1,
+    mdsteps=2,
+    trajectory_length=0.02,
+    beta=6.0,
+    mass=0.1,
+    naik_epsilon=0.0,
+    eps_CG=1e-10,
+    seed=1234,
+)
+    MPI.Initialized() || MPI.Init()
+    MPI.Comm_size(MPI.COMM_WORLD) == 1 || error(
+        "The fixed 4^4, nw=3 example must run on one MPI rank")
+    Random.seed!(seed)
+
+    U = Initialize_Gaugefields(
+        HMC_NC, 3, HMC_SIZE...;
+        condition="cold",
+        isMPILattice=true,
+        PEs=HMC_PES,
+        verbose_level=0,
+    )
+    gauge = make_hmc_gauge_action(U, beta)
+
+    template = GeneralFermion(
+        HMC_NC, 1, HMC_SIZE, HMC_PES;
+        nw=3,
+        phases=(1, 1, 1, -1),
+        elementtype=ComplexF64,
+    )
+    cache = HISQDiracCache4D([link.U for link in U], mass; naik_epsilon)
+
+    # These are the D and Ddag callbacks used by both the solver and HMC force.
+    apply_D = ApplyHISQForHMC{false}(cache)
+    apply_Ddag = ApplyHISQForHMC{true}(cache)
+    numtemp = 8
+    fermion = GeneralFermionAction(
+        U, template, apply_D, apply_Ddag;
+        numtemp,
+        num=12,
+        numcg=12,
+        numg=2numtemp + 2,
+        eps_CG,
+        maxsteps=10_000,
+        verbose_level=0,
+    )
+
+    pseudofermion = template
+    gaussian_fermion = similar(template)
+    momentum = initialize_TA_Gaugefields(U)
+    old_U = similar(U)
+    substitute_U!(old_U, U)
+
+    accepted_count = 0
+    for trajectory in 1:trajectories
+        result = hisq_hmc_trajectory!(
+            U, momentum, old_U, pseudofermion, gaussian_fermion,
+            gauge, fermion;
+            mdsteps,
+            trajectory_length,
+        )
+        accepted_count += result.accepted
+        println(
+            "trajectory $trajectory: accepted=$(result.accepted) ",
+            "deltaH=$(result.delta_H)",
+        )
+    end
+    println("acceptance rate = ", accepted_count / trajectories)
+    return U
+end
+
+run_hisq_hmc_4x4()
+```
+
+The maintained executable version of this code is
 `examples/HISQ_HMC_4x4.jl`.
 
 Run the example from this package directory after activating its Julia
