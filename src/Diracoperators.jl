@@ -1,6 +1,13 @@
 module Dirac_operators
 using MPI
+import LatticeMatrices
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
+
+@static if isdefined(LatticeMatrices, :mark_halo_dirty!)
+    @inline _mark_halo_dirty!(lattice) = LatticeMatrices.mark_halo_dirty!(lattice)
+else
+    @inline _mark_halo_dirty!(lattice) = nothing
+end
 
 import Gaugefields: get_myrank, get_nprocs
 

@@ -733,8 +733,10 @@ test1()
 `GeneralFermion` is a flexible fermion field type defined in `LatticeDiracOperators.jl`.
 It is useful for writing HMC codes where you define the Dirac operator application explicitly.
 
-**NOTE:** MPI support for `GeneralFermion` is currently **not guaranteed**.  
-Please use `PEs = (1,1,1,1)` (single-process layout).
+**NOTE:** The `GeneralFermion` field and the built-in `LatticeMatrices`
+operators support MPI process grids. The complete experimental
+`GeneralFermionAction`/Enzyme HMC workflow described below is currently only
+guaranteed with `PEs = (1,1,1,1)` (single-process layout).
 
 In this example, **both gauge and fermion forces are computed via automatic differentiation (AD) using `Enzyme.jl`:**
 
@@ -755,7 +757,7 @@ NC = 3
 NG = 4
 gsize = (NX, NY, NZ, NT)
 
-# MPI decomposition is not guaranteed for GeneralFermion
+# Use a single-process layout for the experimental AD/HMC workflow below
 PEs = (1,1,1,1)
 
 x  = GeneralFermion(NC, NG, gsize, PEs; nw=1, elementtype=ComplexF64)
@@ -777,7 +779,145 @@ apply_Ddag!(y, U1, U2, U3, U4, x, phitemp, temp) =
 fermi_action = GeneralFermionAction(U, x, apply_D!, apply_Ddag!; numtemp=8, eps_CG=1e-16)
 ```
 
-## 3. AD gauge force (Enzyme)
+## 3. Use the built-in LatticeMatrices fermion operators
+
+`GeneralFermion.field` is a `LatticeMatrices.LatticeMatrix`. Gauge fields
+created with `isMPILattice=true` also store each link in a `LatticeMatrix`.
+LDO therefore forwards `mul!(out, D, x)` to the underlying lattice fields for
+all built-in `LatticeMatrices` operators.
+
+The following common setup works with one or more MPI processes. Gauge links
+are periodic, while the fermions below are antiperiodic in time.
+
+```julia
+using MPI
+using LinearAlgebra
+using LatticeMatrices
+
+MPI.Initialized() || MPI.Init()
+nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+
+NC = 3
+gsize = (4 * nprocs, 4, 4, 4)
+PEs = (nprocs, 1, 1, 1)
+fermion_phases = (1, 1, 1, -1)
+
+U_lattice = Initialize_Gaugefields(
+    NC, 1, gsize...;
+    condition="cold",
+    isMPILattice=true,
+    PEs,
+    verbose_level=0,
+)
+links = [U_mu.U for U_mu in U_lattice]
+```
+
+### Wilson fermion
+
+Wilson spinors have four spin components per site (`NG=4`).
+
+```julia
+psi_wilson = GeneralFermion(
+    NC, 4, gsize, PEs; nw=1, phases=fermion_phases)
+out_wilson = similar(psi_wilson)
+
+D_wilson = WilsonDiracOperator4D(links, 0.12)
+mul!(out_wilson, D_wilson, psi_wilson)
+mul!(out_wilson, adjoint(D_wilson), psi_wilson)
+```
+
+### Wilson--clover fermion
+
+```julia
+D_clover = WilsonDiracCloverOperator4D(links, 0.12, 1.0)
+mul!(out_wilson, D_clover, psi_wilson)
+mul!(out_wilson, adjoint(D_clover), psi_wilson)
+```
+
+The last argument is `cSW`. After changing a gauge link, call
+`update_clover!(D_clover)` before applying the cached clover operator again.
+
+### One-link staggered fermion
+
+Staggered spinors have one component per site (`NG=1`).
+
+```julia
+psi_staggered = GeneralFermion(
+    NC, 1, gsize, PEs; nw=1, phases=fermion_phases)
+out_staggered = similar(psi_staggered)
+
+D_staggered = StaggeredDiracOperator4D(links, 0.01)
+mul!(out_staggered, D_staggered, psi_staggered)
+mul!(out_staggered, adjoint(D_staggered), psi_staggered)
+```
+
+### HISQ fermion
+
+The complete HISQ smearing and Naik stencil require `nw>=3`, so both its thin
+links and staggered field use a separate halo width of three.
+
+```julia
+U_hisq = Initialize_Gaugefields(
+    NC, 3, gsize...;
+    condition="cold",
+    isMPILattice=true,
+    PEs,
+    verbose_level=0,
+)
+links_hisq = [U_mu.U for U_mu in U_hisq]
+psi_hisq = GeneralFermion(
+    NC, 1, gsize, PEs; nw=3, phases=fermion_phases)
+out_hisq = similar(psi_hisq)
+
+naik_epsilon = -0.083
+D_hisq = HISQDiracOperator4D(
+    links_hisq, 0.01; naik_epsilon)
+mul!(out_hisq, D_hisq, psi_hisq)
+mul!(out_hisq, adjoint(D_hisq), psi_hisq)
+```
+
+### Standard (Shamir) domain-wall fermion
+
+The fermion is five-dimensional, but its gauge links remain four-dimensional.
+The fifth direction must not be MPI-decomposed. In the LatticeMatrices
+parameter convention, `b=c=1` selects the standard Shamir kernel.
+
+```julia
+L5 = 8
+gsize5 = (gsize..., L5)
+PEs5 = (PEs..., 1)
+phases5 = (fermion_phases..., 1)
+
+psi_domainwall = GeneralFermion(
+    NC, 4, gsize5, PEs5; nw=1, phases=phases5)
+out_domainwall = similar(psi_domainwall)
+
+D_domainwall = D5DW_MobiusDomainwallOperator5D(
+    links, L5, 0.01, -1.0, 1.0, 1.0)
+mul!(out_domainwall, D_domainwall, psi_domainwall)
+mul!(out_domainwall, adjoint(D_domainwall), psi_domainwall)
+```
+
+### Generalized domain-wall fermion
+
+The generalized operator accepts independent real `a_s`, `b_s`, and `c_s`
+coefficients for every fifth-dimensional slice.
+
+```julia
+a5 = 1 .+ 0.05 .* sin.(2pi .* (0:L5-1) ./ L5)
+b5 = 1.5 .+ 0.10 .* cos.(2pi .* (0:L5-1) ./ L5)
+c5 = 0.5 .+ 0.08 .* sin.(2pi .* (0:L5-1) ./ L5)
+
+D_generalized = D5DW_GeneralizedDomainwallOperator5D(
+    links, L5, 0.01, -1.0, a5, b5, c5)
+mul!(out_domainwall, D_generalized, psi_domainwall)
+mul!(out_domainwall, adjoint(D_generalized), psi_domainwall)
+```
+
+The regression test `test/latticematrices_backend.jl` executes all six cases,
+including their adjoints, on the active `LatticeMatrices` backend.
+
+## 4. AD gauge force (Enzyme)
 ```julia
 set_wing_U!(U)
 Enzyme_derivative!(
@@ -790,7 +930,7 @@ Enzyme_derivative!(
 )
 ```
 
-## 4. AD fermion force (Enzyme)
+## 5. AD fermion force (Enzyme)
 The fermion force is obtained by
 ```julia
 calc_UdSfdU!(UdSfdUμ, fermi_action, U, η)

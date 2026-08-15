@@ -9,6 +9,7 @@ function LinearAlgebra.axpby!(
     Y::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
 ) where {T1,AT1,NC1,NC2,nw}
 
+    _mark_halo_dirty!(Y)
     JACC.parallel_for(
         prod(Y.PN), kernel_4D_axpby!, a, X.A, b, Y.A, Val(NC1), Val(NC2), Val(nw), Y.indexer
     )
@@ -40,6 +41,7 @@ function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     #At = zeros(eltype(A), n1, n2)
     #At .= A
     At = JACC.array(A)
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_mulA!, C.A, At, Val(NC1), Val(nw), C.indexer
     )
@@ -90,6 +92,7 @@ function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     A::TA, x::LatticeMatrix{4,T1,AT1,NC1,4,nw}) where {T1,AT1,NC1,nw,TA<:AbstractMatrix}
 
     At = JACC.array(A)
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_mulxAT!, C.A, At, x.A, Val(NC1), Val(nw), C.indexer
     )
@@ -142,6 +145,7 @@ end
 function add_matrix!(C::LatticeMatrix{4,T,AT,NC1,NC2,nw}, A::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
     B::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
     α::S1=1, β::S2=1) where {T,T1,AT,AT1,NC1,NC2,nw,S1<:Number,S2<:Number}
+    _mark_halo_dirty!(C)
     JACC.parallel_for(prod(C.PN), kernel_add_4D!, C.A, A.A, B.A, C.indexer, Val(NC1), Val(NC2), α, β, Val(nw))
     #set_halo!(C)
 end
@@ -190,6 +194,7 @@ Base.any(isnan, f::LatticeMatrix) = any(isnan, f.A)
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,NG,nw},
     a::TA, x::LatticeMatrix{4,T1,AT1,NC1,NG,nw}) where {T1,AT1,NC1,nw,NG,TA<:Number}
 
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_mulsx!, C.A, a, x.A, Val(NC1), Val(NG), Val(nw), C.indexer
     )
@@ -437,6 +442,7 @@ end
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
     x::LatticeMatrix{4,T1,AT1,NC1,4,nw}, y::LatticeMatrix{4,T1,AT1,NC2,4,nw}) where {T1,AT1,NC1,NC2,nw}
 
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_muluxy!, C.A, x.A, y.A, Val(NC1), Val(NC2), Val(nw), C.indexer
     )
@@ -463,6 +469,7 @@ end
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
     xdag::Adjoint_Lattice{LatticeMatrix{4,T1,AT1,NC1,4,nw}}, y::LatticeMatrix{4,T1,AT1,NC2,4,nw}) where {T1,AT1,NC1,NC2,nw}
 
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_muluxdagy!, C.A, xdag.data.A, y.A, Val(NC1), Val(NC2), Val(nw), C.indexer
     )
@@ -491,6 +498,7 @@ end
 function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw},
     x::LatticeMatrix{4,T1,AT1,NC1,4,nw}, ydag::Adjoint_Lattice{LatticeMatrix{4,T1,AT1,NC2,4,nw}}) where {T1,AT1,NC1,NC2,nw}
 
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_muluxydag!, C.A, x.A, ydag.data.A, Val(NC1), Val(NC2), Val(nw), C.indexer
     )
@@ -520,6 +528,7 @@ end
 function LinearAlgebra.mul!(y::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     x::LatticeMatrix{4,T1,AT1,NC2,4,nw}, U::LatticeMatrix{4,T1,AT1,NC2,NC1,nw}) where {T1,AT1,NC1,NC2,nw}
 
+    _mark_halo_dirty!(y)
     JACC.parallel_for(
         prod(y.PN), kernel_4Dmatrix_mulyxU!, y.A, x.A, U.A, Val(NC1), Val(NC2), Val(nw), y.indexer
     )
@@ -550,6 +559,7 @@ function LinearAlgebra.mul!(y::LatticeMatrix{4,T1,AT1,NC1,4,nw},
     U::Adjoint_Lattice{LatticeMatrix{4,T1,AT1,NC2,NC1,nw}}) where {T1,AT1,NC1,NC2,nw,TS<:LatticeMatrix{4,T1,AT1,NC2,4,nw}}
 
     shift = get_shift(x)
+    _mark_halo_dirty!(y)
     JACC.parallel_for(
         prod(y.PN), kernel_4Dmatrix_mulyxdagshiftedUdag!, y.A, x.data.data.A, U.data.A, Val(NC1), Val(NC2), Val(nw),
         y.indexer, shift
@@ -590,6 +600,7 @@ function LinearAlgebra.mul!(C::LatticeMatrix{4,T1,AT1,NC1,4,nw},
 
 
     shift = get_shift(x)
+    _mark_halo_dirty!(C)
     JACC.parallel_for(
         prod(C.PN), kernel_4Dmatrix_mulxshiftedAT!, C.A, A, x.data.A, Val(NC1), Val(nw), C.indexer, shift
     )

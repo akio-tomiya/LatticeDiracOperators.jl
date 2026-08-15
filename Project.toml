@@ -1,7 +1,7 @@
 name = "LatticeDiracOperators"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
 authors = ["Akio Tomiya, Yuki Nagai <cometscome@gmail.com> and contributors"]
-version = "0.6.3"
+version = "0.6.4"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -31,7 +31,7 @@ Enzyme = "0.13"
 Gaugefields = "0.7"
 JACC = "0.6,1.0"
 JLD2 = "0.4,0.5"
-LatticeMatrices = "0.3.9"
+LatticeMatrices = "0.3.9, 1"
 MPI = "0.20"
 PreallocatedArrays = "0.0.1,0.1.0"
 Requires = "1"

@@ -208,6 +208,7 @@ function substitute_fermion!(A::TA, B::TB) where {NC,WilsonFermion<:WilsonFermio
     L5 = A.L5
     #D = similar(A.f)
 
+    _mark_halo_dirty!(A.f)
     for i = 1:L5
         xi = B.w[i]#permutedims(B.w[i][:, :, :, :, :, :, i], (1, 6, 2, 3, 4, 5))
         A.f.A[:, :, :, :, :, :, i+nw] .= xi.f.A
@@ -331,6 +332,23 @@ end
 
 function Base.adjoint(x::Tx) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
     Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}(x.f')
+end
+
+@static if isdefined(LatticeMatrices, :release!)
+    function LatticeMatrices.release!(x::Shifted_MobiusDomainwallFermion_5D_MPILattice)
+        LatticeMatrices.release!(x.f)
+        return nothing
+    end
+
+    function LatticeMatrices.release!(x::Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice)
+        LatticeMatrices.release!(x.f)
+        return nothing
+    end
+
+    Base.close(x::Shifted_MobiusDomainwallFermion_5D_MPILattice) = LatticeMatrices.release!(x)
+    Base.close(x::Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice) = LatticeMatrices.release!(x)
+    Base.isopen(x::Shifted_MobiusDomainwallFermion_5D_MPILattice) = isopen(x.f)
+    Base.isopen(x::Adjoint_Shifted_MobiusDomainwallFermion_5D_MPILattice) = isopen(x.f)
 end
 
 function Base.adjoint(x::Adjoint_MobiusDomainwallFermion_5D_MPILattice)
@@ -688,6 +706,7 @@ function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
     #JACC.parallel_for(
     #    prod(A.PN), kernel_Dmatrix_mul_455ABdag!, C.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     #)
+    _mark_halo_dirty!(temp)
     JACC.parallel_for(
         prod(temp.PN), kernel_Dmatrix_mulsum_455ABdag!, temp.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), temp.indexer
     )
@@ -751,6 +770,7 @@ function mul_sum!(C::LatticeMatrix{4,T1,AT1,NC1,NC2,nw,DIC},
     #JACC.parallel_for(
     #    prod(A.PN), kernel_Dmatrix_mul_455ABdag!, C.A, A.A, B.data.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     #)
+    _mark_halo_dirty!(temp)
     JACC.parallel_for(
         prod(A.PN), kernel_Dmatrix_mulsum_455AB!, temp.A, A.A, B.A, Val(NC1), Val(NC2), Val(NC3), Val(nw), A.indexer
     )

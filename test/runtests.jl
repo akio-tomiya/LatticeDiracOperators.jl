@@ -2,8 +2,13 @@ using LatticeDiracOperators
 using Gaugefields
 using Test
 using LinearAlgebra
+import LatticeMatrices
 
 @testset "LatticeDiracOperators.jl" begin
+
+    if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
+        include("latticematrices_backend.jl")
+    end
 
     @testset "Wilson HMC" begin
         println("Wilson HMC")

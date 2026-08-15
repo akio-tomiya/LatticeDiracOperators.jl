@@ -58,6 +58,22 @@ function Base.similar(a::L1) where {L1<:GeneralFermion}
     return zero(a)
 end
 
+"""
+    mul!(result::GeneralFermion, operator, input::GeneralFermion)
+
+Apply a `LatticeMatrices` operator directly to `GeneralFermion` fields.
+The underlying `LatticeMatrix` storage is passed to the operator, while the
+`GeneralFermion` wrapper is retained for use by LatticeDiracOperators actions.
+"""
+function LinearAlgebra.mul!(
+    result::GeneralFermion,
+    operator::LatticeMatrices.OperatorOnKernel,
+    input::GeneralFermion,
+)
+    mul!(result.field, operator, input.field)
+    return result
+end
+
 function substitute_fermion!(
     A::L1,
     B::L2,
