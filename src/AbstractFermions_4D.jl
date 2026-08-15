@@ -323,7 +323,11 @@ end
 
 
 #lattice shift
-function shift_fermion(F::AbstractFermionfields_4D{NC}, ν::T) where {T<:Integer,NC}
+function shift_fermion(
+    F::AbstractFermionfields_4D{NC},
+    ν::T;
+    boundarycondition=nothing,
+) where {T<:Integer,NC}
     if ν == 1
         shift = (1, 0, 0, 0)
     elseif ν == 2

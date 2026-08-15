@@ -317,7 +317,7 @@ function set_wing_fermion!(
         for it = 1:NT
             for iy = 1:NY
                 for ix = 1:NX
-                    iz = NX
+                    iz = NZ
                     evenodd = ifelse((ix + iy + iz + it) % 2 == 0, true, false)
                     if evenodd == iseven
                         @simd for k = 1:NumofBasis

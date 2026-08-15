@@ -6,8 +6,17 @@ import LatticeMatrices
 
 @testset "LatticeDiracOperators.jl" begin
 
+    @testset "Solver diagnostics" begin
+        include("solver_diagnostics.jl")
+    end
+
+    @testset "Wilson boundary conditions" begin
+        include("wilson_boundary_conditions.jl")
+    end
+
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
+        include("hisq_hmc_example.jl")
     end
 
     @testset "Wilson HMC" begin
