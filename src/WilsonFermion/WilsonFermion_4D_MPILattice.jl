@@ -28,6 +28,15 @@ include("linearalgebra_4D.jl")
 abstract type WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG} <: WilsonFermion_4D{NC} end
 
 
+"""
+    WilsonFermion_4D_MPILattice(NC, NX, NY, NZ, NT; ...)
+
+Four-dimensional Wilson spinor field backed by
+`LatticeMatrices.LatticeMatrix`. The per-site shape is `NC × 4`; MPI
+decomposition, halo width, precision, communicator, and boundary phases are
+owned by the wrapped lattice matrix. New code normally constructs this field
+with [`Initialize_pseudofermion_fields`](@ref).
+"""
 struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonFields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
     f::Tf#LatticeMatrix{4,T,AT,NC,NG}
     NC::Int64

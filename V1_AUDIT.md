@@ -113,8 +113,9 @@ v1で標準とするMPILattice型をトップレベルからexportした。
 
 - Enzymeはweak dependencyで、`LatticeDiracOperatorsEnzymeExt` からのみ追加機能をロードする。
 - 通常のWilson/staggered/HISQ/domain-wall operatorはEnzymeなしでロード・実行できる。
-- HISQ forceはanalyticで、Enzymeなし。
-- Wilson--clover forceと任意callbackの自動微分はEnzymeあり。
+- HISQ forceはLMのanalytic pullback。
+- Wilson--clover forceはLMのanalytic pullbackでEnzymeなし。
+- 任意callbackの自動微分はEnzymeあり。
 - LM、Gaugefields、LDOの各extensionが同一メソッドを上書きしないよう責務を分離した。
 
 ## Test / CI
@@ -122,7 +123,7 @@ v1で標準とするMPILattice型をトップレベルからexportした。
 テスト入口を用途別に分けた。
 
 - `test/runtests_core.jl`: Enzymeをロードしないcore
-- `test/runtests_ad.jl`: clover、GeneralFermion、HISQ AD
+- `test/runtests_ad.jl`: GeneralFermion、LM callback、HISQ AD
 - `test/runtests_mpi.jl`: 2-rank MPI
 - `test/runtests.jl`: Julia 1.11のlegacyを含むfull package suite
 
@@ -144,7 +145,9 @@ CIは次を実行する。
 | Julia 1.11 full package suite（README整理前、source同一） | 409/409、約10分08秒 |
 | README掲載blockの直接実行、Julia 1.11/1.12 | 7/7 each、Enzyme未load |
 | README test統合後のJulia 1.12 core/no-Enzyme runner | 10/10 subprocess pass |
-| Julia 1.12 Enzyme components | clover 19/19、LM callback 3/3、HISQ HMC 4/4、MPIJACC AD pass |
+| Julia 1.11 analytic Wilson--clover | LM finite difference pass、LDO action 19/19、2-rank 19/19 per rank |
+| Julia 1.11 LM clover Enzyme compatibility | direct 4/4、cached explicit-link 12/12 |
+| Julia 1.12 Enzyme components | LM callback 3/3、HISQ HMC 4/4、MPIJACC AD pass |
 | Julia 1.12 2-rank MPI | halo、AD、clover、callback、staggered、HISQ、domain-wall 全pass |
 | LM Wilson AD smoke, Julia 1.11/1.12 | 25/25 each |
 | QCDMeasurements 1.0.0 CPU downstream, Julia 1.11 | 175/175 |

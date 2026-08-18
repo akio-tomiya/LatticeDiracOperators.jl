@@ -7,7 +7,6 @@ using Test
         LatticeDiracOperators, :LatticeDiracOperatorsEnzymeExt) !== nothing
     project_directory = dirname(Base.active_project())
     test_files = [
-        "wilson_clover_wrapper.jl",
         "wilson_lm_callback_ad.jl",
         "hisq_hmc_example.jl",
         joinpath("MPIJACC", "ad.jl"),

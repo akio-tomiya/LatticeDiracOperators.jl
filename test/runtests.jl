@@ -28,6 +28,7 @@ import LatticeMatrices
         end
         include("hisq_hmc_example.jl")
         include("domainwall_mpialattice.jl")
+        include("domainwall_grid_reference.jl")
     end
 
     @testset "Wilson HMC" begin

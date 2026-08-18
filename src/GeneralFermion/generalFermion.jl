@@ -14,6 +14,15 @@ function defaultphase(dim)
     return phase
 end
 
+"""
+    GeneralFermion(field::LatticeMatrix)
+    GeneralFermion(NC, NG, global_size, process_grid; kwargs...)
+
+Callback-oriented fermion field backed directly by a
+`LatticeMatrices.LatticeMatrix`. Use it with [`GeneralFermionAction`](@ref)
+when a user-defined `apply_D!`/`apply_Ddag!` pair is more convenient than one
+of LDO's standard formulations.
+"""
 struct GeneralFermion{TF,D,T,AT,NC,NG,nw,DI} <: AbstractFermionfields{NC,D}
     field::TF
 
@@ -203,6 +212,13 @@ end
 end
 
 
+"""
+    DdagDgeneral(U, field, apply_D!, apply_Ddag!; kwargs...)
+
+Composite `D†D` operator built from user callbacks. Callbacks have the
+signature `apply!(out, U1, U2, U3, U4, input, fermion_temps, gauge_temps)` and
+must overwrite `out`.
+"""
 struct DdagDgeneral{TmulD,TmulDdag,TG,TF} <: DdagD_operator
     apply_D::TmulD #(phitemp1, DdagD.U[1], DdagD.U[2], DdagD.U[3], DdagD.U[4], x, phitemp, temp)
     apply_Ddag::TmulDdag #(phitemp1, DdagD.U[1], DdagD.U[2], DdagD.U[3], DdagD.U[4], x, phitemp, temp)

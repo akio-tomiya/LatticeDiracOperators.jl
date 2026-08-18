@@ -1,3 +1,12 @@
+"""
+    FermiAction(D, parameters_action; covneuralnet=nothing)
+
+Construct the standard pseudofermion action associated with Dirac operator
+`D`. Staggered and HISQ actions require `parameters_action["Nf"]`; Wilson and
+domain-wall actions accept an empty dictionary. Use
+[`evaluate_FermiAction`](@ref) for the action and [`calc_UdSfdU`](@ref) or
+[`calc_UdSfdU!`](@ref) for its gauge force.
+"""
 abstract type FermiAction{Dim,Dirac,fermion,gauge} end
 
 include("./StaggeredFermiAction.jl")
@@ -45,12 +54,24 @@ function FermiAction(
 
 end
 
+"""
+    evaluate_FermiAction(action, U, phi)
+
+Evaluate the real pseudofermion action for gauge links `U` and pseudofermion
+field `phi`. The action rebuilds its gauge-dependent operator from `U` before
+solving.
+"""
 function evaluate_FermiAction(fermi_action::FermiAction, U, ϕ::AbstractFermionfields)
     error(
         "evaluate_FermiAction(fermi_action,U,ϕ) is not implemented in type fermi_action:$(typeof(fermi_action)), U:$(typeof(U)), and ϕ:$(typeof(ϕ)),  ",
     )
 end
 
+"""
+    gauss_sampling_in_action!(noise, U, action)
+
+Fill `noise` with the Gaussian field required by `action`.
+"""
 function gauss_sampling_in_action!(η::AbstractFermionfields, U, fermi_action::FermiAction)
     error(
         "gauss_sampling_in_action!(η,fermi_action) is not implemented in type η:$(typeof(η)), fermi_action:$(typeof(fermi_action))",
@@ -69,12 +90,26 @@ det(D)^Nf =
  = int dphi dphi^* exp[- phi^* D^{-Nf/2} D^{-Nf/2} phi]
 =#
 
+"""
+    sample_pseudofermions!(phi, U, action, noise)
+
+Construct pseudofermion field `phi` from Gaussian `noise` for `action` and
+gauge links `U`.
+"""
 function sample_pseudofermions!(ϕ::AbstractFermionfields, U, fermi_action::FermiAction, ξ)
     error(
         "sample_pseudofermions!(ϕ,fermi_action,ξ) is not implemented in type ϕ:$(typeof(ϕ)), fermi_action:$(typeof(fermi_action)), ξ:$(typeof(ξ))",
     )
 end
 
+"""
+    calc_UdSfdU(action, U, phi)
+
+Allocate and return the fermion force in LDO's existing
+`Uμ (∂Sf/∂Uμ)†` convention. The standard Wilson, staggered, HISQ, and
+domain-wall paths are analytic. Wilson--clover and `GeneralFermionAction`
+callback forces require the optional Enzyme extension.
+"""
 function calc_UdSfdU(
     fermi_action::FermiAction{Dim,Dirac,fermion,gauge},
     U::Vector{<:AbstractGaugefields},
@@ -89,6 +124,12 @@ function calc_UdSfdU(
     return UdSfdU
 end
 
+"""
+    calc_UdSfdU!(force, action, U, phi)
+
+Write the fermion force into the preallocated vector `force`. See
+[`calc_UdSfdU`](@ref) for the force convention and differentiation backends.
+"""
 function calc_UdSfdU!(
     UdSfdU::Vector{<:AbstractGaugefields},
     fermi_action::FermiAction,

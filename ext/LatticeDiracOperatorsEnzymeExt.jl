@@ -7,16 +7,13 @@ import LatticeMatrices: toann, DiffArg, NoDiffArg, enzyme_duplicated, fold_halo_
 using LatticeDiracOperators
 using PreallocatedArrays
 import Gaugefields.AbstractGaugefields_module: Gaugefields_4D_MPILattice
-import Gaugefields: add_U!, clear_U!
 import Gaugefields.Temporalfields_module: get_temp, unused!
 
 import Enzyme.EnzymeRules: augmented_primal, reverse, RevConfig, AugmentedReturn, Active, Annotation
 const ER = Enzyme.EnzymeRules
 import LatticeMatrices: LatticeMatrix, Shifted_Lattice, Adjoint_Lattice, delinearize, shiftindices, kernel_clear_4D!, kernel_add_4D!, mul_AshiftB!, mul_shiftAshiftB!, clear_matrix!, add_matrix!
 import LatticeDiracOperators.Dirac_operators: WilsonFermion_4D_MPILattice,
-    WilsonFermiAction, _calc_lm_clover_force_fromX!,
     _general_fermion_derivative!
-import LatticeMatrices: mul_cached_clover!
 
 include("fallbackmacro.jl")
 using .EnzymeBFallback
@@ -96,61 +93,6 @@ function _general_fermion_derivative!(
     fold_halo_to_core_grad!(dfdU4.U)
 
     return result
-end
-
-function _wilson_clover_bilinear(
-    U1, U2, U3, U4, left, source, cache, fermion_workspace,
-)
-    result = fermion_workspace[end]
-    mul_cached_clover!(result, cache, U1, U2, U3, U4, source)
-    return real(dot(left, result))
-end
-
-function _calc_lm_clover_force_fromX!(
-    force::Vector{TG},
-    Y::TF,
-    fermi_action::WilsonFermiAction,
-    U::Vector{TG},
-    X::TF;
-    coeff=1,
-) where {TG<:Gaugefields_4D_MPILattice,TF<:WilsonFermion_4D_MPILattice}
-    W = fermi_action.diracoperator(U)
-    mul!(Y, W, X)
-    LatticeDiracOperators.set_wing_fermion!(Y)
-
-    raw_gradient, raw_tokens = get_temp(
-        fermi_action._temporary_gaugefields, 4)
-    clear_U!(raw_gradient)
-
-    primal_work, primal_token = get_temp(
-        fermi_action._temporary_fermionfields)
-    shadow_work, shadow_token = get_temp(
-        fermi_action._temporary_fermionfields)
-    LatticeDiracOperators.clear_fermion!(primal_work)
-    LatticeDiracOperators.clear_fermion!(shadow_work)
-
-    Enzyme_derivative!(
-        _wilson_clover_bilinear,
-        U[1].U, U[2].U, U[3].U, U[4].U,
-        raw_gradient[1].U, raw_gradient[2].U,
-        raw_gradient[3].U, raw_gradient[4].U,
-        nodiff(Y.f), nodiff(X.f), nodiff(W.D);
-        phitemp=[primal_work.f],
-        dphitemp=[shadow_work.f],
-    )
-
-    transformed, transformed_token = get_temp(
-        fermi_action._temporary_gaugefields)
-    for μ in 1:4
-        mul!(transformed, U[μ], raw_gradient[μ]')
-        add_U!(force[μ], coeff, transformed)
-    end
-
-    unused!(fermi_action._temporary_gaugefields, raw_tokens)
-    unused!(fermi_action._temporary_gaugefields, transformed_token)
-    unused!(fermi_action._temporary_fermionfields, primal_token)
-    unused!(fermi_action._temporary_fermionfields, shadow_token)
-    return nothing
 end
 
 function g(χ, U1, U2, U3, U4, η, p, apply, phitemp, temp)

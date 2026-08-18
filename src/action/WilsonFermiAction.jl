@@ -1,11 +1,6 @@
 import Gaugefields: Traceless_antihermitian_add!, Generator
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
-
-function _calc_lm_clover_force_fromX!(args...; kwargs...)
-    error(
-        "Wilson--clover fermion force requires Enzyme. " *
-        "Load Enzyme before calling calc_UdSfdU!.")
-end
+import LatticeMatrices: wilson_clover_link_pullback!
 
 
 #include("clover_data.jl")
@@ -87,6 +82,43 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
         )
 
     end
+end
+
+function _calc_lm_clover_force_fromX!(
+    force::Vector{TG},
+    Y::TF,
+    fermi_action::WilsonFermiAction,
+    U::Vector{TG},
+    X::TF;
+    coeff=1,
+) where {TG<:Gaugefields_4D_MPILattice,TF<:WilsonFermion_4D_MPILattice}
+    W = fermi_action.diracoperator(U)
+    mul!(Y, W, X)
+    set_wing_fermion!(Y)
+
+    gauge_work, gauge_token = get_temp(
+        fermi_action._temporary_gaugefields, 5)
+    raw_gradient = gauge_work[1:4]
+    converted_gradient = gauge_work[5]
+    try
+        clear_U!(raw_gradient)
+        wilson_clover_link_pullback!(
+            ntuple(mu -> raw_gradient[mu].U, Val(4)),
+            W.D,
+            ntuple(mu -> U[mu].U, Val(4)),
+            Y.f,
+            X.f;
+            coefficient=coeff,
+        )
+
+        for mu in 1:4
+            mul!(converted_gradient, U[mu], raw_gradient[mu]')
+            add_U!(force[mu], converted_gradient)
+        end
+    finally
+        unused!(fermi_action._temporary_gaugefields, gauge_token)
+    end
+    return nothing
 end
 
 function evaluate_FermiAction(

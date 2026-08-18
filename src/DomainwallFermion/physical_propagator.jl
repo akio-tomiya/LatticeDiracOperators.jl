@@ -46,7 +46,7 @@ function solve_domainwall_physical_propagator!(
     LatticeMatrices.domainwall_import_physical_source!(source5.f, source4.f)
     diagnostics = solve_DinvX!(solution5, D.D5DW, source5)
     LatticeMatrices.domainwall_export_physical_solution!(solution4.f, solution5.f)
-    set_wing_fermion!(solution4, D.boundarycondition)
+    set_wing_fermion!(solution4, collect(D.boundarycondition[1:4]))
     return diagnostics
 end
 
@@ -77,7 +77,7 @@ function domainwall_physical_point_propagators(
     template5.L5 == D.D5DW.L5 || throw(DimensionMismatch(
         "template field L5=$(template5.L5) differs from operator L5=$(D.D5DW.L5)"))
     source4 = Initialize_WilsonFermion(
-        D.U[1]; nowing=true, boundarycondition=D.boundarycondition)
+        D.U[1]; nowing=true, boundarycondition=collect(D.boundarycondition[1:4]))
     source5 = similar(template5)
     five_dimensional = Vector{typeof(template5)}(undef, 12)
     physical_template = similar(source4)

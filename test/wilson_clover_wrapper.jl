@@ -6,12 +6,18 @@ using LinearAlgebra
 using MPI
 using Random
 using Test
-using Enzyme
 
 JACC.@init_backend
 MPI.Initialized() || MPI.Init()
 
 const _LDO_DIRAC = LatticeDiracOperators.Dirac_operators
+
+if lowercase(get(ENV, "LDO_TEST_EXPECT_NO_ENZYME", "false")) == "true"
+    @test Base.get_extension(
+        LatticeDiracOperators, :LatticeDiracOperatorsEnzymeExt) === nothing
+    @test Base.get_extension(
+        LatticeMatrices, :LatticeMatricesEnzymeExt) === nothing
+end
 
 function _wilson_clover_wrapper_core(field)
     ranges = ntuple(

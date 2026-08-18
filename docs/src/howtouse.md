@@ -1,5 +1,14 @@
 
-# How to use
+# Legacy API and archived examples
+
+!!! warning "Compatibility documentation"
+    This page preserves the pre-v1 manual and its historical HMC examples.
+    New applications should begin with the [v1 quick start](quickstart.md) and
+    use Gaugefields' `gauge_configuration`. Constructors and types shown below
+    remain callable where documented, but they may select compatibility
+    implementations rather than the LatticeMatrices-backed v1 standard path.
+
+## Historical manual
 
 ## Definition of the pseudo-fermion fields
 

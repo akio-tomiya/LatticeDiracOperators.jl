@@ -20,9 +20,9 @@ action = FermiAction(D, action_parameters)
 | `"Domainwall"`, `"MobiusDomainwall"`, `"GeneralizedDomainwall"` | `DomainwallFermion_5D_MPILattice` | five-dimensional domain-wall operators |
 
 `GeneralFermion` and `GeneralFermionAction` are the extension point for a
-user-defined `apply_D`/`apply_Ddag` pair.  Their automatic force requires
-Enzyme.  The standard HISQ force is analytic and does not require Enzyme;
-the standard Wilson--clover force uses the Enzyme extension.
+user-defined `apply_D`/`apply_Ddag` pair. Their automatic force uses the
+Enzyme extension. Standard Wilson--clover and HISQ forces use analytic
+LatticeMatrices pullbacks.
 
 ## Compatibility implementations
 

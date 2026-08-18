@@ -103,8 +103,7 @@ LatticeMatrices owns the two Fat7 levels, U(3) reunitarization, Lepage
 correction, Naik links, Dirac stencil, derived-link cache, and the analytic
 `hisq_link_pullback!`. LDO owns the standard operator/action API and converts
 the thin-link gradient to its existing `U * (dS/dU)'` force convention. The
-ordinary one-link staggered force is never used for a HISQ operator, and the
-standard HISQ action/force path does not require Enzyme.
+ordinary one-link staggered force is never used for a HISQ operator.
 
 The operator supports `halo=0` as a serial/fallback stencil, but dynamical
 HISQ force evaluation requires `halo>=3`.  The complete construction currently

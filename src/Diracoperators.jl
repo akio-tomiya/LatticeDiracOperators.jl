@@ -124,6 +124,18 @@ include("./GeneralFermion/generalFermion.jl")
 include("./action/FermiAction.jl")
 
 
+"""
+    Dirac_operator(U, field, parameters)
+
+Construct a lattice Dirac operator for gauge links `U` and `field`.
+`parameters["Dirac_operator"]` selects `"Wilson"`, `"WilsonClover"`,
+`"staggered"`, `"HISQ"`, `"Domainwall"`, `"MobiusDomainwall"`, or
+`"GeneralizedDomainwall"`. Formulation-specific and solver parameters use the
+same string-keyed dictionary; see the high-level parameter reference in the
+manual.
+
+Gaugefields v1 MPILattice input selects the LatticeMatrices-backed v1 path.
+"""
 function Dirac_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x,
@@ -186,6 +198,14 @@ function Dirac_operator(
     end
 end
 
+"""
+    DdagD_operator(U, field, parameters)
+
+Construct the positive composite operator `D†D` corresponding to
+[`Dirac_operator`](@ref). It supports the same formulation and solver
+parameters and can be applied with `mul!` or inverted with
+[`solve_DinvX!`](@ref).
+"""
 function DdagD_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x,
@@ -220,6 +240,14 @@ function get_temporaryvectors_forCG(A::T) where {T<:DdagD_operator}
     return A.dirac._temporary_fermion_forCG
 end
 
+"""
+    solve_DinvX!(solution, operator, source)
+
+Overwrite `solution` with the iterative solution of
+`operator * solution = source`. The tolerance, iteration limit, solver method,
+and verbosity are taken from the operator constructed by [`Dirac_operator`](@ref)
+or [`DdagD_operator`](@ref).
+"""
 function solve_DinvX!(
     y::T1,
     A::T2,

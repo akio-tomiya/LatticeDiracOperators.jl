@@ -25,13 +25,13 @@ end
     global_size = (4 * nprocs, 4, 4, 4)
     process_grid = (nprocs, 1, 1, 1)
     rng = Random.MersenneTwister(1901)
-    Random.seed!(1900)
 
     gauge = gauge_configuration(
         global_size;
         colors=3,
         halo=3,
         start=:hot,
+        seed=1900,
         process_grid,
     )
     source = Initialize_pseudofermion_fields(gauge[1], "staggered")
@@ -122,6 +122,7 @@ end
         colors=3,
         halo=3,
         start=:hot,
+        seed=1902,
         process_grid,
     )
     rebuilt = operator(replacement)
@@ -154,6 +155,7 @@ end
         colors=3,
         halo=3,
         start=:hot,
+        seed=1903,
         process_grid,
     )
     substitute_U!(replacement, mutated)

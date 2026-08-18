@@ -11,6 +11,7 @@ using Test
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
         "domainwall_mpialattice.jl",
+        "domainwall_grid_reference.jl",
     ]
     for test_file in test_files
         @info "Running isolated two-rank test" test_file

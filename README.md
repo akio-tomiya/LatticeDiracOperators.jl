@@ -21,8 +21,9 @@ Compared with the 0.6 release line, v1:
   Möbius domain-wall, and generalized domain-wall operators;
 - keeps historical wing/nowing/accelerator implementations in
   family-specific `deprecated/` directories for source compatibility;
-- implements the standard HISQ force analytically, without Enzyme;
-- provides Wilson--clover and user-defined callback forces through an optional
+- implements the standard HISQ and Wilson--clover forces analytically through
+  LatticeMatrices pullbacks;
+- provides automatic forces for user-defined callbacks through an optional
   Enzyme extension;
 - supports user-defined `apply_D!` and `apply_Ddag!` callbacks through
   `GeneralFermionAction`; and
@@ -42,8 +43,8 @@ In Julia package mode:
 pkg> add Gaugefields LatticeDiracOperators JACC
 ```
 
-Enzyme is optional. Add it only for Wilson--clover forces or automatic
-differentiation of user-defined `GeneralFermionAction` callbacks:
+Enzyme is optional. Add it only for automatic differentiation of user-defined
+`GeneralFermionAction` callbacks:
 
 ```text
 pkg> add Enzyme
@@ -121,19 +122,23 @@ clover_parameters = merge(
 Dclover = Dirac_operator(U, x, clover_parameters)
 mul!(y, Dclover, x)
 @assert isfinite(real(dot(y, y)))
+
+clover_action = FermiAction(Dclover, Dict("Nf" => 2))
+clover_force = calc_UdSfdU(clover_action, U, x)
+@assert all(link -> isfinite(real(dot(link.U, link.U))), clover_force)
 ```
 
-Wilson--clover application and inversion do not require Enzyme. Calling
-`calc_UdSfdU` for a Wilson--clover action does require `using Enzyme`;
-without it, LDO raises an error explaining the optional dependency.
+Wilson--clover application, inversion, and force evaluation use the analytic
+LatticeMatrices pullback and do not require an automatic-differentiation
+package.
 
-### HISQ without Enzyme
+### HISQ
 
 HISQ uses the staggered MPILattice field and requires a halo width of at least
 three. Its standard fermion force is an analytic LatticeMatrices pullback:
 
 ```julia
-# README_V1_HISQ_NO_ENZYME
+# README_V1_HISQ
 import JACC
 JACC.@init_backend
 
@@ -238,9 +243,9 @@ and `cs`.
 | `Dirac_operator` value | Standard field | Force implementation |
 |---|---|---|
 | `"Wilson"` | `WilsonFermion_4D_MPILattice` | analytic |
-| `"WilsonClover"` | `WilsonFermion_4D_MPILattice` | Enzyme extension |
+| `"WilsonClover"` | `WilsonFermion_4D_MPILattice` | analytic |
 | `"staggered"` | `StaggeredFermion_4D_MPILattice` | analytic |
-| `"HISQ"` | `StaggeredFermion_4D_MPILattice` | analytic, no Enzyme |
+| `"HISQ"` | `StaggeredFermion_4D_MPILattice` | analytic |
 | `"Domainwall"` | `DomainwallFermion_5D_MPILattice` | analytic |
 | `"MobiusDomainwall"` | `DomainwallFermion_5D_MPILattice` | analytic |
 | `"GeneralizedDomainwall"` | `DomainwallFermion_5D_MPILattice` | analytic |
@@ -278,8 +283,19 @@ documented by Gaugefields and LatticeMatrices:
 
 ## Documentation
 
+- [Documenter manual](https://akio-tomiya.github.io/LatticeDiracOperators.jl/dev/)
+- [Quick start](docs/src/quickstart.md)
+- [Wilson and Wilson--clover](docs/src/wilson.md)
+- [Staggered and HISQ](docs/src/staggered_hisq.md)
+- [Domain-wall fermions](docs/src/domainwall.md)
+- [User-defined operators](docs/src/generalfermion.md)
+- [Actions, forces, and solvers](docs/src/actions_forces.md)
+- [MPI, GPU, and multi-GPU](docs/src/mpi_gpu.md)
+- [High-level API parameters](docs/src/highlevelapi.md)
+- [Public v1 API index](docs/src/publicapi.md)
+- [Citing LDO](docs/src/references.md)
 - [v1 API and compatibility boundary](docs/src/v1_api.md)
-- [Operator, action, and historical HMC examples](docs/src/howtouse.md)
+- [Historical API and HMC examples](docs/src/howtouse.md)
 - [Wilson implementation notes](src/WilsonFermion/README.md)
 - [Staggered and HISQ implementation notes](src/StaggeredFermion/README.md)
 - [Domain-wall implementation notes](src/DomainwallFermion/README.md)
@@ -296,9 +312,16 @@ Please use this repository's issue tracker or the
 [JuliaQCD discussion board](https://github.com/orgs/JuliaQCD/discussions).
 Questions in Japanese are welcome.
 
-## Acknowledgment
+## Citing LatticeDiracOperators
 
-If you use this package in a paper, please cite:
+If this package contributes to a publication, please cite both papers:
+
+1. Yuki Nagai and Akio Tomiya,
+   [*JuliaQCD: Portable lattice QCD package in Julia language*](https://arxiv.org/abs/2409.03030),
+   arXiv:2409.03030 (`hep-lat`, 2024).
+2. Yuki Nagai, Akio Tomiya, and Hiroshi Ohno,
+   [*Lattice Gauge Theory via LLVM-Level Automatic Differentiation*](https://arxiv.org/abs/2602.20516),
+   arXiv:2602.20516 (`hep-lat`, 2026).
 
 ```bibtex
 @article{Nagai:2024yaf,
@@ -307,9 +330,15 @@ If you use this package in a paper, please cite:
     eprint = "2409.03030",
     archivePrefix = "arXiv",
     primaryClass = "hep-lat",
-    month = "9",
     year = "2024"
 }
-```
 
-The paper is available as [arXiv:2409.03030](https://arxiv.org/abs/2409.03030).
+@article{Nagai:2026llvmad,
+    author = "Nagai, Yuki and Tomiya, Akio and Ohno, Hiroshi",
+    title = "{Lattice Gauge Theory via LLVM-Level Automatic Differentiation}",
+    eprint = "2602.20516",
+    archivePrefix = "arXiv",
+    primaryClass = "hep-lat",
+    year = "2026"
+}
+```

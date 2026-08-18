@@ -59,6 +59,50 @@ The historical `Initialize_Gaugefields` API reaches this path with
 needed for MPILattice fields; `"improved gpu" => true` with a legacy field is
 rejected rather than silently selecting a mismatched implementation.
 
+## Physical point propagators and residual mass
+
+The v1 valence API imports a four-dimensional source onto the Shamir walls,
+solves the raw five-dimensional operator, and exports the physical solution.
+It deliberately does not call the Pauli--Villars-composed outer operator used
+by the pseudofermion action:
+
+```julia
+L5 = 4
+x5 = Initialize_pseudofermion_fields(U[1], "Domainwall"; L5)
+D = Dirac_operator(U, x5, Dict(
+    "Dirac_operator" => "Domainwall",
+    "mass" => 0.1,
+    "L5" => L5,
+    "M" => -1.0,                 # Grid M5=1 convention
+    "eps_CG" => 1e-28,
+    "MaxCGstep" => 100_000,
+    "method_CG" => "bicg",
+    "verbose_level" => 0,
+    "boundarycondition" => [1, 1, 1, -1],
+))
+
+propagators = domainwall_physical_point_propagators(
+    D, x5; source_position=(1, 1, 1, 1))
+correlators = domainwall_residual_mass_correlator(
+    propagators.five_dimensional; origin=(1, 1, 1, 1))
+
+correlators.PP
+correlators.J5qP
+correlators.ratio                 # J5qP ./ PP on each timeslice
+```
+
+`ratio` is the raw per-configuration timeslice ratio. A residual-mass result
+still requires an ensemble average and a stated plateau fit window. The
+definition follows the midpoint axial Ward identity of Furman and Shamir,
+[Nucl. Phys. B439 (1995) 54--78](https://doi.org/10.1016/0550-3213(95)00031-M).
+
+The independent regression in `test/domainwall_grid_reference.jl` uses a
+`4^4`, `L5=4`, non-cold one-link SU(3) field and compares all timeslices of
+`PP`, Grid's `ContractJ5q`, and `J5qP/PP` with Grid commit
+`0ac72cb6a30ccdc41d664e7e0759f0c8833078f1`. The same frozen values pass on
+threaded CPU, two MPI ranks, and an NVIDIA H100 through JACC/CUDA. The complete
+Grid driver and recorded output are under `test/references/grid/`.
+
 ## Variants
 
 The public function names and operator strings are unchanged:

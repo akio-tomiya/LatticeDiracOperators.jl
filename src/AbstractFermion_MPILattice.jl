@@ -1,3 +1,15 @@
+"""
+    Initialize_pseudofermion_fields(gauge_link, family; L5=2, kwargs...)
+
+Create the standard fermion field associated with one link from a Gaugefields
+v1 configuration. For a `Gaugefields_4D_MPILattice`, `family` may be
+`"Wilson"`, `"staggered"`, `"Domainwall"`, `"MobiusDomainwall"`, or
+`"GeneralizedDomainwall"`.
+
+The returned Wilson, staggered, or domain-wall field uses LatticeMatrices
+storage and inherits the gauge link's lattice geometry, halo width, process
+grid, communicator, and precision. Pass `L5` for a domain-wall family.
+"""
 function Initialize_pseudofermion_fields(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW},
     Dirac_operator::String;

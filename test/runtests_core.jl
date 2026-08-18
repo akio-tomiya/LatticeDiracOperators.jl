@@ -15,9 +15,11 @@ using Test
         "solver_diagnostics.jl",
         "wilson_boundary_conditions.jl",
         "latticematrices_backend.jl",
+        "wilson_clover_wrapper.jl",
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
         "domainwall_mpialattice.jl",
+        "domainwall_grid_reference.jl",
     ]
     for test_file in test_files
         @info "Running isolated core test" test_file

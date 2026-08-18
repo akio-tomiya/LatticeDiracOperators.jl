@@ -4,7 +4,7 @@ using Test
 
 const README_MARKERS = (
     "# README_V1_WILSON",
-    "# README_V1_HISQ_NO_ENZYME",
+    "# README_V1_HISQ",
     "# README_V1_DOMAIN_WALL",
 )
 

@@ -35,13 +35,13 @@ in-place gauge update refreshes the clover field on the next application.
 Direct mutations of a link's `.A` storage must follow the LatticeMatrices
 contract and call `mark_halo_dirty!`.
 
-Loading Enzyme activates the standard Wilson--clover force specialization.
-It differentiates LatticeMatrices' explicit-link cached clover application
-and returns the same `U * (dS/dU)'` convention as the other LDO actions.  The
+The standard force calls LatticeMatrices' analytic
+`wilson_clover_link_pullback!` for the explicit-link cached clover application
+and returns the same `U * (dS/dU)'` convention as the other LDO actions. The
 action-level regression test compares this force with a Lie-direction finite
-difference of the complete pseudofermion action.  Without Enzyme, forward,
-adjoint, and `D†D` applications remain available; requesting the clover force
-raises an explicit error explaining how to activate it.
+difference of the complete pseudofermion action. Forward, adjoint, `D†D`, and
+force calculations all work without loading an automatic-differentiation
+package.
 
 ## `linearalgebra_4D.jl`
 
