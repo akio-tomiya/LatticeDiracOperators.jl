@@ -35,6 +35,20 @@ New code should create gauge links with Gaugefields'
 concrete field names remain available, but select the compatibility path when
 given legacy gauge fields.
 
+## Breaking changes from v0.6
+
+Most legacy public names remain available through the compatibility layer, but:
+
+- v1 requires Julia 1.11 or later, Gaugefields v1, and LatticeMatrices 1.1.2 or
+  later;
+- Gaugefields v1 inputs now select the LatticeMatrices-backed MPILattice path;
+  code that depends on legacy wing/nowing storage or writes directly to `.A`
+  must use the standard field API and halo-epoch contract;
+- the standard domain-wall field uses one five-dimensional `LatticeMatrix`
+  rather than the legacy `w[s]` slice representation; and
+- Enzyme is optional and is no longer loaded by LDO; automatic forces for
+  user-defined `GeneralFermionAction` callbacks require explicitly loading it.
+
 ## Install
 
 In Julia package mode:
