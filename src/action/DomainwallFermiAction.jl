@@ -370,7 +370,6 @@ function gauss_sampling_in_action!(
     gauss_distribution_fermion!(η, rand)
 end
 
-using InteractiveUtils
 
 function sample_pseudofermions!(
     ϕ::AbstractFermionfields,

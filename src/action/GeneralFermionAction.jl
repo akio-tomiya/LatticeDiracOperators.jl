@@ -1,3 +1,18 @@
+function _general_fermion_derivative! end
+
+"""
+    GeneralFermionAction(U, field, apply_D!, apply_Ddag!; kwargs...)
+
+Construct a pseudofermion action from user-defined Dirac and adjoint
+callbacks. Forward application and action evaluation do not require Enzyme.
+Loading Enzyme activates automatic differentiation of the callbacks for
+[`calc_UdSfdU`](@ref).
+
+The callbacks receive
+`(out, U1, U2, U3, U4, input, fermion_temps, gauge_temps)` and must overwrite
+`out`. The temporary counts and Krylov parameters can be set with `numcg`,
+`num`, `numg`, `numtemp`, `eps_CG`, `maxsteps`, and `verbose_level`.
+"""
 struct GeneralFermionAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,fermion,gauge}
     DdagD::Dirac
     numtemp::Int64
@@ -130,7 +145,7 @@ function calc_UdSfdU!(
 
     func(U1, U2, U3, U4, χ, η, apply, phitemp, temp) = vdD(χ, U1, U2, U3, U4, η, apply, phitemp, temp)
 
-    Enzyme_derivative!(
+    _general_fermion_derivative!(
         func,
         U1,
         U2,
@@ -231,4 +246,3 @@ function calc_UdSfdU!(
     #dSFdU!(U, dfdU::Vector{TG}, apply_D, apply_Ddag, φ, numtemp, verbose_level)
 
 end
-

@@ -1,8 +1,13 @@
 
 using Requires
 
+import LatticeMatrices: D5DW_GeneralizedDomainwallOperator5D
+
+abstract type AbstractD5DWGeneralizedDomainwallOperator{Dim} <:
+    Dirac_operator{Dim} end
+
 struct D5DW_GeneralizedDomainwall_operator{Dim,T,fermion,wilsonfermion} <:
-       Dirac_operator{Dim} where {T<:AbstractGaugefields}
+       AbstractD5DWGeneralizedDomainwallOperator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
     wilsonoperator::Union{
         Wilson_Dirac_operator{Dim,T,wilsonfermion},
@@ -19,7 +24,7 @@ struct D5DW_GeneralizedDomainwall_operator{Dim,T,fermion,wilsonfermion} <:
     verbose_print::Verbose_print
     # _temporary_fermion_forCG::Vector{fermion}
     _temporary_fermion_forCG::Temporalfields{fermion}# Vector{fermion}
-    boundarycondition::Vector{Int8}
+    boundarycondition::Vector{<:Number}
     bs::Vector{Float64} #coefficient for GeneralizedDomainwall
     cs::Vector{Float64} #coefficient for GeneralizedDomainwall
 
@@ -155,15 +160,15 @@ end
 struct GeneralizedDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion} <:
        Dirac_operator{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D5DW::D5DW_GeneralizedDomainwall_operator{Dim,T,fermion,wilsonfermion}
-    D5DW_PV::D5DW_GeneralizedDomainwall_operator{Dim,T,fermion,wilsonfermion}
+    D5DW::AbstractD5DWGeneralizedDomainwallOperator{Dim}
+    D5DW_PV::AbstractD5DWGeneralizedDomainwallOperator{Dim}
     mass::Float64
     eps_CG::Float64
     MaxCGstep::Int64
     verbose_level::Int8
     method_CG::String
     verbose_print::Verbose_print
-    boundarycondition::Vector{Int8}
+    boundarycondition::Vector{<:Number}
     bs::Vector{Float64} #coefficient for GeneralizedDomainwall
     cs::Vector{Float64} #coefficient for GeneralizedDomainwall
 
@@ -283,7 +288,7 @@ end
 
 
 struct DdagD_GeneralizedDomainwall_operator{Dim,T,fermion,wilsonfermion} <: DdagD_operator
-    dirac::Domainwall_Dirac_operator{Dim,T,fermion,wilsonfermion}
+    dirac::GeneralizedDomainwall_Dirac_operator{Dim,T,fermion,wilsonfermion}
     function DdagD_GeneralizedDomainwall_operator(
         U::Array{<:AbstractGaugefields{NC,Dim},1},
         x,
@@ -326,6 +331,12 @@ struct GeneralizedD5DWdagD5DW_Wilson_operator{T} <: DdagD_operator
     ) where {Dim,T,fermion,wilsonfermion}
         dtype = typeof(D)
         return new{dtype}(D)
+    end
+
+    function GeneralizedD5DWdagD5DW_Wilson_operator(
+        D::AbstractD5DWGeneralizedDomainwallOperator,
+    )
+        return new{typeof(D)}(D)
     end
 end
 
@@ -495,7 +506,8 @@ function LinearAlgebra.mul!(
     return
 end
 
-include("./GeneralizedDomainwallFermion_5d.jl")
+include("./deprecated/GeneralizedDomainwallFermion_5d.jl")
+include("./GeneralizedDomainwallFermion_5D_MPILattice.jl")
 
 
 

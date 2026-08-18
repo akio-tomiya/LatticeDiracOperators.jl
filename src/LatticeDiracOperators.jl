@@ -42,11 +42,14 @@ import .Dirac_operators:
     gauss_distribution_fermion!,
     Initialize_WilsonFermion,
     Initialize_4DWilsonFermion,
+    WilsonFermion_4D_MPILattice,
+    StaggeredFermion_4D_MPILattice,
     DdagD_operator,
     solve_DinvX!,
     SolverDiagnostics,
     FermiAction,
     shift_fermion,
+    cg,
     bicg,
     bicgstab,
     sample_pseudofermions!,
@@ -85,9 +88,20 @@ import .Dirac_operators:
     dSFdU!,
     GeneralFermion,
     DdagDgeneral,
-    GeneralFermionAction
+    GeneralFermionAction,
+    DomainwallFermion_5D_MPILattice,
+    MobiusDomainwallFermion_5D_MPILattice,
+    solve_domainwall_physical_propagator!,
+    domainwall_physical_point_propagators,
+    domainwall_residual_mass_correlator,
+    WilsonFermion_4D_wing
 
 export GeneralFermion, DdagDgeneral
+export WilsonFermion_4D_MPILattice, StaggeredFermion_4D_MPILattice
+export DomainwallFermion_5D_MPILattice,
+    MobiusDomainwallFermion_5D_MPILattice
+export solve_domainwall_physical_propagator!
+export domainwall_physical_point_propagators, domainwall_residual_mass_correlator
 export dSFdU!
 export apply_F_5D!, apply_δF_5D!, D4x_5D!, Z4_distribution_fermi!
 
@@ -102,6 +116,7 @@ export DdagD_operator,
     FermiAction,
     GeneralFermionAction
 export shift_fermion
+# Deprecated concrete field retained as a v1 compatibility export.
 export WilsonFermion_4D_wing
 export sample_pseudofermions!,
     gauss_sampling_in_action!,

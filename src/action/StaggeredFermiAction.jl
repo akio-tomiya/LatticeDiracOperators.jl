@@ -73,7 +73,10 @@ struct StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf} <:
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)
-        numU = 2
+        # The one-link force needs two gauge temporaries. HISQ borrows five
+        # fields at once (four thin-link gradients plus one conversion field),
+        # with one additional pool slot kept free for nested operations.
+        numU = D isa HISQ_Dirac_operator_MPILattice ? 6 : 2
         _temporary_gaugefields = Temporalfields(Utemp; num=numU)
         #_temporary_gaugefields = Array{Utype,1}(undef, numU)
         #for i = 1:numU
@@ -419,4 +422,57 @@ function calc_UdSfdU_fromX!(
     unused!(fermi_action._temporary_fermionfields, it_temp0_f)
     unused!(fermi_action._temporary_gaugefields, it_temp0_g)
 
+end
+
+function calc_UdSfdU_fromX!(
+    UdSfdU::Vector{TG},
+    Y::TF,
+    fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf},
+    U::Vector{TG},
+    X::TF;
+    coeff=1,
+) where {
+    Dim,Dirac,fermion,gauge,Nf,
+    TG<:Gaugefields_4D_MPILattice,
+    TF<:StaggeredFermion_4D_MPILattice,
+}
+    W = fermi_action.diracoperator(U)
+    mul!(Y, W, X)
+
+    temp_fermions, fermion_token = get_temp(
+        fermi_action._temporary_fermionfields, 2)
+    shifted_fermion = temp_fermions[1]
+    temp_fermion = temp_fermions[2]
+    temp_gauge, gauge_token = get_temp(
+        fermi_action._temporary_gaugefields)
+
+    try
+        for mu in 1:Dim
+            staggered_link = LatticeMatrices.Staggered_Lattice(U[mu].U, mu)
+
+            Xplus = shift_fermion(X, mu)
+            try
+                substitute_fermion!(shifted_fermion, Xplus)
+                mul!(temp_fermion.f, staggered_link, shifted_fermion.f)
+                mul!(temp_gauge.U, temp_fermion.f, Y.f')
+                add_U!(UdSfdU[mu], coeff * 0.5, temp_gauge)
+            finally
+                close(Xplus)
+            end
+
+            Yplus = shift_fermion(Y, mu)
+            try
+                substitute_fermion!(shifted_fermion, Yplus)
+                mul!(temp_fermion.f, staggered_link, shifted_fermion.f)
+                mul!(temp_gauge.U, X.f, temp_fermion.f')
+                add_U!(UdSfdU[mu], coeff * 0.5, temp_gauge)
+            finally
+                close(Yplus)
+            end
+        end
+    finally
+        unused!(fermi_action._temporary_fermionfields, fermion_token)
+        unused!(fermi_action._temporary_gaugefields, gauge_token)
+    end
+    return nothing
 end

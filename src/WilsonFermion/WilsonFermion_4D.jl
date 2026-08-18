@@ -261,5 +261,5 @@ function WWdagx!(
 end
 
 
-include("./WilsonFermion_4D_wing_mpi.jl")
-include("./WilsonFermion_4D_nowing_mpi.jl")
+include("./deprecated/WilsonFermion_4D_wing_mpi.jl")
+include("./deprecated/WilsonFermion_4D_nowing_mpi.jl")

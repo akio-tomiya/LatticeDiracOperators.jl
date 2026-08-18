@@ -1,7 +1,7 @@
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
 
-include("./WilsoncloverFermion.jl")
+include("./deprecated/WilsoncloverFermion.jl")
 
 abstract type Wilson_Dirac_operators{Dim} <: Dirac_operator{Dim} end
 
@@ -63,22 +63,22 @@ end
 
 
 include("./WilsonFermion_4D.jl")
-include("./WilsonFermion_4D_accelerator.jl")
+include("./deprecated/WilsonFermion_4D_accelerator.jl")
 
-include("./mpi_jacc/WilsonFermion_4D_MPILattice.jl")
+include("./WilsonFermion_4D_MPILattice.jl")
 
-include("./WilsonFermion_4D_wing.jl")
-include("./WilsonFermion_4D_nowing.jl")
-include("./WilsonFermion_4D_wing_Adjoint.jl")
+include("./deprecated/WilsonFermion_4D_wing.jl")
+include("./deprecated/WilsonFermion_4D_nowing.jl")
+include("./deprecated/WilsonFermion_4D_wing_Adjoint.jl")
 
-include("./WilsonFermion_2D.jl")
-include("./WilsonFermion_2D_wing.jl")
-
-
+include("./deprecated/WilsonFermion_2D.jl")
+include("./deprecated/WilsonFermion_2D_wing.jl")
 
 
 
-#include("./WilsonFermion_4D_wing_fast.jl")
+
+
+#include("./deprecated/WilsonFermion_4D_wing_fast.jl")
 
 
 function Wilson_Dirac_operator(
@@ -269,7 +269,6 @@ function Initialize_WilsonFermion(NC, NN...; nowing=false)
     return fermion
 end
 
-using InteractiveUtils
 
 function LinearAlgebra.mul!(
     y::T1,
@@ -539,7 +538,7 @@ const rminusγ1 = gtmp3
 
 
 
-include("./WilsontypeFermion.jl")
+include("./deprecated/WilsontypeFermion.jl")
 
 function Wx!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:AbstractGaugefields}
     #temps::Array{T,1},boundarycondition) where  {T <: WilsonFermion_4D,G <: AbstractGaugefields}
@@ -1017,8 +1016,9 @@ function Wdagx_clover!(xout::T, U::Array{G,1}, x::T, A, Dim) where {T,G<:Abstrac
     return
 end
 
-include("./WilsonFermion_faster.jl")
+include("./deprecated/WilsonFermion_faster.jl")
 include("./WilsonFermion_improved.jl")
+include("./WilsonFermion_clover.jl")
 
 
 struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
@@ -1062,6 +1062,6 @@ struct DdagD_Wilson_operator{Dim,T,fermion,TF} <: DdagD_operator
 
 end
 
-include("./kernelfunctions/linearalgebra_mul.jl")
-include("./kernelfunctions/Wilson_jacc.jl")
-include("./kernelfunctions/linearalgebra_mul_jacc.jl")
+include("./deprecated/kernelfunctions/linearalgebra_mul.jl")
+include("./deprecated/kernelfunctions/Wilson_jacc.jl")
+include("./deprecated/kernelfunctions/linearalgebra_mul_jacc.jl")

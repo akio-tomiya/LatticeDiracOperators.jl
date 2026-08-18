@@ -2,7 +2,7 @@ import LatticeMatrices: WilsonDiracOperator4D, WilsonDiracOperator4D_Donly
 struct Wilson_Dirac_operator_improved{Dim,T,fermion,TD} <:
        Wilson_Dirac_operators{Dim} where {T<:AbstractGaugefields}
     U::Array{T,1}
-    D::Union{WilsonDiracOperator4D{TD},WilsonDiracOperator4D_Donly{TD}}
+    D::TD
     κ::Float64 #Hopping parameter
     _temporary_fermi::Temporalfields{fermion}#Vector{fermion}
     factor::Float64
@@ -23,13 +23,18 @@ struct Wilson_Dirac_operator_improved{Dim,T,fermion,TD} <:
 
 end
 
-function Wilson_Dirac_operator_improved(
+@inline function _wilson_lm_links(U)
+    length(U) == 4 || throw(ArgumentError(
+        "the LatticeMatrices Wilson backend requires four gauge links"))
+    return [link.U for link in U]
+end
+
+function _build_Wilson_Dirac_operator_LM(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x,
     parameters,
+    lm_operator,
 ) where {NC,Dim}
-
-
     T = eltype(U)
     xtype = typeof(x)
     @assert haskey(parameters, "κ") "parameters should have the keyword κ"
@@ -68,14 +73,6 @@ function Wilson_Dirac_operator_improved(
     r = check_parameters(parameters, "r", 1.0)
     @assert r == 1 "In fast Wilson mode, r should be 1. Now r = $r"
 
-    Donly = check_parameters(parameters, "Donly", false)
-
-    if Donly
-        D = WilsonDiracOperator4D_Donly([U[1].U, U[2].U, U[3].U, U[4].U])
-    else
-        D = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], κ)
-    end
-
     if Dim == 4
         γ, rplusγ, rminusγ = mk_gamma(r)
         hopp = zeros(ComplexF64, 4)
@@ -92,9 +89,9 @@ function Wilson_Dirac_operator_improved(
 
 
 
-    return Wilson_Dirac_operator_improved{Dim,T,xtype,typeof(U[1].U)}(
+    return Wilson_Dirac_operator_improved{Dim,T,xtype,typeof(lm_operator)}(
         U,
-        D,
+        lm_operator,
         κ,
         _temporary_fermi,
         factor,
@@ -116,11 +113,30 @@ function Wilson_Dirac_operator_improved(
 
 end
 
-function new_UinDonly(D::Wilson_Dirac_operator_improved{Dim,T,fermion}, U) where {Dim,T,fermion}
-    WD = WilsonDiracOperator4D_Donly([U[1].U, U[2].U, U[3].U, U[4].U])
-    return Wilson_Dirac_operator_improved{Dim,T,fermion,typeof(U[1].U)}(
+function Wilson_Dirac_operator_improved(
+    U::Array{<:AbstractGaugefields{NC,Dim},1},
+    x,
+    parameters,
+) where {NC,Dim}
+    @assert haskey(parameters, "κ") "parameters should have the keyword κ"
+    κ = parameters["κ"]
+    links = _wilson_lm_links(U)
+    lm_operator = if check_parameters(parameters, "Donly", false)
+        WilsonDiracOperator4D_Donly(links)
+    else
+        WilsonDiracOperator4D(links, κ)
+    end
+    return _build_Wilson_Dirac_operator_LM(U, x, parameters, lm_operator)
+end
+
+function _replace_Wilson_LM_operator(
+    D::Wilson_Dirac_operator_improved{Dim,T,fermion},
+    U::Array{Tnew,1},
+    lm_operator,
+) where {Dim,T,fermion,Tnew}
+    return Wilson_Dirac_operator_improved{Dim,Tnew,fermion,typeof(lm_operator)}(
         U,
-        WD,
+        lm_operator,
         D.κ,
         D._temporary_fermi,
         D.factor,
@@ -140,28 +156,39 @@ function new_UinDonly(D::Wilson_Dirac_operator_improved{Dim,T,fermion}, U) where
     )
 end
 
-function (D::Wilson_Dirac_operator_improved{Dim,T,fermion})(U) where {Dim,T,fermion}
-    WD = WilsonDiracOperator4D([U[1].U, U[2].U, U[3].U, U[4].U], D.κ)
-    return Wilson_Dirac_operator_improved{Dim,T,fermion,typeof(U[1].U)}(
-        U,
-        WD,
-        D.κ,
-        D._temporary_fermi,
-        D.factor,
-        D.boundarycondition,
-        D.eps_CG,
-        D.MaxCGstep,
-        D.verbose_level,
-        D.method_CG,
-        D.verbose_print,
-        D._temporary_fermion_forCG,
-        D.γ,#::Array{ComplexF64,3}
-        D.rplusγ,#::Array{ComplexF64,3}
-        D.rminusγ,#::Array{ComplexF64,3}
-        D.r,#::Float64 #Wilson term
-        D.hopp,#::Array{ComplexF64,1}
-        D.hopm,#::Array{ComplexF64,1})
-    )
+function new_UinDonly(D::Wilson_Dirac_operator_improved, U)
+    lm_operator = WilsonDiracOperator4D_Donly(_wilson_lm_links(U))
+    return _replace_Wilson_LM_operator(D, U, lm_operator)
+end
+
+function _rebuild_Wilson_LM_operator(
+    ::WilsonDiracOperator4D, U, κ,
+)
+    return WilsonDiracOperator4D(_wilson_lm_links(U), κ)
+end
+
+function _rebuild_Wilson_LM_operator(
+    ::WilsonDiracOperator4D_Donly, U, κ,
+)
+    return WilsonDiracOperator4D_Donly(_wilson_lm_links(U))
+end
+
+
+function (D::Wilson_Dirac_operator_improved)(U)
+    lm_operator = _rebuild_Wilson_LM_operator(D.D, U, D.κ)
+    return _replace_Wilson_LM_operator(D, U, lm_operator)
+end
+
+has_cloverterm(::Wilson_Dirac_operator_improved) = false
+_is_lm_clover(::Any) = false
+_is_lm_clover(::Wilson_Dirac_operator_improved) = false
+
+@inline function _mul_Wilson_LM!(result, lm_operator, U, source)
+    return mul!(result, lm_operator, source)
+end
+
+@inline function _mul_Wilson_LM_adjoint!(result, lm_operator, U, source)
+    return mul!(result, adjoint(lm_operator), source)
 end
 
 struct Adjoint_Wilson_Dirac_operator_improved{T} <: Adjoint_Dirac_operator
@@ -186,7 +213,7 @@ function LinearAlgebra.mul!(
     clear_fermion!(y)
     temp1, it_temp1 = get_temp(A._temporary_fermi)
 
-    mul!(temp1.f, A.D, x.f)
+    _mul_Wilson_LM!(temp1.f, A.D, A.U, x.f)
 
     add_fermion!(y, A.factor, temp1)
     unused!(A._temporary_fermi, it_temp1)
@@ -203,7 +230,7 @@ function LinearAlgebra.mul!(
     clear_fermion!(y)
     temp1, it_temp1 = get_temp(A.parent._temporary_fermi)
 
-    mul!(temp1.f, A.parent.D', x.f)
+    _mul_Wilson_LM_adjoint!(temp1.f, A.parent.D, A.parent.U, x.f)
 
     add_fermion!(y, A.parent.factor, temp1)
     unused!(A.parent._temporary_fermi, it_temp1)

@@ -2,7 +2,6 @@
 
 using LinearAlgebra
 #import Gaugefields:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose_level3
-using InteractiveUtils
 import Gaugefields.Verboseprint_mpi:
     Verbose_print, println_verbose_level1, println_verbose_level2, println_verbose_level3
 
