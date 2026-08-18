@@ -1,3 +1,5 @@
+function _general_fermion_derivative! end
+
 struct GeneralFermionAction{Dim,Dirac,fermion,gauge} <: FermiAction{Dim,Dirac,fermion,gauge}
     DdagD::Dirac
     numtemp::Int64
@@ -130,7 +132,7 @@ function calc_UdSfdU!(
 
     func(U1, U2, U3, U4, χ, η, apply, phitemp, temp) = vdD(χ, U1, U2, U3, U4, η, apply, phitemp, temp)
 
-    Enzyme_derivative!(
+    _general_fermion_derivative!(
         func,
         U1,
         U2,
@@ -231,4 +233,3 @@ function calc_UdSfdU!(
     #dSFdU!(U, dfdU::Vector{TG}, apply_D, apply_Ddag, φ, numtemp, verbose_level)
 
 end
-

@@ -167,7 +167,6 @@ end
 function Base.size(x::Shifted_fermionfields_2D)
     return size(x.parent)
 end
-using InteractiveUtils
 
 #=
 function shift_fermion(U::AbstractFermionfields_2D{NC},ν::T) where {T <: Integer,NC}

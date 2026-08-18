@@ -20,7 +20,7 @@ function Initialize_pseudofermion_fields(
     Dim = 4
     if Dim == 4
         if Dirac_operator == "staggered"
-            x = Initialize_StaggeredFermion(u, nowing=nowing)
+            x = Initialize_StaggeredFermion(u; nowing, kwargs...)
         elseif Dirac_operator == "Wilson"
             x = Initialize_WilsonFermion(u, nowing=nowing)
         elseif Dirac_operator == "Domainwall"

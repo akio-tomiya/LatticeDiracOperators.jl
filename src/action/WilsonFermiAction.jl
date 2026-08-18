@@ -1,6 +1,12 @@
 import Gaugefields: Traceless_antihermitian_add!, Generator
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
+function _calc_lm_clover_force_fromX!(args...; kwargs...)
+    error(
+        "Wilson--clover fermion force requires Enzyme. " *
+        "Load Enzyme before calling calc_UdSfdU!.")
+end
+
 
 #include("clover_data.jl")
 
@@ -143,6 +149,10 @@ function calc_UdSfdU_fromX!(
     X;
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
+    if _is_lm_clover(fermi_action.diracoperator)
+        return _calc_lm_clover_force_fromX!(
+            UdSfdU, Y, fermi_action, U, X; coeff)
+    end
     W = fermi_action.diracoperator(U)
     #set_wing_fermion!(X)
     mul!(Y, W, X)
@@ -240,6 +250,17 @@ function calc_p_UdSfdU!(
     ϕ::AbstractFermionfields,
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
+    if _is_lm_clover(fermi_action.diracoperator)
+        force, force_tokens = get_temp(
+            fermi_action._temporary_gaugefields, Dim)
+        clear_U!(force)
+        calc_UdSfdU!(force, fermi_action, U, ϕ)
+        for μ in 1:Dim
+            Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+        end
+        unused!(fermi_action._temporary_gaugefields, force_tokens)
+        return nothing
+    end
     #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
@@ -265,6 +286,18 @@ function calc_p_UdSfdU_fromX!(
     X;
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
+    if _is_lm_clover(fermi_action.diracoperator)
+        force, force_tokens = get_temp(
+            fermi_action._temporary_gaugefields, Dim)
+        clear_U!(force)
+        _calc_lm_clover_force_fromX!(
+            force, Y, fermi_action, U, X; coeff=1)
+        for μ in 1:Dim
+            Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+        end
+        unused!(fermi_action._temporary_gaugefields, force_tokens)
+        return nothing
+    end
     W = fermi_action.diracoperator(U)
     mul!(Y, W, X)
     #set_wing_fermion!(Y)
@@ -357,7 +390,6 @@ end
 
 
 
-using InteractiveUtils
 
 function sample_pseudofermions!(
     ϕ::AbstractFermionfields,

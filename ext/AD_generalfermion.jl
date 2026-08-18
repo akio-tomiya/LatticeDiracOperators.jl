@@ -35,7 +35,7 @@ function LatticeDiracOperators.dSFdU!(U::Vector{TG}, dfdU::Vector{TG}, apply_D, 
     #mul!(χ, D, η)
 
     func(U1, U2, U3, U4, χ, η, apply, phitemp, temp) = vdD(χ, U1, U2, U3, U4, η, apply, phitemp, temp)
-    Enzyme_derivative!(
+    _general_fermion_derivative!(
         func,
         U1,
         U2,

@@ -112,6 +112,19 @@ function calc_UdSfdU_fromX!(
     ϕ,
     fermi_action::GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge},
     U,
+    X0::DomainwallFermion_5D_MPILattice;
+    coeff = 1,
+) where {Dim,Dirac,fermion,gauge}
+    return _calc_UdSfdU_fromX_MPILattice!(
+        UdSfdU, Y, ϕ, fermi_action, U, X0; coeff)
+end
+
+function calc_UdSfdU_fromX!(
+    UdSfdU::Vector{<:AbstractGaugefields},
+    Y,
+    ϕ,
+    fermi_action::GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge},
+    U,
     X0;
     coeff = 1,
 ) where {Dim,Dirac,fermion,gauge}
@@ -444,7 +457,6 @@ function gauss_sampling_in_action!(
     gauss_distribution_fermion!(η, rand)
 end
 
-using InteractiveUtils
 
 function sample_pseudofermions!(
     ϕ::AbstractFermionfields,

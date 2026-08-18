@@ -6,6 +6,8 @@ import LatticeMatrices
 
 @testset "LatticeDiracOperators.jl" begin
 
+    include("public_api.jl")
+
     @testset "Solver diagnostics" begin
         include("solver_diagnostics.jl")
     end
@@ -18,7 +20,14 @@ import LatticeMatrices
 
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
+        include("wilson_clover_wrapper.jl")
+        include("wilson_lm_callback_ad.jl")
+        include("staggered_mpialattice.jl")
+        withenv("LDO_TEST_EXPECT_NO_ENZYME" => "false") do
+            include("hisq_mpialattice.jl")
+        end
         include("hisq_hmc_example.jl")
+        include("domainwall_mpialattice.jl")
     end
 
     @testset "Wilson HMC" begin

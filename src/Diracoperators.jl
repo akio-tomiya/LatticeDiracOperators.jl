@@ -88,9 +88,9 @@ function get_temporaryvectors_forCG(A::T) where {T<:Dirac_operator}
     return A._temporary_fermion_forCG
 end
 
-#function get_temporaryvectors(A::T, ith) where {T<:Dirac_operator}
-#    return A._temporary_fermion[ith]
-#end
+function get_temporaryvectors(A::T) where {T<:Dirac_operator}
+    return A._temporary_fermi
+end
 
 function get_temporaryvectors_forCG(A::T) where {T<:Adjoint_Dirac_operator}
     return A.parent._temporary_fermion_forCG
@@ -124,8 +124,6 @@ include("./GeneralFermion/generalFermion.jl")
 include("./action/FermiAction.jl")
 
 
-#include("./GeneralFermion/generalDiracoperators.jl")
-
 function Dirac_operator(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x,
@@ -134,6 +132,8 @@ function Dirac_operator(
     @assert haskey(parameters, "Dirac_operator") "parameters should have Dirac_operator keyword!"
     if parameters["Dirac_operator"] == "staggered"
         Staggered_Dirac_operator(U, x, parameters)
+    elseif parameters["Dirac_operator"] in ("HISQ", "hisq")
+        HISQ_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
         if Dim == 4
             fasterversion = check_parameters(parameters, "faster version", true)
@@ -162,13 +162,17 @@ function Dirac_operator(
             end
         end
     elseif parameters["Dirac_operator"] == "WilsonClover"
-        @warn "not implemented completely!!"
         fasterversion = check_parameters(parameters, "faster version", false)
         if fasterversion
             @warn "The faster version is not supported but now \"faster version\" is true. We ignore it. "
         end
-        parameters["hasclover"] = true
-        Wilson_Dirac_operator(U, x, parameters)
+        if Dim == 4 && eltype(U) <: Gaugefields_4D_MPILattice
+            Wilson_Dirac_operator_clover(U, x, parameters)
+        else
+            legacy_parameters = copy(parameters)
+            legacy_parameters["hasclover"] = true
+            Wilson_Dirac_operator(U, x, legacy_parameters)
+        end
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
@@ -177,8 +181,6 @@ function Dirac_operator(
         MobiusDomainwall_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "GeneralizedDomainwall"
         GeneralizedDomainwall_Dirac_operator(U, x, parameters)
-    elseif parameters["Dirac_operator"] == "GeneralDirac"
-        General_Dirac_operator(U, x, parameters)
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -190,14 +192,25 @@ function DdagD_operator(
     parameters,
 ) where {NC,Dim}
     @assert haskey(parameters, "Dirac_operator") "parameters should have Dirac_operator keyword!"
-    if parameters["Dirac_operator"] == "staggered"
-        DdagD_Staggered_operator(U, x, parameters)
+    if parameters["Dirac_operator"] in ("staggered", "HISQ", "hisq")
+        DdagD_Staggered_operator(Dirac_operator(U, x, parameters))
     elseif parameters["Dirac_operator"] == "Wilson"
-        DdagD_Wilson_operator(U, x, parameters)
+        if Dim == 4 && eltype(U) <: Gaugefields_4D_MPILattice
+            DdagD_Wilson_operator(Dirac_operator(U, x, parameters))
+        else
+            DdagD_Wilson_operator(U, x, parameters)
+        end
+    elseif parameters["Dirac_operator"] == "WilsonClover"
+        DdagD_Wilson_operator(Dirac_operator(U, x, parameters))
     elseif parameters["Dirac_operator"] == "Domainwall"
-        DdagD_Domainwall_operator(U, x, parameters)
-    elseif parameters["Dirac_operator"] == "GeneralDirac"
-        DgagD_General_Dirac_operator(U, x, parameters)
+        domainwall = Dirac_operator(U, x, parameters)
+        domainwall isa MobiusDomainwall_Dirac_operator ?
+            DdagD_MobiusDomainwall_operator(domainwall) :
+            DdagD_Domainwall_operator(domainwall)
+    elseif parameters["Dirac_operator"] == "MobiusDomainwall"
+        DdagD_MobiusDomainwall_operator(Dirac_operator(U, x, parameters))
+    elseif parameters["Dirac_operator"] == "GeneralizedDomainwall"
+        DdagD_GeneralizedDomainwall_operator(Dirac_operator(U, x, parameters))
     else
         error("$(parameters["Dirac_operator"]) is not supported")
     end
@@ -341,7 +354,6 @@ function solve_DinvX!(
     return diagnostics
 end
 
-using InteractiveUtils
 
 function get_eps(A::T2) where {T2<:DdagD_operator}
     return A.dirac.eps_CG
@@ -405,8 +417,8 @@ function LinearAlgebra.mul!(
     A::T,
     x::AbstractFermionfields{NC,Dim},
 ) where {T<:DdagD_operator,NC,Dim} #y = A*x
-    #temp = get_temporaryvectors(A.dirac,5)
-    temp, it_temp = get_temp(A.dirac._temporary_fermi)
+    temporary_fields = get_temporaryvectors(A.dirac)
+    temp, it_temp = get_temp(temporary_fields)
     #temp = A.dirac._temporary_fermi[5]
     boundarycondition = get_boundarycondition(A)
 
@@ -424,7 +436,7 @@ function LinearAlgebra.mul!(
     #println("temp ", dot(temp, temp))
     mul!(y, A.dirac', temp)
     #set_wing_fermion!(y)
-    unused!(A.dirac._temporary_fermi, it_temp)
+    unused!(temporary_fields, it_temp)
 
     return
 end
@@ -450,6 +462,8 @@ function check_parameters(parameters, key, initial)
     end
     return value
 end
+
+include("./DomainwallFermion/physical_propagator.jl")
 
 function check_important_parameters(parameters, key, sample=nothing)
     if sample == nothing

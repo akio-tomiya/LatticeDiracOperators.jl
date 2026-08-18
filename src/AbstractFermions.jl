@@ -158,8 +158,8 @@ function __init__()
     #end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
-        include("./WilsonFermion/kernelfunctions/Wilson_cuda.jl")
-        include("./WilsonFermion/kernelfunctions/linearalgebra_mul_cuda.jl")
+        include("./WilsonFermion/deprecated/kernelfunctions/Wilson_cuda.jl")
+        include("./WilsonFermion/deprecated/kernelfunctions/linearalgebra_mul_cuda.jl")
     end
 
     #@require JACC = "0979c8fe-16a4-4796-9b82-89a9f10403ea" begin
@@ -467,4 +467,3 @@ function mul_1minusγμx!(y::Abstractfermion, x, μ)
         mul_1minusγ4x!(y, x)
     end
 end
-

@@ -16,6 +16,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "How to use" => "howtouse.md",
+        "v1 API and compatibility" => "v1_api.md",
     ],
 )
 

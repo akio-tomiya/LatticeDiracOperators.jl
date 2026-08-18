@@ -3,16 +3,20 @@ using LinearAlgebra
 using LatticeMatrices
 using Enzyme
 using JACC
-import LatticeMatrices: toann, DiffArg, NoDiffArg, Enzyme_derivative!, fold_halo_to_core_grad!, dSFdU
+import LatticeMatrices: toann, DiffArg, NoDiffArg, enzyme_duplicated, fold_halo_to_core_grad!, dSFdU
 using LatticeDiracOperators
-#import LatticeDiracOperators.Dirac_operators: General_Dirac_operator, DgagD_General_Dirac_operator
 using PreallocatedArrays
 import Gaugefields.AbstractGaugefields_module: Gaugefields_4D_MPILattice
+import Gaugefields: add_U!, clear_U!
+import Gaugefields.Temporalfields_module: get_temp, unused!
 
 import Enzyme.EnzymeRules: augmented_primal, reverse, RevConfig, AugmentedReturn, Active, Annotation
 const ER = Enzyme.EnzymeRules
 import LatticeMatrices: LatticeMatrix, Shifted_Lattice, Adjoint_Lattice, delinearize, shiftindices, kernel_clear_4D!, kernel_add_4D!, mul_AshiftB!, mul_shiftAshiftB!, clear_matrix!, add_matrix!
-import LatticeDiracOperators.Dirac_operators: WilsonFermion_4D_MPILattice
+import LatticeDiracOperators.Dirac_operators: WilsonFermion_4D_MPILattice,
+    WilsonFermiAction, _calc_lm_clover_force_fromX!,
+    _general_fermion_derivative!
+import LatticeMatrices: mul_cached_clover!
 
 include("fallbackmacro.jl")
 using .EnzymeBFallback
@@ -20,24 +24,15 @@ EnzymeBFallback.@gen_enzyme_fallback_for_B WilsonFermion_4D_MPILattice 10
 
 include("AD_generalfermion.jl")
 
-Enzyme_derivative!(func, U1, U2, U3, U4, dfdU1, dfdU2, dfdU3, dfdU4, temp, dtemp, args...) =
-    Enzyme_derivative!(func, U1, U2, U3, U4, dfdU1, dfdU2, dfdU3, dfdU4, args...; temp=temp, dtemp=dtemp)
-
-Enzyme_derivative!(func, U1, U2, U3, U4, dfdU1, dfdU2, dfdU3, dfdU4, temp, dtemp, phitemp, dphitemp, args...) =
-    Enzyme_derivative!(func, U1, U2, U3, U4, dfdU1, dfdU2, dfdU3, dfdU4, args...; temp=temp, dtemp=dtemp, phitemp=phitemp, dphitemp=dphitemp)
-
-function Enzyme_derivative!(
-    func,
-    U::Vector{T},
-    dfdU, args...;
-    temp=nothing,
-    dtemp=nothing
-) where T
-    # NOTE: Vector U input is not supported. Define a function with U1,U2,U3,U4 args for autodiff.
-    error("Enzyme_derivative! does not support Vector U input. Please define a function that takes U1, U2, U3, U4 as separate arguments and run autodiff on that.")
+@inline _enzyme_workspace(x) = x
+@static if VERSION >= v"1.12"
+    # Match the Julia 1.12 mixed-activity ABI used by LatticeMatrices v1.1.
+    # Tuples keep the workspace shape immutable while their lattice storage is
+    # paired with its shadow by `enzyme_duplicated`.
+    @inline _enzyme_workspace(x::AbstractVector) = Tuple(x)
 end
 
-function Enzyme_derivative!(
+function _general_fermion_derivative!(
     func,
     U1::T,
     U2::T,
@@ -52,54 +47,47 @@ function Enzyme_derivative!(
     phitemp=nothing,
     dphitemp=nothing
 ) where {T<:Gaugefields_4D_MPILattice}
-    #println("Enzyme_derivative! in LatticeMatrices.jl")
     Enzyme.API.strictAliasing!(false)
-    # Primary variables: always differentiated
-    annU1 = Enzyme.Duplicated(U1, dfdU1)
-    annU2 = Enzyme.Duplicated(U2, dfdU2)
-    annU3 = Enzyme.Duplicated(U3, dfdU3)
-    annU4 = Enzyme.Duplicated(U4, dfdU4)
 
-    # Convert additional arguments
+    # LatticeMatrices owns the Julia-version-specific Enzyme ABI. In
+    # particular, Julia 1.12 needs MixedDuplicated for immutable composites.
+    annU1 = enzyme_duplicated(U1, dfdU1)
+    annU2 = enzyme_duplicated(U2, dfdU2)
+    annU3 = enzyme_duplicated(U3, dfdU3)
+    annU4 = enzyme_duplicated(U4, dfdU4)
+
     ann_args = map(toann, args)
 
-    if phitemp !== nothing && dphitemp === nothing
-        error("phitemp is set but dphitemp is nothing")
-    end
+    (temp === nothing) == (dtemp === nothing) ||
+        throw(ArgumentError("temp and dtemp must either both be set or both be nothing"))
+    (phitemp === nothing) == (dphitemp === nothing) ||
+        throw(ArgumentError("phitemp and dphitemp must either both be set or both be nothing"))
 
-    # Call Enzyme
-    if temp === nothing && phitemp === nothing
-        result = Enzyme.autodiff(
-            Reverse,
-            Enzyme.Const(func),     # function object is always treated as read-only
-            Active,          # return value is a real scalar
-            annU1,
-            annU2,
-            annU3,
-            annU4,
-            ann_args...
-        )
-    else
-        extra_args = Any[]
-        if phitemp !== nothing
-            push!(extra_args, Duplicated(phitemp, dphitemp))
-        end
-        if temp !== nothing
-            push!(extra_args, Duplicated(temp, dtemp))
-        end
-        result = Enzyme.autodiff(
-            Reverse,
-            Enzyme.Const(func),
-            Active,
-            annU1,
-            annU2,
-            annU3,
-            annU4,
-            ann_args...,
-            extra_args...
-            #ann_args..., DuplicatedNoNeed(temp, dtemp)
-        )
-    end
+    ann_phitemp = phitemp === nothing ? () : (
+        enzyme_duplicated(
+            _enzyme_workspace(phitemp),
+            _enzyme_workspace(dphitemp),
+        ),
+    )
+    ann_temp = temp === nothing ? () : (
+        enzyme_duplicated(
+            _enzyme_workspace(temp),
+            _enzyme_workspace(dtemp),
+        ),
+    )
+
+    result = Enzyme.autodiff(
+        Reverse,
+        Enzyme.Const(func),
+        Active,
+        annU1,
+        annU2,
+        annU3,
+        annU4,
+        ann_args...,
+        ann_phitemp...,
+        ann_temp...,
+    )
 
     # Halo values are constrained to core values; fold halo gradients back to core.
     fold_halo_to_core_grad!(dfdU1.U)
@@ -107,8 +95,62 @@ function Enzyme_derivative!(
     fold_halo_to_core_grad!(dfdU3.U)
     fold_halo_to_core_grad!(dfdU4.U)
 
-    # Gradients of Active scalar arguments are returned by Enzyme
     return result
+end
+
+function _wilson_clover_bilinear(
+    U1, U2, U3, U4, left, source, cache, fermion_workspace,
+)
+    result = fermion_workspace[end]
+    mul_cached_clover!(result, cache, U1, U2, U3, U4, source)
+    return real(dot(left, result))
+end
+
+function _calc_lm_clover_force_fromX!(
+    force::Vector{TG},
+    Y::TF,
+    fermi_action::WilsonFermiAction,
+    U::Vector{TG},
+    X::TF;
+    coeff=1,
+) where {TG<:Gaugefields_4D_MPILattice,TF<:WilsonFermion_4D_MPILattice}
+    W = fermi_action.diracoperator(U)
+    mul!(Y, W, X)
+    LatticeDiracOperators.set_wing_fermion!(Y)
+
+    raw_gradient, raw_tokens = get_temp(
+        fermi_action._temporary_gaugefields, 4)
+    clear_U!(raw_gradient)
+
+    primal_work, primal_token = get_temp(
+        fermi_action._temporary_fermionfields)
+    shadow_work, shadow_token = get_temp(
+        fermi_action._temporary_fermionfields)
+    LatticeDiracOperators.clear_fermion!(primal_work)
+    LatticeDiracOperators.clear_fermion!(shadow_work)
+
+    Enzyme_derivative!(
+        _wilson_clover_bilinear,
+        U[1].U, U[2].U, U[3].U, U[4].U,
+        raw_gradient[1].U, raw_gradient[2].U,
+        raw_gradient[3].U, raw_gradient[4].U,
+        nodiff(Y.f), nodiff(X.f), nodiff(W.D);
+        phitemp=[primal_work.f],
+        dphitemp=[shadow_work.f],
+    )
+
+    transformed, transformed_token = get_temp(
+        fermi_action._temporary_gaugefields)
+    for μ in 1:4
+        mul!(transformed, U[μ], raw_gradient[μ]')
+        add_U!(force[μ], coeff, transformed)
+    end
+
+    unused!(fermi_action._temporary_gaugefields, raw_tokens)
+    unused!(fermi_action._temporary_gaugefields, transformed_token)
+    unused!(fermi_action._temporary_fermionfields, primal_token)
+    unused!(fermi_action._temporary_fermionfields, shadow_token)
+    return nothing
 end
 
 function g(χ, U1, U2, U3, U4, η, p, apply, phitemp, temp)

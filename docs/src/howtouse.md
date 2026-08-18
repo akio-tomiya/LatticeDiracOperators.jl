@@ -136,37 +136,41 @@ println(y[1,1,1,1,1,1])
 
 The "tastes" of the Staggered Fermion is defined in the action. 
 
-### Domainwall Fermions
-This package supports standard domainwall fermions. 
-The Dirac operator of the domainwall fermion is defined as 
+### Domain-wall Fermions
+
+Gaugefields v1's MPILattice field selects the common LatticeMatrices-backed
+five-dimensional field without a backend-selection flag.
 
 ```julia
+U = gauge_configuration(
+    (4, 4, 4, 4);
+    colors=3, halo=1, start=:cold, process_grid=(1, 1, 1, 1),
+)
 L5 = 4
-x = Initialize_pseudofermion_fields(U[1],"Domainwall",L5=L5)
-println("x ", x.w[1][1,1,1,1,1,1])
+x = Initialize_pseudofermion_fields(U[1], "Domainwall"; L5)
 gauss_distribution_fermion!(x)
 
-params = Dict()
-params["Dirac_operator"] = "Domainwall"
-params["eps_CG"] = 1.0e-16
-params["MaxCGstep"] = 3000
-params["verbose_level"] = 3
-params["mass"] = 0.1
-params["L5"] = L5
-D = Dirac_operator(U,x,params)
-
-println("x ", x[1,1,1,1,1,1,1])
+params = Dict(
+    "Dirac_operator" => "Domainwall",
+    "mass" => 0.1,
+    "L5" => L5,
+    "M" => -1.0,
+    "eps_CG" => 1e-10,
+    "MaxCGstep" => 3000,
+    "verbose_level" => 0,
+)
+D = Dirac_operator(U, x, params)
 y = similar(x)
-solve_DinvX!(y,D,x)
-println("y ", y[1,1,1,1,1,1,1])
+solve_DinvX!(y, D, x)
 
 z = similar(x)
-mul!(z,D,y)
-println("z ", z[1,1,1,1,1,1,1])
-
+mul!(z, D, y)
 ```
 
-The domainwall fermion is defined in 5D space. The element of x is ```x[ic,ix,iy,iz,it,ialpha,iL]```, where iL is an index on the five dimensional axis. 
+The result is a `DomainwallFermion_5D_MPILattice` backed by one
+`LatticeMatrix{5}`. Shamir, Möbius, and generalized coefficients use the same
+field representation. Historical `w[s]` fields remain in the deprecated
+compatibility path.
 
 ## Fermion Action
 

@@ -1,3 +1,8 @@
+using Gaugefields
+using LatticeDiracOperators
+using LinearAlgebra
+using Test
+
 function temporal_slice(field, it)
     return [
         field[ic, ix, iy, iz, it, ialpha] for

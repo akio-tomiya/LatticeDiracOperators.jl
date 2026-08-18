@@ -1,6 +1,7 @@
 abstract type FermiAction{Dim,Dirac,fermion,gauge} end
 
 include("./StaggeredFermiAction.jl")
+include("./HISQFermiForce.jl")
 include("./WilsonFermiAction.jl")
 include("./DomainwallFermiAction.jl")
 include("./MobiusDomainwallFermiAction.jl")
@@ -21,7 +22,7 @@ function FermiAction(
     end
 
 
-    if diractype <: Staggered_Dirac_operator
+    if diractype <: Staggered_Dirac_operators
         return StaggeredFermiAction(D, hascovnet, covneuralnet, parameters_action)
     elseif diractype <: Wilson_Dirac_operators
         return WilsonFermiAction(D, hascovnet, covneuralnet, parameters_action)
