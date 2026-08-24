@@ -10,7 +10,7 @@ function get_myrank(x::T) where {T<:Abstractfermion}
 end
 
 function get_nprocs(x::T) where {T<:Abstractfermion}
-    return 0
+    return 1
 end
 
 abstract type AbstractFermionfields{NC,Dim} <: Abstractfermion end
@@ -151,11 +151,10 @@ include("./AbstractFermions_3D.jl")
 
 
 function __init__()
-    #@require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
-
-
-
-    #end
+    @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
+        include(joinpath(
+            @__DIR__, "..", "ext", "deprecated", "mpi", "legacy_mpi.jl"))
+    end
 
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" begin
         include("./WilsonFermion/deprecated/kernelfunctions/Wilson_cuda.jl")

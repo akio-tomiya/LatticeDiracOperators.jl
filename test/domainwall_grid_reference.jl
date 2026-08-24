@@ -2,11 +2,10 @@ using Gaugefields
 using JACC
 using LatticeDiracOperators
 using LatticeMatrices
-using MPI
 using Test
 
-MPI.Initialized() || MPI.Init()
 JACC.@init_backend
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 @testset "Grid Shamir domain-wall PP and J5q reference" begin
     # Independent reference: Grid commit
@@ -25,7 +24,7 @@ JACC.@init_backend
         0.0028730807215859378 + 1.1579717795075363e-21im,
     ]
 
-    number_of_processes = MPI.Comm_size(MPI.COMM_WORLD)
+    number_of_processes = ldo_test_comm_size()
     lattice_size = (4, 4, 4, 4)
     lattice_size[1] % number_of_processes == 0 || error(
         "this reference test needs a process count dividing NX=4")

@@ -2,13 +2,12 @@ using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 using Test
 import JACC
 
 JACC.@init_backend
-MPI.Initialized() || MPI.Init()
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 function _general_fermion_test_field(NG, gsize, PEs; nw, seed)
     rng = Random.MersenneTwister(seed)
@@ -128,7 +127,7 @@ function _test_registered_general_fermion_action(
 end
 
 @testset "GeneralFermion with LatticeMatrices backend" begin
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+    nprocs = ldo_test_comm_size()
     gsize = (4 * nprocs, 4, 4, 4)
     PEs = (nprocs, 1, 1, 1)
     NC = 3

@@ -7,7 +7,6 @@ using Enzyme # Activates LatticeDiracOperatorsEnzymeExt.
 using Gaugefields
 using LatticeDiracOperators
 using LinearAlgebra
-using MPI
 using Random
 
 export ShiftDefinedWilson, run_shift_defined_ad
@@ -104,7 +103,8 @@ Build a `GeneralFermionAction` from the shift-defined callbacks, evaluate
 Enzyme.  The returned `force_norm` is nonzero when the callback has been
 differentiated successfully.
 
-The lattice is decomposed in the first direction when run with MPI.
+Pass an MPI communicator and matching `process_grid` to run distributed. The
+default is serial and does not require MPI.jl.
 """
 function run_shift_defined_ad(;
     local_x=4,
@@ -114,16 +114,15 @@ function run_shift_defined_ad(;
     seed=123,
     eps_CG=1e-10,
     maxsteps=10_000,
+    process_grid=(1, 1, 1, 1),
+    comm=nothing,
 )
-    MPI.Initialized() || MPI.Init()
-    number_of_processes = MPI.Comm_size(MPI.COMM_WORLD)
     global_size = (
-        local_x * number_of_processes,
-        transverse_size,
-        transverse_size,
-        transverse_size,
+        local_x * process_grid[1],
+        transverse_size * process_grid[2],
+        transverse_size * process_grid[3],
+        transverse_size * process_grid[4],
     )
-    process_grid = (number_of_processes, 1, 1, 1)
 
     gauge = gauge_configuration(
         global_size;
@@ -131,6 +130,7 @@ function run_shift_defined_ad(;
         halo=1,
         start=:cold,
         process_grid,
+        comm,
         verbose=0,
     )
 
@@ -143,6 +143,7 @@ function run_shift_defined_ad(;
         nw=1,
         elementtype=ComplexF64,
         numtemps=8,
+        comm0=comm,
     )
     gauss_distribution_fermion!(source)
     set_wing_fermion!(source)
@@ -168,8 +169,7 @@ function run_shift_defined_ad(;
 
     force = similar(gauge)
     calc_UdSfdU!(force, action, gauge, source)
-    local_force_norm = sum(link -> sum(abs2, link.U.A), force)
-    force_norm = MPI.Allreduce(local_force_norm, +, MPI.COMM_WORLD)
+    force_norm = sum(link -> real(dot(link.U, link.U)), force)
 
     return (;
         action,
@@ -184,10 +184,8 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     result = run_shift_defined_ad()
-    if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-        println("pseudofermion action = ", result.potential)
-        println("AD force norm       = ", result.force_norm)
-    end
+    println("pseudofermion action = ", result.potential)
+    println("AD force norm       = ", result.force_norm)
 end
 
 end # module GeneralFermionShiftADExample

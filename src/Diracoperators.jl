@@ -1,8 +1,14 @@
 module Dirac_operators
-using MPI
 using JACC
 using Random
 import LatticeMatrices
+import ..Communication:
+    broadcast!,
+    comm_rank,
+    comm_size,
+    prepare_communicator,
+    resolve_communicator
+import ..Communication: barrier as communicator_barrier
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
 @static if isdefined(LatticeMatrices, :mark_halo_dirty!)
@@ -11,7 +17,7 @@ else
     @inline _mark_halo_dirty!(lattice) = nothing
 end
 
-import Gaugefields: get_myrank, get_nprocs
+import Gaugefields: barrier, get_myrank, get_nprocs
 
 import Gaugefields:
     AbstractGaugefields,
@@ -115,13 +121,13 @@ const default_MaxCGstep = 3000
 const _PSEUDOFERMION_STREAM_TAG = UInt32(0x50464552)
 
 function _shared_fermion_noise_seed(lattice, seed)
-    root_seed = if MPI.Comm_rank(lattice.comm) == 0
+    root_seed = if comm_rank(lattice.comm) == 0
         seed === nothing ? rand(UInt64) : UInt64(seed)
     else
         UInt64(0)
     end
     seed_buffer = Ref(root_seed)
-    MPI.Bcast!(seed_buffer, 0, lattice.comm)
+    broadcast!(seed_buffer, 0, lattice.comm)
     return seed_buffer[]
 end
 

@@ -8,7 +8,6 @@ using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 
 const DIM = 4
@@ -134,8 +133,7 @@ function trajectory!(
     new_fermion_action = evaluate_FermiAction(fermion, U, pseudofermion)
     new_hamiltonian = hamiltonian(gauge, U, momentum, new_fermion_action)
     delta_h = new_hamiltonian - old_hamiltonian
-    acceptance_draw = MPI.Comm_rank(MPI.COMM_WORLD) == 0 ? rand() : 0.0
-    acceptance_draw = MPI.bcast(acceptance_draw, 0, MPI.COMM_WORLD)
+    acceptance_draw = rand()
     accepted = log(acceptance_draw) < -delta_h
     accepted || substitute_U!(U, old_U)
     return (; accepted, delta_h, old_hamiltonian, new_hamiltonian)
@@ -170,16 +168,8 @@ function run_hisq_hmc(;
     mdsteps >= 1 || throw(ArgumentError("mdsteps must be positive"))
     trajectory_length > 0 || throw(ArgumentError("trajectory_length must be positive"))
 
-    MPI.Initialized() || MPI.Init()
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
-    rank = MPI.Comm_rank(MPI.COMM_WORLD)
-    nprocs == 1 || error(
-        "The fixed 4^4 HISQ example needs nw=3, so decomposing a length-4 " *
-        "direction would make its local extent smaller than its halo. " *
-        "Run this example on one rank; GeneralFermionAction MPI runs use a " *
-        "larger lattice with every local extent at least three.",
-    )
-    Random.seed!(seed + rank)
+    communicator = SerialCommunicator()
+    Random.seed!(seed)
 
     # Full HISQ smearing and the three-link Naik term need three halo layers.
     U = Initialize_Gaugefields(
@@ -189,6 +179,7 @@ function run_hisq_hmc(;
         condition="cold",
         isMPILattice=true,
         PEs=PROCESS_GRID,
+        comm=communicator,
         verbose_level=0,
     )
     gauge = gauge_action(U, beta)
@@ -201,6 +192,7 @@ function run_hisq_hmc(;
         nw=3,
         phases=(1, 1, 1, -1),
         elementtype=ComplexF64,
+        comm0=communicator,
     )
     cache = HISQDiracCache4D([link.U for link in U], mass; naik_epsilon)
     apply_D = ApplyHISQ{false}(cache)
@@ -226,7 +218,7 @@ function run_hisq_hmc(;
     old_U = similar(U)
     substitute_U!(old_U, U)
 
-    report = verbose && rank == 0
+    report = verbose
     report && println(
         "HISQ HMC: lattice=4^4 PEs=$PROCESS_GRID ",
         "beta=$beta mass=$mass mdsteps=$mdsteps",

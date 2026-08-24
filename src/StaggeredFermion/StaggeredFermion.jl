@@ -6,7 +6,6 @@ include("./deprecated/StaggeredFermion_4D_wing.jl")
 include("./deprecated/StaggeredFermion_4D_nowing.jl")
 include("./deprecated/StaggeredFermion_2D_wing.jl")
 include("./deprecated/StaggeredFermion_2D_nowing.jl")
-include("./deprecated/StaggeredFermion_4D_nowing_mpi.jl")
 include("./StaggeredFermion_4D_MPILattice.jl")
 include("./deprecated/StaggeredDiracOperator_legacy.jl")
 

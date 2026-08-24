@@ -59,18 +59,12 @@ struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonField
         singleprecision=false,
         boundarycondition=[1, 1, 1, -1],
         PEs=nothing,
-        comm=MPI.COMM_WORLD)
+        comm=nothing)
 
         Dirac_operator = "Wilson"
         NG = 4
 
-        if MPI.Initialized() == false
-            MPI.Init()
-            mpiinit = true
-        end
-
-
-        comm0 = comm
+        comm0 = prepare_communicator(resolve_communicator(comm))
 
         gsize = (NX, NY, NZ, NT)
         dim = 4
@@ -78,7 +72,7 @@ struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonField
         @assert NDW > 0 "NDW should be larger than 0. We use a halo area."
         elementtype = ifelse(singleprecision, ComplexF32, ComplexF64)
         phases = boundarycondition
-        nprocs = MPI.Comm_size(comm)
+        nprocs = comm_size(comm0)
         if isnothing(PEs)
             PEs_in = (1, 1, 1, nprocs)
         else
@@ -97,8 +91,6 @@ struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonField
 
 
         @assert prod(PEs_in) == nprocs "num. of MPI process should be prod(PEs). Now nprocs = $nprocs and PEs = $PEs"
-        myrank = MPI.Comm_rank(comm)
-
         #verbose_print = Verbose_print(verbose_level, myid=myrank)
 
         f = LatticeMatrix(NC, NG, dim, gsize, PEs_in;
@@ -120,6 +112,10 @@ struct WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG,Tf} <: WilsonField
             singleprecision)
     end
 end
+
+get_myrank(x::WilsonFermion_4D_MPILattice) = comm_rank(x.f.comm)
+get_nprocs(x::WilsonFermion_4D_MPILattice) = comm_size(x.f.comm)
+barrier(x::WilsonFermion_4D_MPILattice) = communicator_barrier(x.f.comm)
 
 function Initialize_WilsonFermion(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}

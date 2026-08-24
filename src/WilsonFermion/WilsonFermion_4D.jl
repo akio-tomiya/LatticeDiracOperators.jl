@@ -10,7 +10,6 @@ function Wx!(
     Wx!(xout, U, x, A, 4)
     return
 end
-
 function Dx!(
     xout::T1,
     U::Array{G,1},
@@ -259,7 +258,3 @@ function WWdagx!(
 
     return
 end
-
-
-include("./deprecated/WilsonFermion_4D_wing_mpi.jl")
-include("./deprecated/WilsonFermion_4D_nowing_mpi.jl")

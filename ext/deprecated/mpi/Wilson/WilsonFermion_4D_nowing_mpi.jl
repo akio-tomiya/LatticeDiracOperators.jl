@@ -50,6 +50,7 @@ struct WilsonFermion_4D_nowing_mpi{NC} <: WilsonFermion_4D{NC} #AbstractFermionf
         PEs;
         comm=MPI.COMM_WORLD,
     ) where {T<:Integer}
+        comm = prepare_communicator(comm)
         NG = 4
         NDW = 0
         NV = NX * NY * NZ * NT

@@ -30,7 +30,7 @@ struct DomainwallFermion_5D_MPILattice{
         operator_name="MobiusDomainwall",
         boundarycondition=[1, 1, 1, -1, 1],
         PEs=nothing,
-        comm=MPI.COMM_WORLD, kwargs...) where {Tn<:Integer}
+        comm=nothing, kwargs...) where {Tn<:Integer}
 
 
 
@@ -38,11 +38,7 @@ struct DomainwallFermion_5D_MPILattice{
         Dirac_operator = String(operator_name)
         NG = 4
 
-        if MPI.Initialized() == false
-            MPI.Init()
-        end
-
-        comm0 = comm
+        comm0 = prepare_communicator(resolve_communicator(comm))
 
         gsize = (NX, NY, NZ, NT, L5)
         dim = 5
@@ -52,7 +48,7 @@ struct DomainwallFermion_5D_MPILattice{
         phases = boundarycondition
         #@info phases
 
-        nprocs = MPI.Comm_size(comm)
+        nprocs = comm_size(comm0)
         if isnothing(PEs)
             PEs_in = (1, 1, 1, nprocs, 1)
         else
@@ -140,6 +136,10 @@ struct DomainwallFermion_5D_MPILattice{
     end
 
 end
+
+get_myrank(x::DomainwallFermion_5D_MPILattice) = comm_rank(x.f.comm)
+get_nprocs(x::DomainwallFermion_5D_MPILattice) = comm_size(x.f.comm)
+barrier(x::DomainwallFermion_5D_MPILattice) = communicator_barrier(x.f.comm)
 
 const MobiusDomainwallField_5D_MPILattice = DomainwallField_5D_MPILattice
 const MobiusDomainwallFermion_5D_MPILattice = DomainwallFermion_5D_MPILattice

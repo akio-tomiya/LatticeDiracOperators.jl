@@ -2,11 +2,10 @@ using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 using Test
 
-MPI.Initialized() || MPI.Init()
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 function _domainwall_mpialattice_core(field)
     ranges = ntuple(
@@ -20,7 +19,7 @@ function _domainwall_mpialattice_finite(field)
 end
 
 @testset "domain-wall MPILattice standard backend" begin
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+    nprocs = ldo_test_comm_size()
     gsize = (2 * nprocs, 2, 2, 2)
     PEs = (nprocs, 1, 1, 1)
     L5 = 2

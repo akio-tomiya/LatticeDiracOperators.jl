@@ -4,12 +4,11 @@ using JACC
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 using Test
 
 JACC.@init_backend
-MPI.Initialized() || MPI.Init()
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 struct _ApplyWilsonLM{Adjoint,T}
     kappa::T
@@ -28,7 +27,7 @@ function (apply::_ApplyWilsonLM{Adjoint})(
 end
 
 @testset "LatticeMatrices Wilson callback AD" begin
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+    nprocs = ldo_test_comm_size()
     global_size = (2nprocs, 2, 2, 2)
     process_grid = (nprocs, 1, 1, 1)
     gauge = Initialize_Gaugefields(

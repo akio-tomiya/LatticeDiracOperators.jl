@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   core-no-enzyme:
-    name: Core (no Enzyme) · Julia ${{ matrix.julia-version }} · ${{ matrix.os }}
+    name: Core (no MPI/Enzyme) · Julia ${{ matrix.julia-version }} · ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +40,7 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Instantiate core dependencies
         run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
-      - name: Run core tests without loading Enzyme
+      - name: Run core tests without MPI or Enzyme
         run: julia --startup-file=no --project=. test/runtests_core.jl
 
   enzyme:
@@ -56,8 +56,8 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
-      - name: Instantiate with Enzyme
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(name="Enzyme", version="0.13"))'
+      - name: Instantiate with MPI and Enzyme
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add([PackageSpec(name="MPI", version="0.20"), PackageSpec(name="Enzyme", version="0.13")])'
       - name: Run AD integration tests
         run: julia --startup-file=no --project=. test/runtests_ad.jl
 

@@ -6,8 +6,11 @@
 LatticeDiracOperators.jl provides lattice Dirac operators, pseudofermion
 actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [Gaugefields.jl](https://github.com/akio-tomiya/Gaugefields.jl) v1 and
-[LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.1
+[LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.2
 as its standard backend.
+
+Version 1.1.0 makes MPI.jl optional. Serial CPU and single-GPU calculations no
+longer install or load MPI. See [changes.md](changes.md) for details.
 
 Version 1.0.2 adds stout-smearing support to the pseudofermion MD driver. See [changes.md](changes.md) for details.
 
@@ -43,8 +46,8 @@ given legacy gauge fields.
 
 Most legacy public names remain available through the compatibility layer, but:
 
-- v1 requires Julia 1.11 or later, Gaugefields v1, and LatticeMatrices 1.1.2 or
-  later;
+- v1.1 requires Julia 1.11 or later, Gaugefields 1.1, and LatticeMatrices 1.2
+  or later;
 - Gaugefields v1 inputs now select the LatticeMatrices-backed MPILattice path;
   code that depends on legacy wing/nowing storage or writes directly to `.A`
   must use the standard field API and halo-epoch contract;
@@ -68,8 +71,18 @@ Enzyme is optional. Add it only for automatic differentiation of user-defined
 pkg> add Enzyme
 ```
 
-Add `MPI` as a direct application dependency when the application itself
-imports the MPI API or launches MPI-specific helper code.
+MPI is optional. Serial CPU and single-GPU applications do not need to install
+it. For MPI execution, add MPI.jl and load it before constructing distributed
+fields:
+
+```text
+using MPI
+MPI.Init() # Optional: the first MPI field also initializes MPI lazily.
+```
+
+After `using MPI`, the default communicator is `MPI.COMM_WORLD`. Even with one
+rank, pass `SerialCommunicator()` as `comm`/`comm0` to force the serial path.
+LDO never calls `MPI.Finalize()`.
 
 ## Recommended high-level API
 
