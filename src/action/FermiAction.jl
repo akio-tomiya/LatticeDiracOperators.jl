@@ -68,11 +68,18 @@ function evaluate_FermiAction(fermi_action::FermiAction, U, ϕ::AbstractFermionf
 end
 
 """
-    gauss_sampling_in_action!(noise, U, action)
+    gauss_sampling_in_action!(noise, U, action; kwargs...)
 
-Fill `noise` with the Gaussian field required by `action`.
+Fill `noise` with the Gaussian field required by `action`. Standard
+LatticeMatrices fields accept global-site RNG keywords such as `seed`,
+`sweep`, and `subgroup`.
 """
-function gauss_sampling_in_action!(η::AbstractFermionfields, U, fermi_action::FermiAction)
+function gauss_sampling_in_action!(
+    η::AbstractFermionfields,
+    U,
+    fermi_action::FermiAction;
+    kwargs...,
+)
     error(
         "gauss_sampling_in_action!(η,fermi_action) is not implemented in type η:$(typeof(η)), fermi_action:$(typeof(fermi_action))",
     )

@@ -1040,17 +1040,13 @@ function Z4_distribution_fermi!(x::WilsonFermion_4D_nowing_mpi{NC}) where {NC}
     NZ = x.NZ
     NT = x.NT
     n6 = size(x.f)[6]
-    θ = 0.0
-    N::Int32 = 4
-    Ninv = Float64(1 / N)
     for it = 1:x.PN[4]
         for iz = 1:x.PN[3]
             for iy = 1:x.PN[2]
                 for ix = 1:x.PN[1]
                     for ialpha = 1:NG
                         @inbounds @simd for ic = 1:NC
-                            θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
-                            v = cos(θ) + im * sin(θ)
+                            v = _z4_root(rand(0:3))
                             setvalue!(x, v, ic, ialpha, ix, iy, iz, it)
                             #x[ic,ix,iy,iz,it,ialpha] = cos(θ)+im*sin(θ) 
                         end
@@ -2447,4 +2443,3 @@ function mul_1plusγ4x!(y::WilsonFermion_4D_nowing_mpi{NC}, x) where {NC}#(1+gam
         end
     end
 end
-

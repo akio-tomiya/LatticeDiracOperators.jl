@@ -787,9 +787,6 @@ function Z4_distribution_fermi!(x::Abstract_GeneralizedDomainwallFermion_5D{NC,W
     NZ = x.NZ
     NT = x.NT
     n6 = size(x.w[1].f)[6]
-    θ = 0.0
-    N::Int32 = 4
-    Ninv = Float64(1 / N)
     clear_fermion!(x)
     for ialpha = 1:n6
     for it = 1:NT
@@ -797,8 +794,7 @@ function Z4_distribution_fermi!(x::Abstract_GeneralizedDomainwallFermion_5D{NC,W
         for iy = 1:NY
             for ix = 1:NX
                 @inbounds @simd for ic = 1:NC
-                    θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
-                    x.w[1][ic, ix, iy, iz, it, ialpha] = cos(θ) + im * sin(θ)
+                    x.w[1][ic, ix, iy, iz, it, ialpha] = _z4_root(rand(0:3))
                 end
             end
         end

@@ -138,4 +138,8 @@ export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
 export clear_fermion!, add_fermion!
 
+include("PseudofermionMDAction.jl")
+
+export PseudofermionMDAction, refresh_pseudofermion!
+
 end

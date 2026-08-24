@@ -14,6 +14,8 @@ using Test
         "readme_examples.jl",
         "solver_diagnostics.jl",
         "wilson_boundary_conditions.jl",
+        "z4_noise.jl",
+        "pseudofermion_md_action.jl",
         "latticematrices_backend.jl",
         "wilson_clover_wrapper.jl",
         "staggered_mpialattice.jl",

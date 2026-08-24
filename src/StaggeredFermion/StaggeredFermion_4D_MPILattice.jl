@@ -143,10 +143,28 @@ get_myrank(x::StaggeredFermion_4D_MPILattice) = MPI.Comm_rank(x.f.comm)
 get_nprocs(x::StaggeredFermion_4D_MPILattice) = MPI.Comm_size(x.f.comm)
 barrier(x::StaggeredFermion_4D_MPILattice) = MPI.Barrier(x.f.comm)
 
-function gauss_distribution_fermion!(x::StaggeredFermion_4D_MPILattice)
+function gauss_distribution_fermion!(
+    x::StaggeredFermion_4D_MPILattice;
+    seed=nothing,
+    sweep::Integer=0,
+    direction::Integer=0,
+    color::Integer=0,
+    subgroup::Integer=_PSEUDOFERMION_STREAM_TAG,
+    rng_algorithm=LatticeMatrices.Philox4x32(),
+)
     real_type = typeof(real(zero(eltype(x.f.A))))
     sigma = sqrt(real_type(0.5))
-    randomize_gaussian_matrix!(x.f; sigma, seed=rand(UInt64))
+    shared_seed = _shared_fermion_noise_seed(x.f, seed)
+    randomize_gaussian_matrix!(
+        x.f;
+        sigma,
+        seed=shared_seed,
+        sweep,
+        direction,
+        color,
+        subgroup,
+        rng_algorithm,
+    )
     return x
 end
 

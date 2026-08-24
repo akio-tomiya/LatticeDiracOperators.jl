@@ -169,18 +169,28 @@ end
 
 
 function gauss_distribution_fermion!(
-    x::Tx
+    x::Tx;
+    seed=nothing,
+    sweep::Integer=0,
+    direction::Integer=0,
+    color::Integer=0,
+    subgroup::Integer=_PSEUDOFERMION_STREAM_TAG,
+    rng_algorithm=LatticeMatrices.Philox4x32(),
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
-
-    NG = 4
-    work = zeros(T, NC, NG, NX, NY, NZ, NT, L5)
-    work = map(i -> gauss_distribution(), work)
-    PEs = get_PEs(x.f)
-    a = LatticeMatrix(
-        work, 5, PEs; nw=x.NDW, phases=x.f.phases, comm0=x.f.comm)
-    substitute!(x.f, a)
-
-    return
+    real_type = typeof(real(zero(eltype(x.f.A))))
+    sigma = sqrt(real_type(0.5))
+    shared_seed = _shared_fermion_noise_seed(x.f, seed)
+    LatticeMatrices.randomize_gaussian_matrix!(
+        x.f;
+        sigma,
+        seed=shared_seed,
+        sweep,
+        direction,
+        color,
+        subgroup,
+        rng_algorithm,
+    )
+    return x
 end
 
 function gauss_distribution_fermion!(
@@ -892,15 +902,14 @@ function ZN_distribution_fermi!(
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5,Tx<:MobiusDomainwallFermion_5D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,Tf,L5}}
     NG = 4
     work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT, L5)
-    Ninv = 1 / N
     for it = 1:NT
         for iz = 1:NZ
             for iy = 1:NY
                 for ix = 1:NX
                     for ialpha = 1:NG
                         @inbounds @simd for ic = 1:NC
-                            θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
-                            work[ic, ialpha, ix, iy, iz, it, 1] = cos(θ) + im * sin(θ)
+                            work[ic, ialpha, ix, iy, iz, it, 1] =
+                                N == 4 ? _z4_root(rand(0:3)) : cis(2π * rand(0:N-1) / N)
                         end
                     end
                 end

@@ -6,6 +6,7 @@ using Test
     test_files = [
         joinpath("MPIJACC", "halo_epoch.jl"),
         joinpath("MPIJACC", "ad.jl"),
+        joinpath("MPIJACC", "pseudofermion_md_action.jl"),
         "wilson_clover_wrapper.jl",
         "wilson_lm_callback_ad.jl",
         "staggered_mpialattice.jl",

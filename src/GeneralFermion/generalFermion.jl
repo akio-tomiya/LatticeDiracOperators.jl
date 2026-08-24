@@ -117,25 +117,28 @@ end
 
 
 function gauss_distribution_fermion!(
-    x::L1
+    x::L1;
+    seed=nothing,
+    sweep::Integer=0,
+    direction::Integer=0,
+    color::Integer=0,
+    subgroup::Integer=_PSEUDOFERMION_STREAM_TAG,
+    rng_algorithm=LatticeMatrices.Philox4x32(),
 ) where {TF,D,T,AT,NC,NG,nw,DI,L1<:GeneralFermion{TF,D,T,AT,NC,NG,nw,DI}}
-    gsize = x.field.gsize
-
-    work = zeros(ComplexF64, NC, NG, gsize...)
-    σ = sqrt(1 / 2)
-    for i = 1:length(work)
-        v = σ * randn() + im * σ * randn()
-        work[i] = v
-    end
-    #work = map(i -> gauss_distribution(), work)
-    PEs = get_PEs(x.field)
-    phases = x.field.phases
-    comm0 = x.field.comm
-    field = LatticeMatrix(work, D, PEs; nw, phases, comm0)
-    substitute!(x.field, field)
-    set_halo!(x.field)
-
-    return
+    real_type = typeof(real(zero(eltype(x.field.A))))
+    sigma = sqrt(real_type(0.5))
+    shared_seed = _shared_fermion_noise_seed(x.field, seed)
+    LatticeMatrices.randomize_gaussian_matrix!(
+        x.field;
+        sigma,
+        seed=shared_seed,
+        sweep,
+        direction,
+        color,
+        subgroup,
+        rng_algorithm,
+    )
+    return x
 end
 
 @inline function LatticeMatrices.mul_AshiftB!(

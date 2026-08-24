@@ -77,6 +77,47 @@ The returned convention is LDO's existing
 `Uμ (∂Sf/∂Uμ)†` matrix field. Gaugefields integrators perform the
 traceless anti-Hermitian projection required by their momentum update.
 
+## Gaugefields MD driver
+
+`PseudofermionMDAction` adapts an LDO action and a fixed pseudofermion field
+to the Gaugefields MD-provider interface:
+
+```julia
+noise = similar(x)
+phi = similar(x)
+fermion_md = PseudofermionMDAction(action, phi)
+refresh_pseudofermion!(
+    fermion_md,
+    U,
+    noise;
+    seed=0x1234,
+    sweep=trajectory_number,
+    subgroup=1,
+)
+
+actions = MDActionSet(; gauge=gauge_action, fermion=fermion_md)
+integrator = SextonWeingarten(
+    slow=:fermion,
+    fast=:gauge,
+    n_fast=4,
+)
+driver = md_driver(
+    U,
+    actions;
+    steps=10,
+    trajectory_length=1.0,
+    integrator,
+)
+md_trajectory!(U, momenta, driver)
+```
+
+The pseudofermion is refreshed between trajectories and remains fixed during
+each call to `md_trajectory!`. The GF driver is deterministic: applications
+remain responsible for momentum refresh, the Metropolis decision, gauge-link
+backup, and rollback. Multiple pseudofermion terms can be placed in the same
+`MDActionSet` under distinct names and assigned to force groups independently.
+Use a distinct `subgroup` (or seed) for each pseudofermion action term.
+
 | Action | Force route |
 | --- | --- |
 | Wilson | analytic |

@@ -9,6 +9,8 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.1
 as its standard backend.
 
+Version 1.0.1 adds Gaugefields MD-driver integration and corrected Z4 noise.
+
 The package supports Julia 1.11 and 1.12, threaded CPU execution, MPI domain
 decomposition, and the GPU backends provided by JACC and LatticeMatrices.
 

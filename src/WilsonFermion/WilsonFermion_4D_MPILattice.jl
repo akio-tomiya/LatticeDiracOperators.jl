@@ -160,16 +160,28 @@ function Base.similar(x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
 end
 
 function gauss_distribution_fermion!(
-    x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG}
+    x::WilsonFermion_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW,NG};
+    seed=nothing,
+    sweep::Integer=0,
+    direction::Integer=0,
+    color::Integer=0,
+    subgroup::Integer=_PSEUDOFERMION_STREAM_TAG,
+    rng_algorithm=LatticeMatrices.Philox4x32(),
 ) where {NC,NX,NY,NZ,NT,T,AT,NDW,NG}
-
-    work = zeros(ComplexF64, NC, NG, NX, NY, NZ, NT)
-    work = map(i -> gauss_distribution(), work)
-    PEs = get_PEs(x.f)
-    a = LatticeMatrix(work, 4, PEs; nw=1, phases=x.f.phases, comm0=x.f.comm)
-    substitute!(x.f, a)
-
-    return
+    real_type = typeof(real(zero(eltype(x.f.A))))
+    sigma = sqrt(real_type(0.5))
+    shared_seed = _shared_fermion_noise_seed(x.f, seed)
+    LatticeMatrices.randomize_gaussian_matrix!(
+        x.f;
+        sigma,
+        seed=shared_seed,
+        sweep,
+        direction,
+        color,
+        subgroup,
+        rng_algorithm,
+    )
+    return x
 end
 
 function gauss_distribution_fermion!(
