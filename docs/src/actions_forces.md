@@ -118,6 +118,27 @@ backup, and rollback. Multiple pseudofermion terms can be placed in the same
 `MDActionSet` under distinct names and assigned to force groups independently.
 Use a distinct `subgroup` (or seed) for each pseudofermion action term.
 
+For stout-smeared fermions, configure the smearing on the `FermiAction` and
+construct the provider in the same way:
+
+```julia
+smearing = CovNeuralnet(U)
+push!(smearing, STOUT_Layer(["plaquette"], [0.1], U))
+smeared_action = FermiAction(
+    D,
+    action_parameters;
+    covneuralnet=smearing,
+)
+fermion_md = PseudofermionMDAction(smeared_action, phi)
+```
+
+The provider automatically applies the forward smearing for refresh and
+potential evaluation. During force evaluation it applies the same
+`calc_smearedU`/`back_prop` chain rule as the legacy manual HMC example and
+returns the force with respect to the original thin links. Passing an explicit
+third argument, `PseudofermionMDAction(action, phi, smearing)`, overrides the
+smearing stored in the action.
+
 | Action | Force route |
 | --- | --- |
 | Wilson | analytic |

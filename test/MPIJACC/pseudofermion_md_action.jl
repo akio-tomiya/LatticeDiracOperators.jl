@@ -73,6 +73,46 @@ MPI.Initialized() || MPI.Init()
         for momentum in force
     )
 
+    smearing = CovNeuralnet(U)
+    push!(smearing, STOUT_Layer(["plaquette"], [0.1], U))
+    smeared_dirac = Dirac_operator(U, field, parameters)
+    smeared_action = FermiAction(
+        smeared_dirac,
+        Dict("Nf" => 2);
+        covneuralnet=smearing,
+    )
+    smeared_provider = PseudofermionMDAction(
+        smeared_action,
+        similar(field),
+    )
+    @test smeared_provider.smearing === smearing
+    smeared_noise = similar(field)
+    refresh_pseudofermion!(
+        smeared_provider,
+        U,
+        smeared_noise;
+        seed=0x53544f55,
+        sweep=4,
+        subgroup=3,
+    )
+    smeared_workspace = md_action_workspace(smeared_provider, U)
+    @test isfinite(md_potential(
+        smeared_provider,
+        U,
+        smeared_workspace,
+    ))
+    smeared_force = initialize_TA_Gaugefields(U)
+    md_force!(
+        smeared_force,
+        smeared_provider,
+        U,
+        smeared_workspace,
+    )
+    @test all(
+        all(isfinite, gather_and_bcast_matrix(momentum.a))
+        for momentum in smeared_force
+    )
+
     gauge_action = GaugeAction(U)
     plaquettes = make_loops_fromname("plaquette", Dim=4)
     append!(plaquettes, plaquettes')
