@@ -1,5 +1,23 @@
 # Changes
 
+## v1.1.0
+
+- Made MPI.jl a weak dependency. Serial CPU and single-GPU applications can
+  load and use LDO without installing MPI.jl.
+- Added an MPI package extension. Loading MPI.jl activates
+  `MPI.COMM_WORLD`; constructing the first MPI-backed fermion field lazily
+  initializes MPI unless the application already initialized it explicitly.
+- Kept one-rank serial execution selectable with `SerialCommunicator()` even
+  after `using MPI`.
+- Moved the hand-written legacy MPI fermion fields to
+  `ext/deprecated/mpi/`. They are compatibility-only, load after `using MPI`,
+  and are scheduled for removal in a future breaking release.
+- Split CI coverage into MPI-free core tests and explicit MPI integration
+  tests, including the MPI initialization lifecycle.
+- Raised the minimum compatible versions to Gaugefields 1.1 and
+  LatticeMatrices 1.2 so MPI remains optional throughout the dependency
+  graph.
+
 ## v1.0.2
 
 - Made `PseudofermionMDAction` automatically honor stout smearing configured

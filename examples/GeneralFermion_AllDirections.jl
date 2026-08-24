@@ -5,7 +5,6 @@ using Enzyme # Load the optional automatic-differentiation extension.
 using Gaugefields
 using LatticeDiracOperators
 using LinearAlgebra
-using MPI
 using Random
 
 # A spinless covariant nearest-neighbour operator in all four directions:
@@ -51,11 +50,12 @@ function apply_D_all_directions!(
     return result
 end
 
-function run_all_directions(; seed=456)
-    MPI.Initialized() || MPI.Init()
-    number_of_processes = MPI.Comm_size(MPI.COMM_WORLD)
-    global_size = (2 * number_of_processes, 2, 2, 2)
-    process_grid = (number_of_processes, 1, 1, 1)
+function run_all_directions(;
+    seed=456,
+    process_grid=(1, 1, 1, 1),
+    comm=nothing,
+)
+    global_size = ntuple(direction -> 2 * process_grid[direction], 4)
 
     gauge = gauge_configuration(
         global_size;
@@ -63,6 +63,7 @@ function run_all_directions(; seed=456)
         halo=1,
         start=:cold,
         process_grid,
+        comm,
         verbose=0,
     )
 
@@ -74,6 +75,7 @@ function run_all_directions(; seed=456)
         process_grid;
         nw=1,
         numtemps=4,
+        comm0=comm,
     )
     gauss_distribution_fermion!(source)
     set_wing_fermion!(source)
@@ -98,13 +100,8 @@ function run_all_directions(; seed=456)
 
     force = similar(gauge)
     calc_UdSfdU!(force, action, gauge, source)
-    local_force_norms = ntuple(
-        direction -> sum(abs2, force[direction].U.A),
-        4,
-    )
     force_norms = ntuple(
-        direction -> MPI.Allreduce(
-            local_force_norms[direction], +, MPI.COMM_WORLD),
+        direction -> real(dot(force[direction].U, force[direction].U)),
         4,
     )
     return (; action, gauge, source, DdagD_source, force, force_norms)
@@ -112,7 +109,5 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     result = run_all_directions()
-    if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-        println("AD force norms (U1, U2, U3, U4) = ", result.force_norms)
-    end
+    println("AD force norms (U1, U2, U3, U4) = ", result.force_norms)
 end

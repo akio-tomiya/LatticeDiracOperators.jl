@@ -48,9 +48,9 @@ struct StaggeredFermion_4D_MPILattice{
         elementtype=nothing,
         boundarycondition=(1, 1, 1, -1),
         PEs=nothing,
-        comm=MPI.COMM_WORLD,
+        comm=nothing,
     )
-        MPI.Initialized() || MPI.Init()
+        comm0 = prepare_communicator(resolve_communicator(comm))
         NDW >= 0 || throw(ArgumentError("NDW must be non-negative"))
 
         complex_type = if elementtype === nothing
@@ -62,7 +62,7 @@ struct StaggeredFermion_4D_MPILattice{
             "staggered MPILattice fields require ComplexF32 or ComplexF64"))
         singleprecision = complex_type === ComplexF32
 
-        nprocs = MPI.Comm_size(comm)
+        nprocs = comm_size(comm0)
         process_grid = isnothing(PEs) ? (1, 1, 1, nprocs) : Tuple(PEs)
         length(process_grid) == 4 || throw(ArgumentError(
             "PEs must contain four process-grid dimensions"))
@@ -77,7 +77,7 @@ struct StaggeredFermion_4D_MPILattice{
             nw=NDW,
             elementtype=complex_type,
             phases,
-            comm0=comm,
+            comm0,
         )
         T = eltype(f.A)
         AT = typeof(f.A)
@@ -139,9 +139,9 @@ function Base.similar(x::StaggeredFermion_4D_MPILattice)
     )
 end
 
-get_myrank(x::StaggeredFermion_4D_MPILattice) = MPI.Comm_rank(x.f.comm)
-get_nprocs(x::StaggeredFermion_4D_MPILattice) = MPI.Comm_size(x.f.comm)
-barrier(x::StaggeredFermion_4D_MPILattice) = MPI.Barrier(x.f.comm)
+get_myrank(x::StaggeredFermion_4D_MPILattice) = comm_rank(x.f.comm)
+get_nprocs(x::StaggeredFermion_4D_MPILattice) = comm_size(x.f.comm)
+barrier(x::StaggeredFermion_4D_MPILattice) = communicator_barrier(x.f.comm)
 
 function gauss_distribution_fermion!(
     x::StaggeredFermion_4D_MPILattice;

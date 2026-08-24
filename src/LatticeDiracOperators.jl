@@ -3,9 +3,13 @@ using Wilsonloop
 using Gaugefields
 using Requires
 using AlgRemez_jll
-using MPI
 using JACC
 using LatticeMatrices
+
+include("communication.jl")
+
+import LatticeMatrices: SerialCommunicator
+export SerialCommunicator
 
 import Gaugefields: add_U!
 import Gaugefields: Abstractfields, clear_U!

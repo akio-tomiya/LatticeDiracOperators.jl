@@ -20,6 +20,7 @@ import LatticeMatrices
 
     include("z4_noise.jl")
     include("pseudofermion_md_action.jl")
+    include("mpi_optional.jl")
 
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")

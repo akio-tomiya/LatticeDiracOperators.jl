@@ -1,12 +1,18 @@
 using LatticeDiracOperators
+using Gaugefields
 using LatticeMatrices
 using Test
 
 @testset "LatticeDiracOperators core without Enzyme" begin
+    @test Base.find_package("MPI") === nothing
     @test Base.get_extension(
         LatticeDiracOperators, :LatticeDiracOperatorsEnzymeExt) === nothing
     @test Base.get_extension(
+        LatticeDiracOperators, :LatticeDiracOperatorsMPIExt) === nothing
+    @test Base.get_extension(
         LatticeMatrices, :LatticeMatricesEnzymeExt) === nothing
+    @test Base.get_extension(Gaugefields, :GaugefieldsMPIExt) === nothing
+    @test Base.get_extension(LatticeMatrices, :LatticeMatricesMPIExt) === nothing
 
     project_directory = dirname(Base.active_project())
     test_files = [
@@ -16,6 +22,7 @@ using Test
         "wilson_boundary_conditions.jl",
         "z4_noise.jl",
         "pseudofermion_md_action.jl",
+        "mpi_optional.jl",
         "latticematrices_backend.jl",
         "wilson_clover_wrapper.jl",
         "staggered_mpialattice.jl",

@@ -31,14 +31,19 @@ struct GeneralFermion{TF,D,T,AT,NC,NG,nw,DI} <: AbstractFermionfields{NC,D}
     end
 
     function GeneralFermion(NC, NG, gsize, PEs; nw=1, elementtype=ComplexF64, phases=defaultphase(length(gsize)),
-        comm0=MPI.COMM_WORLD, numtemps=1)
+        comm0=nothing, numtemps=1)
         dim = length(gsize)
+        comm0 = prepare_communicator(resolve_communicator(comm0))
         field = LatticeMatrix(NC, NG, dim, gsize, PEs; nw, elementtype, phases,
             comm0, numtemps)
         return GeneralFermion(field)
     end
 end
 export GeneralFermion
+
+get_myrank(x::GeneralFermion) = comm_rank(x.field.comm)
+get_nprocs(x::GeneralFermion) = comm_size(x.field.comm)
+barrier(x::GeneralFermion) = communicator_barrier(x.field.comm)
 
 @inline function LinearAlgebra.dot(
     A::L1,

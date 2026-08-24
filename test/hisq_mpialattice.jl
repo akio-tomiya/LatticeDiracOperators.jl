@@ -3,12 +3,11 @@ using JACC
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 using Test
 
 JACC.@init_backend
-MPI.Initialized() || MPI.Init()
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 const _HISQ_LDO_DIRAC = LatticeDiracOperators.Dirac_operators
 
@@ -21,7 +20,7 @@ function _hisq_wrapper_core(field)
 end
 
 @testset "HISQ MPILattice wrapper" begin
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+    nprocs = ldo_test_comm_size()
     global_size = (4 * nprocs, 4, 4, 4)
     process_grid = (nprocs, 1, 1, 1)
     rng = Random.MersenneTwister(1901)

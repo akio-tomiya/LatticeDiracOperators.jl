@@ -27,6 +27,7 @@ struct WilsonFermion_4D_mpi{NC,NDW} <: WilsonFermion_4D{NC} #AbstractFermionfiel
 
 
     function WilsonFermion_4D_mpi(NC::T, NX::T, NY::T, NZ::T, NT::T, PEs) where {T<:Integer}
+        prepare_communicator(comm)
         NG = 4
         NDW = 1
         NV = NX * NY * NZ * NT

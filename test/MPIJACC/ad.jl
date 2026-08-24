@@ -3,8 +3,9 @@ using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Test
+
+include(joinpath(@__DIR__, "..", "test_communicator.jl"))
 
 include(joinpath(@__DIR__, "..", "..", "examples", "GeneralFermion_Shift_AD.jl"))
 using .GeneralFermionShiftADExample
@@ -26,7 +27,9 @@ function core_values(field)
 end
 
 @testset "GeneralFermion apply_D! quickstart" begin
-    result = GeneralFermionQuickstartExample.run_quickstart()
+    process_grid = (ldo_test_comm_size(), 1, 1, 1)
+    result = GeneralFermionQuickstartExample.run_quickstart(;
+        process_grid, comm=LDO_TEST_COMM)
     @test isfinite(real(dot(result.DdagD_source, result.DdagD_source)))
     @test isfinite(result.force_norm)
     @test result.force_norm > 0
@@ -38,7 +41,9 @@ end
 end
 
 @testset "GeneralFermion apply_D! in all directions" begin
-    result = GeneralFermionAllDirectionsExample.run_all_directions()
+    process_grid = (ldo_test_comm_size(), 1, 1, 1)
+    result = GeneralFermionAllDirectionsExample.run_all_directions(;
+        process_grid, comm=LDO_TEST_COMM)
     @test isfinite(real(dot(result.DdagD_source, result.DdagD_source)))
     @test all(isfinite, result.force_norms)
     @test all(>(0), result.force_norms)
@@ -46,9 +51,11 @@ end
 
 @testset "GeneralFermionAction MPI Enzyme force" begin
     kappa = 0.1
+    process_grid = (ldo_test_comm_size(), 1, 1, 1)
 
     removed_parameters = Dict("Dirac_operator" => "GeneralDirac")
-    result = run_shift_defined_ad(; kappa)
+    result = run_shift_defined_ad(;
+        kappa, process_grid, comm=LDO_TEST_COMM)
     gauge = result.gauge
     source = result.source
 

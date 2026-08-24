@@ -5,7 +5,6 @@ using Enzyme # Load the optional automatic-differentiation extension.
 using Gaugefields
 using LatticeDiracOperators
 using LinearAlgebra
-using MPI
 using Random
 
 # A small Hermitian nearest-neighbour operator,
@@ -40,11 +39,12 @@ function apply_D!(result, U1, U2, U3, U4, source, fermion_temps, gauge_temps)
     return result
 end
 
-function run_quickstart(; seed=123)
-    MPI.Initialized() || MPI.Init()
-    number_of_processes = MPI.Comm_size(MPI.COMM_WORLD)
-    global_size = (2 * number_of_processes, 2, 2, 2)
-    process_grid = (number_of_processes, 1, 1, 1)
+function run_quickstart(;
+    seed=123,
+    process_grid=(1, 1, 1, 1),
+    comm=nothing,
+)
+    global_size = ntuple(direction -> 2 * process_grid[direction], 4)
 
     gauge = gauge_configuration(
         global_size;
@@ -52,6 +52,7 @@ function run_quickstart(; seed=123)
         halo=1,
         start=:cold,
         process_grid,
+        comm,
         verbose=0,
     )
 
@@ -63,6 +64,7 @@ function run_quickstart(; seed=123)
         process_grid;
         nw=1,
         numtemps=4,
+        comm0=comm,
     )
     gauss_distribution_fermion!(source)
     set_wing_fermion!(source)
@@ -88,14 +90,11 @@ function run_quickstart(; seed=123)
     force = similar(gauge)
     calc_UdSfdU!(force, action, gauge, source)
 
-    local_force_norm = sum(link -> sum(abs2, link.U.A), force)
-    force_norm = MPI.Allreduce(local_force_norm, +, MPI.COMM_WORLD)
+    force_norm = sum(link -> real(dot(link.U, link.U)), force)
     return (; action, gauge, source, DdagD_source, force, force_norm)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     result = run_quickstart()
-    if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-        println("AD force norm = ", result.force_norm)
-    end
+    println("AD force norm = ", result.force_norm)
 end

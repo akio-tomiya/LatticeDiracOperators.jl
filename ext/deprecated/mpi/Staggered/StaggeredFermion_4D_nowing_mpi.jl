@@ -47,6 +47,7 @@ struct StaggeredFermion_4D_nowing_mpi{NC} <: AbstractFermionfields_4D{NC}
         PEs;
         comm=MPI.COMM_WORLD,
     ) where {T<:Integer}
+        comm = prepare_communicator(comm)
         NG = 1
         NDW = 0
         NV = NX * NY * NZ * NT

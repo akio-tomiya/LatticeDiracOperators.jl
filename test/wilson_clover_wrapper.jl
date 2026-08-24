@@ -3,12 +3,11 @@ using JACC
 using LatticeDiracOperators
 using LatticeMatrices
 using LinearAlgebra
-using MPI
 using Random
 using Test
 
 JACC.@init_backend
-MPI.Initialized() || MPI.Init()
+include(joinpath(@__DIR__, "test_communicator.jl"))
 
 const _LDO_DIRAC = LatticeDiracOperators.Dirac_operators
 
@@ -28,7 +27,7 @@ function _wilson_clover_wrapper_core(field)
 end
 
 @testset "WilsonClover MPILattice wrapper" begin
-    nprocs = MPI.Comm_size(MPI.COMM_WORLD)
+    nprocs = ldo_test_comm_size()
     global_size = (4 * nprocs, 4, 4, 4)
     process_grid = (nprocs, 1, 1, 1)
     Random.seed!(800)
@@ -161,8 +160,7 @@ end
     antihermitian = (force_matrix - force_matrix') / 2
     traceless_force = antihermitian - tr(antihermitian) * I / 3
     local_force_directional = -2 * real(tr(traceless_force * direction))
-    force_directional = MPI.Allreduce(
-        local_force_directional, +, MPI.COMM_WORLD)
+    force_directional = ldo_test_allreduce_sum(local_force_directional)
     @test isapprox(
         force_directional, finite_difference; atol=2e-5, rtol=2e-4)
 end
