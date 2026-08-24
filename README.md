@@ -9,7 +9,9 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.1
 as its standard backend.
 
-Version 1.0.1 adds Gaugefields MD-driver integration (including stout-smeared fermions) and corrected Z4 noise. See [changes.md](changes.md) for details.
+Version 1.0.2 adds stout-smearing support to the pseudofermion MD driver. See [changes.md](changes.md) for details.
+
+Version 1.0.1 adds Gaugefields MD-driver integration and corrected Z4 noise. See [changes.md](changes.md) for details.
 
 The package supports Julia 1.11 and 1.12, threaded CPU execution, MPI domain
 decomposition, and the GPU backends provided by JACC and LatticeMatrices.
@@ -147,6 +149,442 @@ clover_force = calc_UdSfdU(clover_action, U, x)
 Wilson--clover application, inversion, and force evaluation use the analytic
 LatticeMatrices pullback and do not require an automatic-differentiation
 package.
+
+### HMC with and without stout smearing
+
+The following examples show both supported styles:
+
+1. assemble the gauge update, gauge force, fermion force, Hamiltonian, and
+   Metropolis step explicitly, as in the historical README; or
+2. give the same gauge and fermion actions to the Gaugefields MD driver.
+
+The shared setup below uses a small lattice so it can be run as-is. The
+functions `conventional_hmc!` and `driver_hmc!` each perform one complete HMC
+trajectory. The fixed `accept_uniform` makes the example reproducible; a
+production application should draw one uniform random number per trajectory.
+
+```julia
+# README_V1_HMC_COMMON
+import JACC
+JACC.@init_backend
+
+using Gaugefields
+using LatticeDiracOperators
+using LinearAlgebra
+
+function wilson_hmc_setup(; stout=false)
+    U = gauge_configuration(
+        (2, 2, 2, 2);
+        colors=2,
+        halo=1,
+        start=:hot,
+        seed=UInt64(0x10203040),
+        process_grid=(1, 1, 1, 1),
+        verbose=0,
+    )
+
+    gauge_action = GaugeAction(U)
+    plaquettes = make_loops_fromname("plaquette", Dim=4)
+    append!(plaquettes, plaquettes')
+    push!(gauge_action, 0.95, plaquettes)
+
+    field = Initialize_pseudofermion_fields(U[1], "Wilson")
+    parameters = Dict{String,Any}(
+        "Dirac_operator" => "Wilson",
+        "κ" => 0.08,
+        "eps_CG" => 1e-11,
+        "MaxCGstep" => 2000,
+        "verbose_level" => 0,
+    )
+    D = Dirac_operator(U, field, parameters)
+
+    smearing = if stout
+        network = CovNeuralnet(U)
+        push!(network, STOUT_Layer(["plaquette"], [0.1], U))
+        network
+    else
+        nothing
+    end
+    action = FermiAction(
+        D,
+        Dict("Nf" => 2);
+        covneuralnet=smearing,
+    )
+    return U, gauge_action, action, similar(field), similar(field), smearing
+end
+
+function conventional_workspace(U)
+    return (
+        gauge_derivative=similar(U[1]),
+        gauge_product=similar(U[1]),
+        raw_fermion_derivative=map(similar, U),
+        smeared_derivative=map(similar, U),
+        thin_derivative=map(similar, U),
+        conversion=similar(U[1]),
+        exponential=similar(U[1]),
+        link_product=similar(U[1]),
+        exponential_temps=[similar(U[1]), similar(U[1])],
+        gauge_force=initialize_TA_Gaugefields(U),
+        fermion_force=initialize_TA_Gaugefields(U),
+    )
+end
+
+fermion_links(U, ::Nothing) = U
+fermion_links(U, smearing) = first(calc_smearedU(U, smearing))
+
+function conventional_gauge_force!(force, gauge_action, U, workspace)
+    factor = -1 / U[1].NC
+    for direction in eachindex(U)
+        calc_dSdUμ!(
+            workspace.gauge_derivative,
+            gauge_action,
+            direction,
+            U,
+        )
+        mul!(
+            workspace.gauge_product,
+            U[direction],
+            workspace.gauge_derivative,
+        )
+        clear_U!(force[direction])
+        Traceless_antihermitian_add!(
+            force[direction],
+            factor,
+            workspace.gauge_product,
+        )
+    end
+    return nothing
+end
+
+function conventional_fermion_force!(
+    force,
+    action,
+    U,
+    pseudofermion,
+    ::Nothing,
+    workspace,
+)
+    calc_UdSfdU!(
+        workspace.raw_fermion_derivative,
+        action,
+        U,
+        pseudofermion,
+    )
+    for direction in eachindex(U)
+        clear_U!(force[direction])
+        Traceless_antihermitian_add!(
+            force[direction],
+            -1,
+            workspace.raw_fermion_derivative[direction],
+        )
+    end
+    return nothing
+end
+
+function conventional_fermion_force!(
+    force,
+    action,
+    U,
+    pseudofermion,
+    smearing,
+    workspace,
+)
+    Uout, link_history, _ = calc_smearedU(U, smearing)
+    calc_UdSfdU!(
+        workspace.raw_fermion_derivative,
+        action,
+        Uout,
+        pseudofermion,
+    )
+    for direction in eachindex(U)
+        mul!(
+            workspace.smeared_derivative[direction],
+            Uout[direction]',
+            workspace.raw_fermion_derivative[direction],
+        )
+    end
+    back_prop!(
+        workspace.thin_derivative,
+        workspace.smeared_derivative,
+        smearing,
+        link_history,
+        U,
+    )
+    for direction in eachindex(U)
+        mul!(
+            workspace.conversion,
+            U[direction],
+            workspace.thin_derivative[direction],
+        )
+        clear_U!(force[direction])
+        Traceless_antihermitian_add!(
+            force[direction],
+            -1,
+            workspace.conversion,
+        )
+    end
+    return nothing
+end
+
+function conventional_update_links!(U, momenta, step_size, workspace)
+    for direction in eachindex(U)
+        exptU!(
+            workspace.exponential,
+            step_size,
+            momenta[direction],
+            workspace.exponential_temps,
+        )
+        mul!(
+            workspace.link_product,
+            workspace.exponential,
+            U[direction],
+        )
+        substitute_U!(U[direction], workspace.link_product)
+    end
+    return nothing
+end
+
+function conventional_update_momenta!(
+    momenta,
+    U,
+    step_size,
+    gauge_action,
+    action,
+    pseudofermion,
+    smearing,
+    workspace,
+)
+    conventional_gauge_force!(workspace.gauge_force, gauge_action, U, workspace)
+    conventional_fermion_force!(
+        workspace.fermion_force,
+        action,
+        U,
+        pseudofermion,
+        smearing,
+        workspace,
+    )
+    for direction in eachindex(U)
+        add_U!(
+            momenta[direction],
+            step_size,
+            workspace.gauge_force[direction],
+        )
+        add_U!(
+            momenta[direction],
+            step_size,
+            workspace.fermion_force[direction],
+        )
+    end
+    return nothing
+end
+
+function conventional_hamiltonian(
+    U,
+    momenta,
+    gauge_action,
+    action,
+    pseudofermion,
+    smearing,
+)
+    gauge = -real(evaluate_GaugeAction(gauge_action, U)) / U[1].NC
+    fermion = real(evaluate_FermiAction(
+        action,
+        fermion_links(U, smearing),
+        pseudofermion,
+    ))
+    return gauge + real(momenta * momenta) / 2 + fermion
+end
+
+function conventional_hmc!(
+    U,
+    gauge_action,
+    action,
+    pseudofermion,
+    noise,
+    smearing;
+    steps=1,
+    trajectory_length=0.002,
+    accept_uniform=0.5,
+)
+    gauss_sampling_in_action!(
+        noise,
+        fermion_links(U, smearing),
+        action;
+        seed=0x314159,
+        sweep=1,
+        subgroup=1,
+    )
+    sample_pseudofermions!(
+        pseudofermion,
+        fermion_links(U, smearing),
+        action,
+        noise,
+    )
+    momenta = gaussian_momenta(
+        U;
+        seed=UInt64(0x55667788),
+        sweep=1,
+    )
+    old_links = map(similar, U)
+    substitute_U!(old_links, U)
+    workspace = conventional_workspace(U)
+    initial_hamiltonian = conventional_hamiltonian(
+        U,
+        momenta,
+        gauge_action,
+        action,
+        pseudofermion,
+        smearing,
+    )
+
+    step_size = trajectory_length / steps
+    for _ in 1:steps
+        conventional_update_links!(U, momenta, step_size / 2, workspace)
+        conventional_update_momenta!(
+            momenta,
+            U,
+            step_size,
+            gauge_action,
+            action,
+            pseudofermion,
+            smearing,
+            workspace,
+        )
+        conventional_update_links!(U, momenta, step_size / 2, workspace)
+    end
+
+    final_hamiltonian = conventional_hamiltonian(
+        U,
+        momenta,
+        gauge_action,
+        action,
+        pseudofermion,
+        smearing,
+    )
+    delta_hamiltonian = final_hamiltonian - initial_hamiltonian
+    probability = exp(-max(0, delta_hamiltonian))
+    accepted = accept_uniform < probability
+    accepted || substitute_U!(U, old_links)
+    return (; accepted, delta_hamiltonian)
+end
+
+function driver_hmc!(
+    U,
+    gauge_action,
+    action,
+    pseudofermion,
+    noise;
+    steps=1,
+    trajectory_length=0.002,
+    accept_uniform=0.5,
+)
+    fermion_md = PseudofermionMDAction(action, pseudofermion)
+    refresh_pseudofermion!(
+        fermion_md,
+        U,
+        noise;
+        seed=0x314159,
+        sweep=1,
+        subgroup=1,
+    )
+    actions = MDActionSet(; gauge=gauge_action, fermion=fermion_md)
+    driver = md_driver(
+        U,
+        actions;
+        steps,
+        trajectory_length,
+        integrator=QPQ(),
+    )
+    momenta = gaussian_momenta(
+        U;
+        seed=UInt64(0x55667788),
+        sweep=1,
+    )
+    old_links = map(similar, U)
+    substitute_U!(old_links, U)
+    diagnostics = md_trajectory!(U, momenta, driver)
+    probability = exp(-max(0, diagnostics.delta_hamiltonian))
+    accepted = accept_uniform < probability
+    accepted || substitute_U!(U, old_links)
+    return (; accepted, delta_hamiltonian=diagnostics.delta_hamiltonian)
+end
+```
+
+#### Conventional HMC without stout smearing
+
+Here the thin links are passed directly to the fermion action and force.
+
+```julia
+# README_V1_HMC_THIN_CONVENTIONAL
+U, gauge_action, action, phi, noise, smearing = wilson_hmc_setup(stout=false)
+thin_conventional = conventional_hmc!(
+    U,
+    gauge_action,
+    action,
+    phi,
+    noise,
+    smearing,
+)
+@assert isfinite(thin_conventional.delta_hamiltonian)
+```
+
+#### MD-driver HMC without stout smearing
+
+The physical ingredients are unchanged; `PseudofermionMDAction` supplies the
+fermion potential and force to `MDActionSet`.
+
+```julia
+# README_V1_HMC_THIN_DRIVER
+U, gauge_action, action, phi, noise, _ = wilson_hmc_setup(stout=false)
+thin_driver = driver_hmc!(U, gauge_action, action, phi, noise)
+@assert thin_driver.accepted == thin_conventional.accepted
+@assert isapprox(
+    thin_driver.delta_hamiltonian,
+    thin_conventional.delta_hamiltonian;
+    rtol=2e-10,
+    atol=2e-11,
+)
+```
+
+#### Conventional HMC with stout smearing
+
+This is the historical route. The fermion action is evaluated on `Uout`, and
+the derivative is returned to the thin links by `back_prop!` before the
+momentum update.
+
+```julia
+# README_V1_HMC_STOUT_CONVENTIONAL
+U, gauge_action, action, phi, noise, smearing = wilson_hmc_setup(stout=true)
+stout_conventional = conventional_hmc!(
+    U,
+    gauge_action,
+    action,
+    phi,
+    noise,
+    smearing,
+)
+@assert isfinite(stout_conventional.delta_hamiltonian)
+```
+
+#### MD-driver HMC with stout smearing
+
+No smearing calls are needed in the application loop. The two-argument
+`PseudofermionMDAction` constructor reads the smearing stored in
+`FermiAction`; the driver performs the same forward smearing and thin-link
+pullback internally.
+
+```julia
+# README_V1_HMC_STOUT_DRIVER
+U, gauge_action, action, phi, noise, _ = wilson_hmc_setup(stout=true)
+stout_driver = driver_hmc!(U, gauge_action, action, phi, noise)
+@assert stout_driver.accepted == stout_conventional.accepted
+@assert isapprox(
+    stout_driver.delta_hamiltonian,
+    stout_conventional.delta_hamiltonian;
+    rtol=2e-9,
+    atol=2e-10,
+)
+```
 
 ### HISQ
 

@@ -8,6 +8,15 @@ const README_MARKERS = (
     "# README_V1_DOMAIN_WALL",
 )
 
+const README_HMC_COMMON = "# README_V1_HMC_COMMON"
+
+const README_HMC_MARKERS = (
+    "# README_V1_HMC_THIN_CONVENTIONAL",
+    "# README_V1_HMC_THIN_DRIVER",
+    "# README_V1_HMC_STOUT_CONVENTIONAL",
+    "# README_V1_HMC_STOUT_DRIVER",
+)
+
 function contains_parse_error(expr)
     expr isa Expr || return false
     expr.head in (:error, :incomplete) && return true
@@ -33,7 +42,8 @@ end
 
 @testset "README v1 examples" begin
     blocks = readme_julia_blocks()
-    @test length(blocks) == length(README_MARKERS)
+    @test length(blocks) ==
+          length(README_MARKERS) + length(README_HMC_MARKERS) + 1
 
     @testset "all Julia blocks parse" begin
         for (index, block) in enumerate(blocks)
@@ -58,6 +68,25 @@ end
             process = run(ignorestatus(command))
             @test process.exitcode == 0
         end
+
+        common = readme_block_containing(blocks, README_HMC_COMMON)
+        hmc_examples = join(
+            (
+                readme_block_containing(blocks, marker)
+                for marker in README_HMC_MARKERS
+            ),
+            "\n",
+        )
+        checked_hmc = common * "\n" * hmc_examples * """
+
+        @assert Base.get_extension(
+            LatticeDiracOperators,
+            :LatticeDiracOperatorsEnzymeExt,
+        ) === nothing
+        """
+        command = `$(Base.julia_cmd()) --startup-file=no --project=$(project_directory) -e $(checked_hmc)`
+        process = run(ignorestatus(command))
+        @test process.exitcode == 0
     end
 end
 
