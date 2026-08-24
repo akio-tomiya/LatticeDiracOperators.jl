@@ -121,12 +121,11 @@ Use a distinct `subgroup` (or seed) for each pseudofermion action term.
 | Action | Force route |
 | --- | --- |
 | Wilson | analytic |
-| Wilson--clover | analytic LM link pullback |
+| Wilson--clover | analytic |
 | Staggered | analytic |
-| HISQ | analytic LM thin-link pullback |
+| HISQ | analytic |
 | Shamir/Möbius/generalized domain wall | analytic |
 | GeneralFermion callbacks | automatic differentiation |
 
 Enzyme is a weak dependency used by the `GeneralFermionAction` callback force
-route. Standard Wilson--clover forces use the analytic LatticeMatrices
-pullback.
+route.
