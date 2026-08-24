@@ -35,6 +35,8 @@ gauss_sampling_in_action!
 sample_pseudofermions!
 calc_UdSfdU
 calc_UdSfdU!
+PseudofermionMDAction
+refresh_pseudofermion!
 ```
 
 ## User-defined operators

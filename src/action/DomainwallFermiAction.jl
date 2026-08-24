@@ -364,10 +364,11 @@ end
 function gauss_sampling_in_action!(
     η::AbstractFermionfields,
     U,
-    fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge},
+    fermi_action::DomainwallFermiAction{Dim,Dirac,fermion,gauge};
+    kwargs...,
 ) where {Dim,Dirac,fermion,gauge}
     #gauss_distribution_fermion!(η)
-    gauss_distribution_fermion!(η, rand)
+    gauss_distribution_fermion!(η; kwargs...)
 end
 
 

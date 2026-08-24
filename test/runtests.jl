@@ -18,6 +18,9 @@ import LatticeMatrices
 
     include("readme_examples.jl")
 
+    include("z4_noise.jl")
+    include("pseudofermion_md_action.jl")
+
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
         include("wilson_clover_wrapper.jl")

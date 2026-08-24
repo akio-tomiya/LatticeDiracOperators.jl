@@ -26,4 +26,6 @@ const _DIRAC = LatticeDiracOperators.Dirac_operators
     # Compatibility names remain bound after moving their implementations.
     @test _LDO.WilsonFermion_4D_wing === _DIRAC.WilsonFermion_4D_wing
     @test isdefined(_LDO, :Wilson_Dirac_operator_faster)
+    @test isdefined(_LDO, :PseudofermionMDAction)
+    @test isdefined(_LDO, :refresh_pseudofermion!)
 end

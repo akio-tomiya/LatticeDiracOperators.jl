@@ -176,21 +176,23 @@ end
 function gauss_sampling_in_action!(
     η::AbstractFermionfields,
     U,
-    fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf},
+    fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf};
+    kwargs...,
 ) where {Dim,Dirac,fermion,gauge,Nf}
-    gauss_distribution_fermion!(η)
+    gauss_distribution_fermion!(η; kwargs...)
 end
 
 function gauss_sampling_in_action!(
     η::AbstractFermionfields,
     U,
-    fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,gauge,4},
+    fermi_action::StaggeredFermiAction{Dim,Dirac,fermion,gauge,4};
+    kwargs...,
 ) where {Dim,Dirac,fermion,gauge}
     evensite = false
     W = fermi_action.diracoperator(U)
     temp, it_temp = get_temp(fermi_action._temporary_fermionfields)
     #temp = fermi_action._temporary_fermionfields[1]
-    gauss_distribution_fermion!(η)
+    gauss_distribution_fermion!(η; kwargs...)
     mul!(temp, W', η)
     clear_fermion!(temp, evensite)
     solve_DinvX!(η, W', temp)

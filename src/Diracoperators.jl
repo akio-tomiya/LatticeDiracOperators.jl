@@ -1,5 +1,7 @@
 module Dirac_operators
 using MPI
+using JACC
+using Random
 import LatticeMatrices
 import Gaugefields.Temporalfields_module: Temporalfields, unused!, get_temp
 
@@ -110,6 +112,18 @@ end
 
 const default_eps_CG = 1e-19
 const default_MaxCGstep = 3000
+const _PSEUDOFERMION_STREAM_TAG = UInt32(0x50464552)
+
+function _shared_fermion_noise_seed(lattice, seed)
+    root_seed = if MPI.Comm_rank(lattice.comm) == 0
+        seed === nothing ? rand(UInt64) : UInt64(seed)
+    else
+        UInt64(0)
+    end
+    seed_buffer = Ref(root_seed)
+    MPI.Bcast!(seed_buffer, 0, lattice.comm)
+    return seed_buffer[]
+end
 
 
 include("./AbstractFermions.jl")
@@ -119,6 +133,8 @@ include("./DomainwallFermion/DomainwallFermion.jl")
 include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
 include("./GeneralizedDomainwallFermion/GeneralizedDomainwallFermion.jl")
 include("./GeneralFermion/generalFermion.jl")
+
+include("./Z4Noise.jl")
 
 
 include("./action/FermiAction.jl")

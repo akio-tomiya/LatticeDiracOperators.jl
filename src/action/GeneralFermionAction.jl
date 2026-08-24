@@ -59,11 +59,12 @@ end
 function gauss_sampling_in_action!(
     η::GeneralFermion,
     U,
-    fermi_action::GeneralFermionAction,
+    fermi_action::GeneralFermionAction;
+    kwargs...,
 )
     #gauss_distribution_fermion!(η)
     #gauss_distribution_fermion!(η, rand)
-    gauss_distribution_fermion!(η)
+    gauss_distribution_fermion!(η; kwargs...)
 end
 
 

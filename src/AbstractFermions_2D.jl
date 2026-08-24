@@ -1143,17 +1143,13 @@ function Z4_distribution_fermi!(x::AbstractFermionfields_2D{NC}) where {NC}
     #NZ = x.NZ
     NT = x.NT
     n6 = size(x.f)[4]
-    θ = 0.0
-    N::Int32 = 4
-    Ninv = Float64(1 / N)
     for ialpha = 1:n6
         for it = 1:NT
             #for iz=1:NZ
             #for iy=1:NY
             for ix = 1:NX
                 @inbounds @simd for ic = 1:NC
-                    θ = Float64(rand(0:N-1)) * π * Ninv # r \in [0,π/4,2π/4,3π/4]
-                    x[ic, ix, iy, iz, it, ialpha] = cos(θ) + im * sin(θ)
+                    x[ic, ix, it, ialpha] = _z4_root(rand(0:3))
                 end
             end
             #end
