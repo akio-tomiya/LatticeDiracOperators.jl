@@ -74,8 +74,8 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
-      - name: Instantiate with Enzyme
-        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(name="Enzyme", version="0.13"))'
+      - name: Instantiate with MPI and Enzyme
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add([PackageSpec(name="MPI", version="0.20"), PackageSpec(name="Enzyme", version="0.13")])'
       - name: Run two-rank MPI tests
         run: julia --startup-file=no --project=. test/runtests_mpi.jl
 
