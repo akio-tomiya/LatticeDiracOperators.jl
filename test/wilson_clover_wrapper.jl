@@ -30,11 +30,10 @@ end
     nprocs = ldo_test_comm_size()
     global_size = (4 * nprocs, 4, 4, 4)
     process_grid = (nprocs, 1, 1, 1)
-    Random.seed!(800)
     gauge = Initialize_Gaugefields(
         3, 1, global_size...;
         condition="hot", isMPILattice=true, PEs=process_grid,
-        verbose_level=0,
+        verbose_level=0, seed=800,
     )
     source = Initialize_pseudofermion_fields(gauge[1], "Wilson")
     rng = Random.MersenneTwister(801)
@@ -83,7 +82,7 @@ end
     replacement = Initialize_Gaugefields(
         3, 1, global_size...;
         condition="hot", isMPILattice=true, PEs=process_grid,
-        verbose_level=0,
+        verbose_level=0, seed=802,
     )
     cache_epoch_before = halo_epochs(operator.D.clover[1]).core
     substitute_U!(gauge[1], replacement[1])
