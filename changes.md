@@ -1,5 +1,11 @@
 # Changes
 
+## v1.1.1
+
+- Allow the LatticeMatrices HISQ wrapper to use its generic-color U(N)
+  projection for SU(N), while retaining color-dimension consistency checks.
+- Accept Wilsonloop.jl v1 in addition to v0.1.5.
+
 ## v1.1.0
 
 - Made MPI.jl a weak dependency. Serial CPU and single-GPU applications can

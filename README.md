@@ -9,6 +9,8 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.2
 as its standard backend.
 
+Version 1.1.1 enables HISQ for SU(N); see [changes.md](changes.md).
+
 Version 1.1.0 makes MPI.jl optional. Serial CPU and single-GPU calculations no
 longer install or load MPI. See [changes.md](changes.md) for details.
 

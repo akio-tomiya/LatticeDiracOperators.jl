@@ -64,8 +64,8 @@ not be used to choose a v1 backend.
 | `"mass"` | required | required | fermion mass |
 | `"naik_epsilon"` | unused | `0.0` | species-dependent Naik correction |
 
-HISQ currently requires `NC=3`. Operator application supports `halo=0` or
-`halo>=3`; its dynamical force requires `halo>=3`.
+HISQ supports SU(N). Operator application supports `halo=0` or `halo>=3`;
+its dynamical force requires `halo>=3`.
 
 ## Domain wall
 

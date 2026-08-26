@@ -29,8 +29,8 @@ constructing the operator.
 
 ## HISQ
 
-HISQ requires `NC=3`. Use a halo of at least three for dynamical force
-calculations:
+HISQ supports SU(N). Use a halo of at least three for dynamical force
+calculations (this example uses SU(3)):
 
 ```julia
 U_hisq = gauge_configuration(
@@ -61,7 +61,7 @@ force_hisq = calc_UdSfdU(action_hisq, U_hisq, x_hisq)
 ```
 
 The standard HISQ force uses the analytic LatticeMatrices pullback.
-LatticeMatrices owns both Fat7 levels, U(3) reunitarization, the Lepage
+LatticeMatrices owns both Fat7 levels, U(N) reunitarization, the Lepage
 correction, Naik links, the cached stencil, and the thin-link pullback. LDO
 converts the thin-link gradient to its standard force convention.
 

@@ -99,15 +99,15 @@ Sf = evaluate_FermiAction(action, U, x)
 force = calc_UdSfdU(action, U, x)
 ```
 
-LatticeMatrices owns the two Fat7 levels, U(3) reunitarization, Lepage
+LatticeMatrices owns the two Fat7 levels, U(N) reunitarization, Lepage
 correction, Naik links, Dirac stencil, derived-link cache, and the analytic
 `hisq_link_pullback!`. LDO owns the standard operator/action API and converts
 the thin-link gradient to its existing `U * (dS/dU)'` force convention. The
 ordinary one-link staggered force is never used for a HISQ operator.
 
-The operator supports `halo=0` as a serial/fallback stencil, but dynamical
-HISQ force evaluation requires `halo>=3`.  The complete construction currently
-requires `NC=3`.  The operator cache is deliberately shared by the lightweight
+The operator supports any `NC>=2` and `halo=0` as a serial/fallback stencil,
+but dynamical HISQ force evaluation requires `halo>=3`. The operator cache is
+deliberately shared by the lightweight
 objects returned from `D(U)` and is intended for serial use within one action;
 create a separate Dirac operator when applying the same action concurrently.
 

@@ -197,6 +197,23 @@ end
     @test_throws ArgumentError Dirac_operator(
         short_halo_gauge, short_halo_source, parameters)
 
+    for colors in (2, 4)
+        generic_gauge = gauge_configuration(
+            global_size;
+            colors,
+            halo=3,
+            start=:cold,
+            process_grid,
+        )
+        generic_source = Initialize_pseudofermion_fields(
+            generic_gauge[1], "staggered")
+        generic_operator = Dirac_operator(
+            generic_gauge, generic_source, parameters)
+        generic_result = similar(generic_source)
+        mul!(generic_result, generic_operator, generic_source)
+        @test isfinite(real(dot(generic_result, generic_result)))
+    end
+
     wrong_color_gauge = gauge_configuration(
         global_size;
         colors=2,
@@ -204,10 +221,8 @@ end
         start=:cold,
         process_grid,
     )
-    wrong_color_source = Initialize_pseudofermion_fields(
-        wrong_color_gauge[1], "staggered")
     @test_throws ArgumentError Dirac_operator(
-        wrong_color_gauge, wrong_color_source, parameters)
+        wrong_color_gauge, source, parameters)
 
     if nprocs == 1
         expect_no_enzyme = lowercase(get(

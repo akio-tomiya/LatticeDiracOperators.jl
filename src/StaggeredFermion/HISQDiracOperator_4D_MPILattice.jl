@@ -26,9 +26,11 @@ struct HISQ_Dirac_operator_MPILattice{
 end
 
 function _validate_hisq_wrapper_geometry(U, x::StaggeredFermion_4D_MPILattice)
-    x.NC == 3 || throw(ArgumentError("HISQ currently requires NC=3"))
     links = _staggered_lm_links(U)
     reference = links[1]
+    x.NC == reference.NC1 && x.NC == reference.NC2 ||
+        throw(ArgumentError(
+            "the HISQ fermion field and thin gauge links must have the same number of colors"))
     x.f.gsize == reference.gsize && x.f.PN == reference.PN &&
         x.f.dims == reference.dims && x.f.nw == reference.nw ||
         throw(ArgumentError(
@@ -49,8 +51,9 @@ function _validate_hisq_replacement_geometry(
         current.dims == replacement.dims && current.nw == replacement.nw ||
         throw(ArgumentError(
             "replacement HISQ thin links must preserve the operator lattice geometry"))
-    replacement.NC1 == 3 && replacement.NC2 == 3 ||
-        throw(ArgumentError("HISQ currently requires NC=3"))
+    replacement.NC1 == current.NC1 && replacement.NC2 == current.NC2 ||
+        throw(ArgumentError(
+            "replacement HISQ thin links must preserve the operator color dimension"))
     return links
 end
 
