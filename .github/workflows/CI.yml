@@ -91,3 +91,18 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
+
+  legacy-long-running:
+    name: Legacy long-running HMC · Julia 1.11
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+      - uses: julia-actions/cache@v2
+      - name: Instantiate test dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+      - name: Run legacy long-running HMC tests
+        run: julia --startup-file=no --project=. test/runtests_legacy.jl

@@ -5,6 +5,10 @@
 - Allow the LatticeMatrices HISQ wrapper to use its generic-color U(N)
   projection for SU(N), while retaining color-dimension consistency checks.
 - Accept Wilsonloop.jl v1 in addition to v0.1.5.
+- Keep the default full-package test focused on current CPU API regressions.
+  The exploratory multi-trajectory legacy HMC suites now live in
+  `test/runtests_legacy.jl` and run only in scheduled or manually dispatched
+  CI jobs; Enzyme-dependent tests remain covered by the dedicated Enzyme job.
 
 ## v1.1.0
 
