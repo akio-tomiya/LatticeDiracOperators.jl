@@ -1145,6 +1145,7 @@ struct RHMC #type for the rational Hybrid Monte Carlo
         lambda_low = 0.0004,
         lambda_high = 64,
         precision = 42,
+        verbose::Bool = false,
     )
         num = numerator(order)
         den = denominator(order)
@@ -1155,12 +1156,23 @@ struct RHMC #type for the rational Hybrid Monte Carlo
             lambda_low = lambda_low,
             lambda_high = lambda_high,
             precision = precision,
+            verbose = verbose,
         )
     end
 
-    function RHMC(y, z; n = 10, lambda_low = 0.0004, lambda_high = 64, precision = 42)
-        println("-------------------------------------------------------------")
-        println("RHMC mode!")
+    function RHMC(
+        y,
+        z;
+        n = 10,
+        lambda_low = 0.0004,
+        lambda_high = 64,
+        precision = 42,
+        verbose::Bool = false,
+    )
+        if verbose
+            println("-------------------------------------------------------------")
+            println("RHMC mode!")
+        end
 
         order = y // z # y/z
         num = numerator(order)
@@ -1233,7 +1245,9 @@ struct RHMC #type for the rational Hybrid Monte Carlo
             coeffs = coeffs_18_n10
             coeffs_inverse = coeffs_18_n10
         else
-            println("$y//$z with the order $n: coefficients for RHMC should be calculated")
+            verbose && println(
+                "$y//$z with the order $n: coefficients for RHMC should be calculated",
+            )
             coeff_plus, coeff_minus = calc_coefficients(
                 abs(num),
                 den,
@@ -1251,11 +1265,13 @@ struct RHMC #type for the rational Hybrid Monte Carlo
             end
         end
 
-        println("the coefficients for x^{$num/$den}: ")
-        display(coeffs)
-        println("the coefficients for x^{-$num/$den}: ")
-        display(coeffs_inverse)
-        println("-------------------------------------------------------------")
+        if verbose
+            println("the coefficients for x^{$num/$den}: ")
+            display(coeffs)
+            println("the coefficients for x^{-$num/$den}: ")
+            display(coeffs_inverse)
+            println("-------------------------------------------------------------")
+        end
 
         return new(num, den, coeffs, coeffs_inverse)
     end

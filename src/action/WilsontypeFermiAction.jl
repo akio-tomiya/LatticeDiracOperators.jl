@@ -16,12 +16,13 @@ struct Wilson_GeneralDirac_FermiAction{Dim,Dirac,fermion,gauge} <:
 
         num = 8
 
-        x = D._temporary_fermi[1]
+        x, it_x = get_temp(D._temporary_fermi)
         xtype = typeof(x)
         _temporary_fermionfields = Array{xtype,1}(undef, num)
         for i = 1:num
             _temporary_fermionfields[i] = similar(x)
         end
+        unused!(D._temporary_fermi, it_x)
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)

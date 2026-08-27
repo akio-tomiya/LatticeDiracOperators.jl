@@ -1,5 +1,20 @@
 # Changes
 
+## v1.1.2
+
+- Added `reset_trajectory_state!(::PseudofermionMDAction)` as the public hook
+  for clearing action-owned chronological solver guesses at trajectory
+  boundaries. Restarting applications no longer need to inspect LDO action
+  fields or Gaugefields temporary pools.
+- Clear pseudofermion refresh destinations before sampling. This removes the
+  dependence of standard and Möbius domain-wall refreshes on previous or
+  uninitialized field contents and enables bitwise trajectory restart.
+- Fixed leaked temporary-pool tokens in Wilson and domain-wall action
+  constructors, eliminating repeated `All blocks are used` warnings and
+  unintended growth of `PreallocatedArray` pools.
+- Made pretabulated RHMC coefficient construction quiet by default. Pass
+  `verbose=true` to `RHMC` to print the complete coefficient tables.
+
 ## v1.1.1
 
 - Allow the LatticeMatrices HISQ wrapper to use its generic-color U(N)

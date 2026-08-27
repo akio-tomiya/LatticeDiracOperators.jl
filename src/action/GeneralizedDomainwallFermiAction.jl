@@ -19,10 +19,10 @@ struct GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
     ) where {Dim}
         num = 10
         temps = get_temporaryvectors(D)
-        x = temps[1]
-        # x, it_x = get_temp(temps)
+        x, it_x = get_temp(temps)
         xtype = typeof(x)
         _temporary_fermionfields = Temporalfields(x; num)
+        unused!(temps, it_x)
         # _temporary_fermionfields = Array{xtype,1}(undef, num)
 
         # for i = 1:num
@@ -37,9 +37,6 @@ struct GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
         # for i = 1:numU
         #     _temporary_gaugefields[i] = similar(Utemp)
         # end
-
-        # unused!(temps, it_x)
-
 
         return new{Dim,typeof(D),xtype,Utype}(
             hascovnet,
