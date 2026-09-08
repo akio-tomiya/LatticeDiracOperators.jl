@@ -144,6 +144,6 @@ export clear_fermion!, add_fermion!
 
 include("PseudofermionMDAction.jl")
 
-export PseudofermionMDAction, refresh_pseudofermion!
+export PseudofermionMDAction, refresh_pseudofermion!, reset_trajectory_state!
 
 end

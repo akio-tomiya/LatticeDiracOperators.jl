@@ -5,7 +5,9 @@ using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices: gather_and_bcast_matrix
 using LinearAlgebra
+using Logging
 using Test
+import Gaugefields.Temporalfields_module: get_temp, unused!
 
 function _ldo_md_maximum_difference(left, right)
     return maximum(
@@ -16,6 +18,18 @@ end
 
 _ldo_md_global_links(U) = gather_and_bcast_matrix.(getproperty.(U, :U))
 _ldo_md_global_momenta(p) = gather_and_bcast_matrix.(getproperty.(p, :a))
+
+@testset "Pretabulated RHMC construction is quiet by default" begin
+    output = mktemp() do _, io
+        redirect_stdout(io) do
+            LatticeDiracOperators.Rhmc.RHMC(1 // 2; n=10)
+        end
+        flush(io)
+        seekstart(io)
+        return read(io, String)
+    end
+    @test isempty(output)
+end
 
 @testset "Stout MD action matches the legacy README path" begin
     # Keep the lattice, Wilson parameters, and single stout layer from the
@@ -177,6 +191,36 @@ end
         sweep=11,
         subgroup=1,
     ) === provider
+
+    temporary_pool = action._temporary_fermionfields
+    temporary_fields, temporary_tokens = get_temp(
+        temporary_pool,
+        length(temporary_pool),
+    )
+    try
+        substitute_fermion!(temporary_fields[1], pseudofermion)
+        @test maximum(
+            abs,
+            gather_and_bcast_matrix(temporary_fields[1].f),
+        ) > 0
+    finally
+        unused!(temporary_pool, temporary_tokens)
+    end
+    reset_result = @test_logs min_level=Logging.Warn reset_trajectory_state!(
+        provider,
+    )
+    @test reset_result === provider
+    cleared_fields, cleared_tokens = get_temp(
+        temporary_pool,
+        length(temporary_pool),
+    )
+    try
+        @test all(cleared_fields) do temporary
+            iszero(maximum(abs, gather_and_bcast_matrix(temporary.f)))
+        end
+    finally
+        unused!(temporary_pool, cleared_tokens)
+    end
 
     repeated_noise = similar(field)
     repeated_pseudofermion = similar(field)

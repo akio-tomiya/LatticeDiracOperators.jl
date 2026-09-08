@@ -19,9 +19,10 @@ struct MobiusDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
     ) where {Dim}
         num = 10
         temps = get_temporaryvectors(D)
-        x = temps[1]
+        x, it_x = get_temp(temps)
         xtype = typeof(x)
         _temporary_fermionfields = Temporalfields(x; num)
+        unused!(temps, it_x)
         #_temporary_fermionfields = Array{xtype,1}(undef, num)
         #for i = 1:num
         #    _temporary_fermionfields[i] = similar(x)

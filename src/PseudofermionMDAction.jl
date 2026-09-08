@@ -6,6 +6,7 @@ import Gaugefields:
     md_action_workspace,
     md_force!,
     md_potential
+import Gaugefields.Temporalfields_module: get_temp, unused!
 using LinearAlgebra: mul!
 
 """
@@ -42,6 +43,72 @@ PseudofermionMDAction(action, pseudofermion) = PseudofermionMDAction(
     _action_smearing(action),
 )
 
+function _clear_temporary_field!(field)
+    if applicable(clear_fermion!, field)
+        clear_fermion!(field)
+    elseif applicable(clear_U!, field)
+        clear_U!(field)
+    else
+        throw(ArgumentError(
+            "cannot clear temporary field of type $(typeof(field))",
+        ))
+    end
+    return field
+end
+
+function _clear_temporary_pool!(pool)
+    fields, tokens = get_temp(pool, length(pool))
+    try
+        foreach(_clear_temporary_field!, fields)
+    finally
+        unused!(pool, tokens)
+    end
+    return pool
+end
+
+function _clear_temporary_pool!(pool::AbstractVector)
+    foreach(_clear_temporary_field!, pool)
+    return pool
+end
+
+const _TRAJECTORY_WORKSPACE_CHILDREN = (
+    :diracoperator,
+    :dirac,
+    :parent,
+    :D5DW,
+    :D5DW_PV,
+    :wilsonoperator,
+)
+
+function _clear_trajectory_workspaces!(object)
+    for name in fieldnames(typeof(object))
+        value = getfield(object, name)
+        if startswith(String(name), "_temporary")
+            _clear_temporary_pool!(value)
+        elseif name in _TRAJECTORY_WORKSPACE_CHILDREN
+            _clear_trajectory_workspaces!(value)
+        end
+    end
+    return object
+end
+
+"""
+    reset_trajectory_state!(provider::PseudofermionMDAction)
+
+Reset action- and Dirac-operator-owned chronological solver guesses before a
+new pseudofermion trajectory. The pseudofermion itself is left unchanged.
+Applications that restart at trajectory boundaries can call this hook before
+[`refresh_pseudofermion!`](@ref), ensuring that a continuous run and a newly
+constructed runtime begin their next fermion solve from the same state.
+
+Temporary-field layout remains an LDO implementation detail; callers do not
+need to inspect action fields or Gaugefields temporary pools.
+"""
+function reset_trajectory_state!(provider::PseudofermionMDAction)
+    _clear_trajectory_workspaces!(provider.action)
+    return provider
+end
+
 struct PseudofermionMDWorkspace{D}
     derivative::D
 end
@@ -69,6 +136,8 @@ function refresh_pseudofermion!(
     noise;
     kwargs...,
 ) where {A,P}
+    clear_fermion!(noise)
+    clear_fermion!(provider.pseudofermion)
     gauss_sampling_in_action!(noise, U, provider.action; kwargs...)
     sample_pseudofermions!(
         provider.pseudofermion,
@@ -86,6 +155,8 @@ function refresh_pseudofermion!(
     kwargs...,
 ) where {A,P,S}
     smeared_links, _, _ = calc_smearedU(U, provider.smearing)
+    clear_fermion!(noise)
+    clear_fermion!(provider.pseudofermion)
     gauss_sampling_in_action!(
         noise,
         smeared_links,

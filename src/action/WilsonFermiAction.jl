@@ -30,7 +30,8 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
         #hascloverterm = check_parameters(parameters_action, "hascloverterm", false)
         numU = 2
         num = 6
-        NC = D._temporary_fermi[1].NC
+        x, it_x = get_temp(D._temporary_fermi)
+        NC = x.NC
         numbasis = NC^2 - 1
         if hascloverterm
             numU += 9 + 2numbasis
@@ -52,11 +53,9 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
 
 
 
-        #x = D._temporary_fermi[1]
-        x, it_x = get_temp(D._temporary_fermi)
-
         xtype = typeof(x)
         _temporary_fermionfields = Temporalfields(x; num)# Array{xtype,1}(undef, num)
+        unused!(D._temporary_fermi, it_x)
         #for i = 1:num
         #    _temporary_fermionfields[i] = similar(x)
         #end
