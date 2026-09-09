@@ -52,6 +52,7 @@ import .Dirac_operators:
     solve_DinvX!,
     SolverDiagnostics,
     FermiAction,
+    StaggeredFermiAction,
     shift_fermion,
     cg,
     bicg,
@@ -120,6 +121,7 @@ export DdagD_operator,
     solve_DinvX!,
     SolverDiagnostics,
     FermiAction,
+    StaggeredFermiAction,
     GeneralFermionAction
 export shift_fermion
 # Deprecated concrete field retained as a v1 compatibility export.

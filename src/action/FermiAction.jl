@@ -17,6 +17,7 @@ include("./MobiusDomainwallFermiAction.jl")
 include("./GeneralizedDomainwallFermiAction.jl")
 include("./WilsontypeFermiAction.jl")
 include("./GeneralFermionAction.jl")
+include("./LatticeStaggeredFermiAction.jl")
 
 function FermiAction(
     D::Dirac_operator{Dim},

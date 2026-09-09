@@ -95,6 +95,31 @@ struct StaggeredFermiAction{Dim,Dirac,fermion,gauge,Nf} <:
             _temporary_gaugefields,
         )
     end
+
+    function StaggeredFermiAction(
+        ::Val{:lattice_matrices},
+        D::Dirac,
+        x::fermion,
+        Utemp::gauge,
+        Nf::Int,
+        rhmc_info_for_action,
+        rhmc_info_for_MD,
+        num_fermion_temporaries::Int,
+    ) where {Dirac,fermion,gauge}
+        fermion_temporaries = Temporalfields(
+            x; num=num_fermion_temporaries)
+        gauge_temporaries = Temporalfields(Utemp; num=6)
+        return new{4,Dirac,fermion,gauge,Nf}(
+            false,
+            nothing,
+            D,
+            Nf,
+            rhmc_info_for_action,
+            rhmc_info_for_MD,
+            fermion_temporaries,
+            gauge_temporaries,
+        )
+    end
 end
 
 function evaluate_FermiAction(

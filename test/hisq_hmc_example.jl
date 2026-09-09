@@ -2,7 +2,7 @@ using Test
 
 include(joinpath(@__DIR__, "..", "examples", "HISQ_HMC_4x4.jl"))
 
-@testset "4^4 HISQ HMC through GeneralFermionAction" begin
+@testset "4^4 HISQ HMC through StaggeredFermiAction" begin
     result = HISQHMC4x4Example.run_hisq_hmc(;
         trajectories=1,
         mdsteps=1,

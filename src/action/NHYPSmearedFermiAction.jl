@@ -104,9 +104,10 @@ function md_force!(
         action.pseudofermion,
     )
 
-    # LDO's force convention is V * dS/dV. The nHYP pullback consumes a
-    # Frobenius cotangent G satisfying delta S = Re tr(G' * delta V), so
-    # G = (V' * (V * dS/dV))' = (V * dS/dV)' * V.
+    # LDO stores -1/2 of the usual link-gradient representation. Therefore
+    # F' * V is the same -1/2-scaled Frobenius cotangent. The nHYP pullback
+    # is linear, so retaining that scale produces the required LDO force on
+    # the thin links.
     for direction in eachindex(U)
         mul!(
             workspace.smeared_cotangent[direction],

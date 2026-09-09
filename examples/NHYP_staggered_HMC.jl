@@ -51,16 +51,23 @@ function run_nhyp_staggered_hmc(;
         verbose=0,
     )
     gauge = gauge_action(U, beta)
-    pseudofermion = Initialize_pseudofermion_fields(U[1], "staggered")
-    gaussian = similar(pseudofermion)
-    D = Dirac_operator(U, pseudofermion, Dict(
-        "Dirac_operator" => "staggered",
-        "mass" => mass,
-        "eps" => 1e-11,
-        "MaxCGstep" => 10_000,
-        "verbose_level" => 0,
-    ))
-    fermion = FermiAction(D, Dict("Nf" => Nf))
+    fermion_template = GeneralFermion(
+        3, 1, lattice, (1, 1, 1, 1);
+        nw=1,
+        phases=(1, 1, 1, -1),
+    )
+    pseudofermion = fermion_template
+    gaussian = similar(fermion_template)
+    fermion = StaggeredFermiAction(
+        U,
+        fermion_template;
+        mass,
+        Nf,
+        discretization=:staggered,
+        eps_CG=1e-11,
+        maxsteps=10_000,
+        verbose_level=0,
+    )
     fermion_md = NHYPSmearedFermiAction(
         fermion,
         pseudofermion;

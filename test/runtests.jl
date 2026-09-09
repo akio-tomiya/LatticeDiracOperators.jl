@@ -28,6 +28,8 @@ import LatticeMatrices
 
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
+        include("lattice_staggered_fermi_action.jl")
+        include("hisq_hmc_example.jl")
         include("wilson_clover_wrapper.jl")
         include("staggered_mpialattice.jl")
         withenv("LDO_TEST_EXPECT_NO_ENZYME" => "true") do
