@@ -22,6 +22,10 @@ import LatticeMatrices
     include("pseudofermion_md_action.jl")
     include("mpi_optional.jl")
 
+    @testset "nHYP staggered HMC" begin
+        include("nhyp_staggered_hmc.jl")
+    end
+
     if isdefined(LatticeMatrices, :D5DW_GeneralizedDomainwallOperator5D)
         include("latticematrices_backend.jl")
         include("wilson_clover_wrapper.jl")
