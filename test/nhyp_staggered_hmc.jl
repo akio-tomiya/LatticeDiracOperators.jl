@@ -9,6 +9,7 @@ function _nhyp_staggered_test_system(; zero_smearing=false)
         start=:hot,
         seed=UInt64(0x4e485950),
         process_grid=(1, 1, 1, 1),
+        comm=SerialCommunicator(),
         verbose=0,
     )
     gauge = GaugeAction(U)
@@ -140,4 +141,59 @@ end
         _nhyp_staggered_global_momenta(momentum),
         initial_momenta,
     ) < 2e-9
+end
+
+@testset "Generic analytically smeared staggered MD provider" begin
+    system = _nhyp_staggered_test_system()
+    for smearing in (APESmearing(), HYPSmearing())
+        exception = try
+            SmearedFermiAction(
+                system.fermion, system.pseudofermion, smearing)
+            nothing
+        catch caught
+            caught
+        end
+        @test exception isa ArgumentError
+        @test occursin(
+            "projection=:polar", sprint(showerror, exception))
+    end
+
+    for smearing in (
+        StoutSmearing(rho=0.07), HEXSmearing(),
+        APESmearing(alpha=0.5, projection=:polar),
+        HYPSmearing(projection=:polar),
+    )
+        action = SmearedFermiAction(
+            system.fermion,
+            system.pseudofermion,
+            smearing,
+        )
+        workspace = md_action_workspace(action, system.U)
+        Random.seed!(0x53564d44)
+        @test refresh_smeared_pseudofermions!(
+            system.gaussian,
+            action,
+            system.U,
+            workspace,
+        ) === system.pseudofermion
+        @test isfinite(md_potential(action, system.U, workspace))
+        force = gauge_momenta(system.U)
+        @test md_force!(force, action, system.U, workspace) === nothing
+        @test all(field -> all(isfinite, field.a.A), force)
+    end
+
+    action = SmearedFermiAction(
+        system.fermion,
+        system.pseudofermion,
+        StoutSmearing(rho=0.07),
+    )
+    actions = MDActionSet(gauge=system.gauge, fermion=action)
+    driver = md_driver(system.U, actions; steps=1)
+    Random.seed!(0x53565246)
+    @test refresh_smeared_pseudofermions!(
+        system.gaussian,
+        system.U,
+        driver,
+        :fermion,
+    ) === system.pseudofermion
 end

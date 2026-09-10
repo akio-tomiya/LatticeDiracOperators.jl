@@ -146,6 +146,7 @@ export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
 export clear_fermion!, add_fermion!
 export NHYPSmearedFermiAction, refresh_nhyp_pseudofermions!
+export SmearedFermiAction, refresh_smeared_pseudofermions!
 
 include("PseudofermionMDAction.jl")
 
