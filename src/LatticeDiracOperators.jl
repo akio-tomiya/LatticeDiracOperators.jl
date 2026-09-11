@@ -52,6 +52,7 @@ import .Dirac_operators:
     solve_DinvX!,
     SolverDiagnostics,
     FermiAction,
+    StaggeredFermiAction,
     shift_fermion,
     cg,
     bicg,
@@ -100,6 +101,8 @@ import .Dirac_operators:
     domainwall_residual_mass_correlator,
     WilsonFermion_4D_wing
 
+include("./action/NHYPSmearedFermiAction.jl")
+
 export GeneralFermion, DdagDgeneral
 export WilsonFermion_4D_MPILattice, StaggeredFermion_4D_MPILattice
 export DomainwallFermion_5D_MPILattice,
@@ -118,6 +121,7 @@ export DdagD_operator,
     solve_DinvX!,
     SolverDiagnostics,
     FermiAction,
+    StaggeredFermiAction,
     GeneralFermionAction
 export shift_fermion
 # Deprecated concrete field retained as a v1 compatibility export.
@@ -141,6 +145,8 @@ export uniform_distribution_fermion!, γ5D
 export convert_to_normalvector
 export save_fermionfield, load_fermionfield!
 export clear_fermion!, add_fermion!
+export NHYPSmearedFermiAction, refresh_nhyp_pseudofermions!
+export SmearedFermiAction, refresh_smeared_pseudofermions!
 
 include("PseudofermionMDAction.jl")
 

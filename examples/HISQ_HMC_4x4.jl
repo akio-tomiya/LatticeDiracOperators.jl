@@ -3,7 +3,6 @@ module HISQHMC4x4Example
 import JACC
 JACC.@init_backend
 
-using Enzyme
 using Gaugefields
 using LatticeDiracOperators
 using LatticeMatrices
@@ -14,44 +13,6 @@ const DIM = 4
 const NC = 3
 const LATTICE_SIZE = (4, 4, 4, 4)
 const PROCESS_GRID = (1, 1, 1, 1)
-
-"""Callable wrapper used by `GeneralFermionAction` for the cached HISQ operator."""
-struct ApplyHISQ{Adjoint,C}
-    cache::C
-end
-
-ApplyHISQ{Adjoint}(cache::C) where {Adjoint,C} =
-    ApplyHISQ{Adjoint,C}(cache)
-
-function (apply::ApplyHISQ{false})(
-    result, U1, U2, U3, U4, source, fermion_temps, gauge_temps,
-)
-    mul_cached_hisq!(
-        result.field,
-        apply.cache,
-        U1.U,
-        U2.U,
-        U3.U,
-        U4.U,
-        source.field,
-    )
-    return result
-end
-
-function (apply::ApplyHISQ{true})(
-    result, U1, U2, U3, U4, source, fermion_temps, gauge_temps,
-)
-    mul_cached_hisq_adjoint!(
-        result.field,
-        apply.cache,
-        U1.U,
-        U2.U,
-        U3.U,
-        U4.U,
-        source.field,
-    )
-    return result
-end
 
 function gauge_action(U, beta)
     action = GaugeAction(U)
@@ -117,7 +78,8 @@ function trajectory!(
     gauss_distribution!(momentum)
     gauss_sampling_in_action!(gaussian_fermion, U, fermion)
     sample_pseudofermions!(pseudofermion, U, fermion, gaussian_fermion)
-    old_fermion_action = real(dot(gaussian_fermion, gaussian_fermion))
+    old_fermion_action = evaluate_FermiAction(
+        fermion, U, pseudofermion)
 
     substitute_U!(old_U, U)
     old_hamiltonian = hamiltonian(gauge, U, momentum, old_fermion_action)
@@ -148,9 +110,8 @@ end
 """
     run_hisq_hmc(; kwargs...)
 
-Run a small, single-process HISQ HMC demonstration on a fixed `4^4` lattice.
-The pseudofermion action is `phi' * (D' * D)^(-1) * phi`; it is an unrooted
-HISQ example, not a physical rooted `2+1`-flavor simulation.
+Run a small, single-process four-flavor HISQ HMC demonstration on a fixed
+`4^4` lattice using the analytic `StaggeredFermiAction` force.
 """
 function run_hisq_hmc(;
     trajectories=1,
@@ -194,19 +155,13 @@ function run_hisq_hmc(;
         elementtype=ComplexF64,
         comm0=communicator,
     )
-    cache = HISQDiracCache4D([link.U for link in U], mass; naik_epsilon)
-    apply_D = ApplyHISQ{false}(cache)
-    apply_Ddag = ApplyHISQ{true}(cache)
-    numtemp = 8
-    fermion = GeneralFermionAction(
+    fermion = StaggeredFermiAction(
         U,
-        fermion_template,
-        apply_D,
-        apply_Ddag;
-        numtemp,
-        num=12,
-        numcg=12,
-        numg=2numtemp + 2,
+        fermion_template;
+        mass,
+        Nf=4,
+        discretization=:hisq,
+        naik_epsilon,
         eps_CG,
         maxsteps,
         verbose_level=0,

@@ -9,6 +9,9 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.2
 as its standard backend.
 
+Version 1.1.3 adds analytic staggered/HISQ actions and native APE,
+stout/EXP, HYP, HEX, and nHYP-smeared fermion HMC; see [changes.md](changes.md).
+
 Version 1.1.2 adds a public trajectory-state reset hook for portable HMC
 restart; see [changes.md](changes.md).
 
