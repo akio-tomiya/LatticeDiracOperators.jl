@@ -1,5 +1,56 @@
 # Changes
 
+## v1.1.4
+
+### Generalized domain-wall even/odd preconditioning
+
+- Added opt-in four-dimensional even/odd (EO) preconditioning for
+  LatticeMatrices-backed `GeneralizedDomainwall` operators through
+  `"evenodd" => true`, including nonuniform fifth-direction coefficients
+  `as`, `bs`, and `cs`.
+- Implemented the normalized even Schur operator and its adjoint, diagonal
+  block inverses, and full-solution reconstruction for forward and adjoint
+  solves with CG, BiCG, and BiCGStab. Public operator multiplication retains
+  the full domain-wall operator. CG is also supported for non-EO solves.
+- Used the same Schur determinant ratio for pseudofermion refresh, action
+  evaluation, analytic gauge forces, and momentum updates. The omitted
+  diagonal determinant factors are independent of the gauge field.
+- Reduced intermediate halo synchronization in EO hopping and Krylov vector
+  operations while keeping public matvec and successful solve outputs
+  synchronized. MPI parity handling supports odd local extents when the
+  global physical extents are even.
+- Retained full field storage and the existing default without EO. EO
+  requires even global extents in all four physical directions, a fully
+  local fifth direction, and a fifth-direction boundary phase of one.
+
+### Regression tests and validation
+
+- Consolidated CPU, GPU, and MPI numerical checks in `test/domainwall_eo.jl`,
+  covering block inverses, Schur operators, solver reconstruction,
+  pseudofermion actions, force finite differences, and halo correctness.
+  MPI tests compare distributed results with an undistributed reference.
+- Added 44 independent dense-reference assertions for single-process runs,
+  covering the Schur operator and its adjoint, full forward/adjoint
+  solutions, the action, and gauge independence of the omitted determinant
+  factors for colors 1 and 3, fifth extents 1 and 2, nonuniform coefficients,
+  and a complex boundary phase.
+- Added `test/eo/run_cuda.jl` to require a functional CUDA backend, disable
+  scalar indexing, verify GPU storage, and report the selected device after
+  MPI rank-to-device assignment.
+- Passed 570/570 assertions with the integrated CPU runner and passed the
+  common runner on both CPU MPI ranks. Verified that the CUDA entry point
+  rejects the Threads backend.
+- Earlier H100 NVL validation of the same production implementation passed
+  534/534 single-GPU assertions and 44/44 separate dense-reference
+  assertions. Two MPI ranks sharing one H100 passed 489/489 and 465/465
+  assertions with host-staged communication. These results predate the
+  consolidated CUDA entry point; distinct-GPU and device-direct MPI
+  communication were not exercised.
+- These focused checks do not cover the full package suite, long HMC
+  trajectories, or production performance. See
+  [the EO test documentation](test/eo/README.md) for configurations,
+  commands, numerical errors, and validation dates.
+
 ## v1.1.3
 
 ### Native-smeared fermion HMC
