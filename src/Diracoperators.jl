@@ -138,6 +138,7 @@ include("./WilsonFermion/WilsonFermion.jl")
 include("./DomainwallFermion/DomainwallFermion.jl")
 include("./MobiusDomainwallFermion/MobiusDomainwallFermion.jl")
 include("./GeneralizedDomainwallFermion/GeneralizedDomainwallFermion.jl")
+include("./GeneralizedDomainwallFermion/GeneralizedDomainwall_evenodd.jl")
 include("./GeneralFermion/generalFermion.jl")
 
 include("./Z4Noise.jl")

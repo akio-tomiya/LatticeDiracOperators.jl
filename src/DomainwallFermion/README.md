@@ -59,6 +59,104 @@ The historical `Initialize_Gaugefields` API reaches this path with
 needed for MPILattice fields; `"improved gpu" => true` with a legacy field is
 rejected rather than silently selecting a mismatched implementation.
 
+## Generalized domain-wall even/odd preconditioning
+
+The standard generalized wrapper supports four-dimensional even/odd (EO)
+preconditioning, with the complete fifth direction stored locally:
+
+```julia
+L5 = 4
+x = Initialize_pseudofermion_fields(U[1], "GeneralizedDomainwall"; L5)
+gauss_distribution_fermion!(x; seed=41)
+parameters = Dict{String,Any}(
+    "Dirac_operator" => "GeneralizedDomainwall",
+    "L5" => L5, "mass" => 0.1, "M" => -1.0,
+    "as" => ones(L5), "bs" => fill(1.5, L5), "cs" => fill(0.5, L5),
+    "evenodd" => true, "method_CG" => "bicgstab",
+    "eps_CG" => 1e-18, "MaxCGstep" => 3000, "verbose_level" => 0,
+)
+D = Dirac_operator(U, x, parameters)
+solution = similar(x)
+solve_DinvX!(solution, D.D5DW, x)    # Full solution, reconstructed from EO.
+solve_DinvX!(solution, D.D5DW', x)   # Adjoint solve.
+solve_DinvX!(solution, D, x)        # Full Pauli–Villars-composed operator.
+
+action = FermiAction(D, Dict())
+phi, noise = similar(x), similar(x)
+provider = PseudofermionMDAction(action, phi)
+refresh_pseudofermion!(provider, U, noise; seed=42)
+Sf = evaluate_FermiAction(action, U, phi)
+force = calc_UdSfdU(action, U, phi)
+```
+
+For `D = [E B; C O]` the normalized even Schur operator is
+`S = I - E⁻¹ B O⁻¹ C`. Raw `mul!` still applies the full five-dimensional
+operator. `solve_DinvX!` uses `S` and reconstructs both parities; `"bicg"`,
+`"bicgstab"`, and `"cg"` (normal equations) are supported. Solver diagnostics
+refer to the reduced system, so check a full-system residual when needed.
+`eps_CG` is an absolute **squared** residual tolerance.
+
+The same `"method_CG" => "cg"` setting is accepted with `"evenodd" => false`,
+including the raw forward/adjoint and PV-composed solves. The public name `cg`
+covers CGNR for forward solves (`D†D x = D†b`) and CGNE for adjoint solves
+(`D†D z = b`, followed by `x = D z`). With EO, these normal equations apply
+to the Schur operator before reconstruction. Their stopping residuals differ
+from the original full-system residual.
+
+`test/domainwall_eo.jl` compares all three
+solvers with and without EO, checks the original-system residuals and the
+agreement of their solutions, and reports median solve times and
+`non_eo_time / eo_time`. Run it after preparing the environment in `test/eo/README.md`:
+
+```sh
+julia --project=test/eo test/domainwall_eo.jl
+```
+
+The comparison defaults to a hot `4^4` lattice, `L5=4`, and five samples per
+solve. Set `LDO_EO_BENCH_N`, `LDO_EO_BENCH_L5`, or `LDO_EO_BENCH_REPEATS` to
+change these values. It uses the active project's JACC backend. Set
+`LDO_TEST_MPI=true` under an MPI launcher to split a physical direction across
+ranks (`LDO_EO_BENCH_AXIS=1` by default). `LDO_EO_BENCH_N` is the global extent.
+Timings synchronize backend work, use an MPI barrier before each sample, and
+report the maximum rank time. They exclude operator construction and warmup.
+A speed ratio below one means that EO is slower on the measured configuration.
+
+With EO enabled, the action, pseudofermion refresh, gauge derivative, and
+momentum update all use the same Schur determinant ratio. Pseudofermions
+occupy even sites. Gauge-independent diagonal determinant factors are
+omitted from the action. The action's normal equations use CG regardless of
+the raw solver selection. Nonuniform `as`, `bs`, and `cs` are supported;
+reconstruct the operator when changing these coefficients or masses.
+
+All four global physical extents must be even, `PEs[5]` must be 1, and the
+fifth boundary phase must be 1. The implementation retains full field storage
+but evaluates hopping only on the requested output parity. SU(3) uses the
+v1 half-spinor hopping kernels directly, with a two-stage adjoint that reuses
+Wilson hopping across fifth slices. Other colour counts use a projected
+source and a parity-restricted generic stencil. Schur applications use two
+intermediate fields (plus adjoint/generic hopping scratch), fuse the final
+subtraction, and update intermediate halos only before hopping reads.
+On one rank, SU(3) hopping wraps the fifth coordinate directly and copies
+only the four-dimensional boundary faces it reads. Partial halo updates leave
+the full halo marked dirty, so subsequent public stencils still synchronize
+all required ghosts. Multiple ranks retain the standard halo exchange.
+EO Krylov operations also defer halo synchronization during vector algebra
+and internal matvecs; public matvecs and successful solves return clean halos.
+The shared solver recurrences and non-EO field operations are unchanged.
+This is not a compressed-storage or specialized GPU implementation. The common
+`test/domainwall_eo.jl` entry point runs numerical, action/force, halo, and solve
+comparisons on the chosen JACC backend and compares decomposed fields with
+an undistributed reference. Single-process runs also include an independent
+dense-matrix reference for Schur operators, solutions, actions, and determinants.
+See [`test/eo/README.md`](../../test/eo/README.md) for CPU, MPI, GPU, and MPI+GPU
+commands, the CUDA entry point, and the H100 validation scope. Production
+trajectory performance and communication between distinct GPUs require
+separate validation.
+
+Omitting `"evenodd"` (or setting it to `false`) retains the existing path.
+This switch currently applies to the LatticeMatrices-backed
+`"GeneralizedDomainwall"` wrapper.
+
 ## Physical point propagators and residual mass
 
 The v1 valence API imports a four-dimensional source onto the Shamir walls,

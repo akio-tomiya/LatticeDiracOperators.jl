@@ -21,6 +21,7 @@ using Test
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
         "domainwall_mpialattice.jl",
+        "domainwall_eo.jl",
         "domainwall_grid_reference.jl",
     ]
     for test_file in test_files
@@ -31,6 +32,8 @@ using Test
             command,
             "LDO_TEST_EXPECT_NO_ENZYME" => "false",
             "LDO_TEST_MPI" => "true",
+            "LDO_TEST_EXPECT_RANKS" => "2",
+            "LDO_EO_BENCH_REPEATS" => get(ENV, "LDO_EO_BENCH_REPEATS", "1"),
         )))
         @test process.exitcode == 0
     end

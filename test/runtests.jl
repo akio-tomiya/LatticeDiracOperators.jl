@@ -36,6 +36,9 @@ import LatticeMatrices
             include("hisq_mpialattice.jl")
         end
         include("domainwall_mpialattice.jl")
+        withenv("LDO_EO_BENCH_REPEATS" => get(ENV, "LDO_EO_BENCH_REPEATS", "1")) do
+            include("domainwall_eo.jl")
+        end
         include("domainwall_grid_reference.jl")
     end
 

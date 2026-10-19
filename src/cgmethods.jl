@@ -28,6 +28,14 @@ struct SolverDiagnostics
 end
 
 
+# Operators may defer halo updates during a solve while retaining the same
+# recurrences and returning a field ready for external use.
+_solver_copy!(A, Y, X) = substitute_fermion!(Y, X)
+_solver_axpby!(A, a, X, b, Y) = LinearAlgebra.axpby!(a, X, b, Y)
+_solver_mul!(Y, A, X) = mul!(Y, A, X)
+_solver_finish!(A, x) = nothing
+
+
 function add!(b, Y, a, X) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a, X, b, Y) #X*a + Y*b -> Y
 end
@@ -66,11 +74,11 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     temps = get_temporaryvectors_forCG(A)
     #res = temps[1]
     res, it_res = get_temp(temps)
-    substitute_fermion!(res, b)
+    _solver_copy!(A, res, b)
     temp1, it_temp1 = get_temp(temps)
     #temp1 = temps[2]
-    mul!(temp1, A, x)
-    add!(res, -1, temp1)
+    _solver_mul!(temp1, A, x)
+    _solver_axpby!(A, -1, temp1, 1, res)
     p, it_p = get_temp(temps)
     q, it_q = get_temp(temps)
     s, it_s = get_temp(temps)
@@ -82,6 +90,7 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
         rnorm = real(res ⋅ res)
         initial_rnorm = rnorm
         if rnorm < eps
+            _solver_finish!(A, x)
             return SolverDiagnostics(
                 :bicg,
                 0,
@@ -95,19 +104,19 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
         end
         #println(rnorm)
 
-        mul!(p, A', res)
+        _solver_mul!(p, A', res)
         c1 = p ⋅ p
 
         for i = 1:maxsteps
-            mul!(q, A, p)
+            _solver_mul!(q, A, p)
             #! ...  c2 = < q | q >
             c2 = q ⋅ q
 
             alpha = c1 / c2
             #! ...  x   = x   + alpha * p
-            add!(x, alpha, p)
+            _solver_axpby!(A, alpha, p, 1, x)
             #...  res = res - alpha * q
-            add!(res, -alpha, q)
+            _solver_axpby!(A, -alpha, q, 1, res)
             rnorm = real(res ⋅ res)
             println_verbose_level3(verbose, "$i-th eps: $rnorm")
 
@@ -117,6 +126,7 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
                     "Converged at $i-th step. eps: $rnorm",
                 )
                 println_verbose_level3(verbose, "--------------------------------------")
+                _solver_finish!(A, x)
                 return SolverDiagnostics(
                     :bicg,
                     i,
@@ -129,7 +139,7 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
                 )
             end
 
-            mul!(s, A', res)
+            _solver_mul!(s, A', res)
 
             #c3 = s * s
             c3 = s ⋅ s
@@ -137,7 +147,7 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
             beta = c3 / c1
             c1 = c3
 
-            add!(beta, p, 1, s) #p = beta*p + s
+            _solver_axpby!(A, 1, s, beta, p) #p = beta*p + s
         end
 
         error("""
@@ -175,18 +185,18 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
     temps = get_temporaryvectors_forCG(A)
     r, it_r = get_temp(temps)
     #r = temps[1]
-    substitute_fermion!(r, b)
+    _solver_copy!(A, r, b)
     temp1, it_temp1 = get_temp(temps)
     #temp1 = temps[2]
-    mul!(temp1, A, x)
-    add!(r, -1, temp1)
+    _solver_mul!(temp1, A, x)
+    _solver_axpby!(A, -1, temp1, 1, r)
 
     rs, it_rs = get_temp(temps)
     #rs = temps[3]
-    substitute_fermion!(rs, r)
+    _solver_copy!(A, rs, r)
     p, it_p = get_temp(temps)
     #p = temps[4]
-    substitute_fermion!(p, r)
+    _solver_copy!(A, p, r)
     Ap, it_Ap = get_temp(temps)
     #Ap = temps[5]
     s, it_s = get_temp(temps)
@@ -202,6 +212,7 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
         initial_rnorm = rnorm
 
         if rnorm < eps
+            _solver_finish!(A, x)
             return SolverDiagnostics(
                 :bicgstab,
                 0,
@@ -219,8 +230,8 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
             c1 = dot(rs, r)
             rho_scale = sqrt(real(rs ⋅ rs) * real(r ⋅ r))
             if abs(c1) <= Base.eps(Float64) * rho_scale
-                substitute_fermion!(rs, r)
-                substitute_fermion!(p, r)
+                _solver_copy!(A, rs, r)
+                _solver_copy!(A, p, r)
                 c1 = rs ⋅ r
                 restart_count += 1
                 println_verbose_level3(
@@ -228,20 +239,21 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     "Restarted BiCGStab shadow residual at $i-th step",
                 )
             end
-            mul!(Ap, A, p)
+            _solver_mul!(Ap, A, p)
             c2 = dot(rs, Ap)
             α = c1 / c2
             #s = r - α*A*p
-            add!(0, s, 1, r)
-            add!(s, -α, Ap)
+            _solver_axpby!(A, 1, r, 0, s)
+            _solver_axpby!(A, -α, Ap, 1, s)
             snorm = real(s ⋅ s)
             if snorm < eps
-                add!(x, α, p)
+                _solver_axpby!(A, α, p, 1, x)
                 println_verbose_level3(
                     verbose,
                     "Converged at $i-th step. eps: $snorm",
                 )
                 println_verbose_level3(verbose, "--------------------------------------")
+                _solver_finish!(A, x)
                 return SolverDiagnostics(
                     :bicgstab,
                     i,
@@ -253,18 +265,18 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     :intermediate_residual,
                 )
             end
-            mul!(t, A, s)
+            _solver_mul!(t, A, s)
             d1 = dot(t, s)
             d2 = dot(t, t)
             ω = d1 / d2
 
             #r = (1-ω A)s
-            add!(0, r, 1, s)
-            add!(r, -ω, t)
+            _solver_axpby!(A, 1, s, 0, r)
+            _solver_axpby!(A, -ω, t, 1, r)
 
             #x = x + ωs+ αp
-            add!(x, ω, s)
-            add!(x, α, p)
+            _solver_axpby!(A, ω, s, 1, x)
+            _solver_axpby!(A, α, p, 1, x)
 
             rnorm = real(r ⋅ r)
             println_verbose_level3(verbose, "$i-th eps: $rnorm")
@@ -275,6 +287,7 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                     "Converged at $i-th step. eps: $rnorm",
                 )
                 println_verbose_level3(verbose, "--------------------------------------")
+                _solver_finish!(A, x)
                 return SolverDiagnostics(
                     :bicgstab,
                     i,
@@ -290,8 +303,8 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
             β = (dot(rs, r) / c1) * (α / ω)
 
             #p = r + β*(1-ωA)*p
-            add!(β, p, 1, r)
-            add!(p, -ω * β, Ap)
+            _solver_axpby!(A, 1, r, β, p)
+            _solver_axpby!(A, -ω * β, Ap, 1, p)
         end
 
         error("""

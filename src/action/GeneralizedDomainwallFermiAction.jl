@@ -17,7 +17,7 @@ struct GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
         hascovnet,
         covneuralnet,
     ) where {Dim}
-        num = 10
+        num = _generalized_domainwall_eo_enabled(D) ? 16 : 10
         temps = get_temporaryvectors(D)
         x, it_x = get_temp(temps)
         xtype = typeof(x)
@@ -31,7 +31,7 @@ struct GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
 
         Utemp = D.U[1]
         Utype = typeof(Utemp)
-        numU = 2
+        numU = _generalized_domainwall_eo_enabled(D) ? 6 : 2
         # _temporary_gaugefields = Array{Utype,1}(undef, numU)
         _temporary_gaugefields = Temporalfields(Utemp; num=numU)
         # for i = 1:numU
@@ -54,6 +54,9 @@ function evaluate_FermiAction(
     U,
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
+    if _generalized_domainwall_eo_enabled(fermi_action.diracoperator)
+        return _evaluate_generalized_eo_action(fermi_action, U, ϕ)
+    end
     W = fermi_action.diracoperator(U)
     temps = fermi_action._temporary_fermionfields
     # η = fermi_action._temporary_fermionfields[1]
@@ -70,6 +73,9 @@ function calc_UdSfdU!(
     U::Vector{<:AbstractGaugefields},
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
+    if _generalized_domainwall_eo_enabled(fermi_action.diracoperator)
+        return _calc_generalized_eo_force!(UdSfdU, fermi_action, U, ϕ)
+    end
     #println("------dd")
     QD5DW = fermi_action.diracoperator.D5DW(U)
     Q = GeneralizedD5DWdagD5DW_Wilson_operator(QD5DW)
@@ -320,6 +326,15 @@ function calc_p_UdSfdU!(
     ϕ::AbstractFermionfields,
     coeff = 1,
 ) where {Dim,Dirac,fermion,gauge}
+    if _generalized_domainwall_eo_enabled(fermi_action.diracoperator)
+        return _with_generalized_eo_fields(fermi_action._temporary_gaugefields, Dim) do force
+            _calc_generalized_eo_force!(force, fermi_action, U, ϕ)
+            for mu in 1:Dim
+                Traceless_antihermitian_add!(p[mu], -coeff, force[mu])
+            end
+            nothing
+        end
+    end
     #println("------dd")
     QD5DW = fermi_action.diracoperator.D5DW(U)
     Q = GeneralizedD5DWdagD5DW_Wilson_operator(QD5DW)
@@ -462,7 +477,12 @@ function sample_pseudofermions!(
     fermi_action::GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge},
     ξ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
+    if _generalized_domainwall_eo_enabled(fermi_action.diracoperator)
+        return _sample_generalized_eo_pseudofermions!(ϕ, U, fermi_action, ξ)
+    end
     W = fermi_action.diracoperator(U)
     mul!(ϕ, W', ξ)
     set_wing_fermion!(ϕ)
 end
+
+include("GeneralizedDomainwallFermiAction_evenodd.jl")

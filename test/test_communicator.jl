@@ -10,10 +10,15 @@ if !isdefined(@__MODULE__, :LDO_TEST_COMM)
         ldo_test_comm_rank() = MPI.Comm_rank(LDO_TEST_COMM)
         ldo_test_allreduce_sum(value) =
             MPI.Allreduce(value, MPI.SUM, LDO_TEST_COMM)
+        ldo_test_allreduce_max(value) =
+            MPI.Allreduce(value, MPI.MAX, LDO_TEST_COMM)
+        ldo_test_barrier() = MPI.Barrier(LDO_TEST_COMM)
     else
         const LDO_TEST_COMM = LatticeMatrices.SerialCommunicator()
         ldo_test_comm_size() = 1
         ldo_test_comm_rank() = 0
         ldo_test_allreduce_sum(value) = value
+        ldo_test_allreduce_max(value) = value
+        ldo_test_barrier() = nothing
     end
 end

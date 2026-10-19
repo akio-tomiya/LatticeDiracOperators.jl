@@ -6,7 +6,7 @@ fifth-direction coefficients differ from the Shamir/Möbius wrapper.  The
 legacy `w[s]` implementation remains available through the old constructors.
 """
 struct D5DW_GeneralizedDomainwall_operator_MPILattice{
-    Dim,TU,fermion,TD,R,VC,
+    Dim,TU,fermion,TD,R,VC,EC,
 } <: AbstractD5DWGeneralizedDomainwallOperator{Dim}
     U::Array{TU,1}
     D::TD
@@ -24,6 +24,8 @@ struct D5DW_GeneralizedDomainwall_operator_MPILattice{
     as::VC
     bs::VC
     cs::VC
+    use_eo::Bool
+    eo_cache::EC
 end
 
 function D5DW_GeneralizedDomainwall_operator_MPILattice(
@@ -54,13 +56,20 @@ function D5DW_GeneralizedDomainwall_operator_MPILattice(
     operator = D5DW_GeneralizedDomainwallOperator5D(
         links, L5, mass_R, M, as_R, bs_R, cs_R)
 
+    use_eo = Bool(check_parameters(parameters, "evenodd", false))
+    method_CG = check_parameters(parameters, "method_CG", "bicg")
+    if use_eo
+        _validate_generalized_eo(x)
+        method_CG in ("bicg", "bicgstab", "cg") || throw(ArgumentError(
+            "generalized domain-wall EO supports bicg, bicgstab or cg"))
+    end
+    eo_cache = use_eo ? _generalized_eo_cache(x, mass_R, M, as_R, bs_R, cs_R) : nothing
     temporary_fermi = Temporalfields(x; num=4)
-    temporary_fermion_forCG = Temporalfields(x; num=7)
+    temporary_fermion_forCG = Temporalfields(x; num=use_eo ? 24 : 7)
     eps_CG = check_parameters(parameters, "eps_CG", default_eps_CG)
     MaxCGstep = check_parameters(parameters, "MaxCGstep", default_MaxCGstep)
     verbose_level = check_parameters(parameters, "verbose_level", 2)
     verbose_print = Verbose_print(verbose_level)
-    method_CG = check_parameters(parameters, "method_CG", "bicg")
     boundarycondition = collect(x.f.phases)
     if haskey(parameters, "boundarycondition")
         requested_boundary = collect(parameters["boundarycondition"])
@@ -73,26 +82,27 @@ function D5DW_GeneralizedDomainwall_operator_MPILattice(
     TD = typeof(operator)
     VC = typeof(as_R)
     return D5DW_GeneralizedDomainwall_operator_MPILattice{
-        Dim,TU,typeof(x),TD,R,VC,
+        Dim,TU,typeof(x),TD,R,VC,typeof(eo_cache),
     }(
         U, operator, mass_R, temporary_fermi, L5,
         eps_CG, MaxCGstep, verbose_level, method_CG, verbose_print,
-        temporary_fermion_forCG, boundarycondition, M, as_R, bs_R, cs_R)
+        temporary_fermion_forCG, boundarycondition, M, as_R, bs_R, cs_R,
+        use_eo, eo_cache)
 end
 
 function (D::D5DW_GeneralizedDomainwall_operator_MPILattice{
-    Dim,TU,fermion,TD,R,VC,
-})(U) where {Dim,TU,fermion,TD,R,VC}
+    Dim,TU,fermion,TD,R,VC,EC,
+})(U) where {Dim,TU,fermion,TD,R,VC,EC}
     links = [U[mu].U for mu in 1:4]
     operator = D5DW_GeneralizedDomainwallOperator5D(
         links, D.L5, D.mass, D.M, D.as, D.bs, D.cs)
     return D5DW_GeneralizedDomainwall_operator_MPILattice{
-        Dim,eltype(U),fermion,typeof(operator),R,VC,
+        Dim,eltype(U),fermion,typeof(operator),R,VC,EC,
     }(
         U, operator, D.mass, D._temporary_fermi, D.L5,
         D.eps_CG, D.MaxCGstep, D.verbose_level, D.method_CG,
         D.verbose_print, D._temporary_fermion_forCG, D.boundarycondition,
-        D.M, D.as, D.bs, D.cs)
+        D.M, D.as, D.bs, D.cs, D.use_eo, D.eo_cache)
 end
 
 struct Adjoint_D5DW_GeneralizedDomainwall_operator_MPILattice{T} <:

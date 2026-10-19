@@ -28,13 +28,15 @@ using Test
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
         "domainwall_mpialattice.jl",
+        "domainwall_eo.jl",
         "domainwall_grid_reference.jl",
     ]
     for test_file in test_files
         @info "Running isolated core test" test_file
         command = `$(Base.julia_cmd()) --startup-file=no --project=$(project_directory) $(joinpath(@__DIR__, test_file))`
         process = run(ignorestatus(addenv(
-            command, "LDO_TEST_EXPECT_NO_ENZYME" => "true")))
+            command, "LDO_TEST_EXPECT_NO_ENZYME" => "true",
+            "LDO_EO_BENCH_REPEATS" => get(ENV, "LDO_EO_BENCH_REPEATS", "1"))))
         @test process.exitcode == 0
     end
 end
