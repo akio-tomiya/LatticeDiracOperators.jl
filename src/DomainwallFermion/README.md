@@ -143,13 +143,15 @@ all required ghosts. Multiple ranks retain the standard halo exchange.
 EO Krylov operations also defer halo synchronization during vector algebra
 and internal matvecs; public matvecs and successful solves return clean halos.
 The shared solver recurrences and non-EO field operations are unchanged.
-This is not a compressed-storage or specialized GPU implementation. The single
-`test/domainwall_eo.jl` file runs numerical, action/force, halo, and solve
+This is not a compressed-storage or specialized GPU implementation. The common
+`test/domainwall_eo.jl` entry point runs numerical, action/force, halo, and solve
 comparisons on the chosen JACC backend and compares decomposed fields with
-an undistributed reference.
+an undistributed reference. Single-process runs also include an independent
+dense-matrix reference for Schur operators, solutions, actions, and determinants.
 See [`test/eo/README.md`](../../test/eo/README.md) for CPU, MPI, GPU, and MPI+GPU
-commands. GPU hardware and production trajectory performance require separate
-validation; a CPU run does not validate a GPU backend.
+commands, the CUDA entry point, and the H100 validation scope. Production
+trajectory performance and communication between distinct GPUs require
+separate validation.
 
 Omitting `"evenodd"` (or setting it to `false`) retains the existing path.
 This switch currently applies to the LatticeMatrices-backed

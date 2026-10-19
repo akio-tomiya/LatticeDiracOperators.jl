@@ -55,6 +55,12 @@ const EO_DEVICE_SELECTION = select_device_by_mpi_rank!(LDO_TEST_COMM)
 
 const EO_Dop = LatticeDiracOperators.Dirac_operators
 
+# The small dense oracle uses an explicit serial communicator. Distributed
+# runs below already compare gathered fields against an undistributed oracle.
+if ldo_test_comm_size() == 1
+    include(joinpath(@__DIR__, "eo", "dense_reference.jl"))
+end
+
 function _eo_parameters(L5=4)
     Dict{String,Any}(
         "Dirac_operator" => "GeneralizedDomainwall", "L5" => L5,
