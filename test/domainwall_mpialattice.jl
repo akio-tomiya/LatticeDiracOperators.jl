@@ -11,7 +11,10 @@ function _domainwall_mpialattice_core(field)
     ranges = ntuple(
         direction -> (field.nw + 1):(field.nw + field.PN[direction]),
         length(field.PN))
-    return @view field.A[:, :, ranges...]
+    # isapprox's generic norm scalar-indexes non-contiguous CuArray views.
+    # Move the test snapshot explicitly; keep production GPU scalar indexing off.
+    data = Array(field.A)
+    return @view data[:, :, ranges...]
 end
 
 function _domainwall_mpialattice_finite(field)

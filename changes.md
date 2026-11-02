@@ -1,5 +1,27 @@
 # Changes
 
+## v1.1.5
+
+- Incorporates [PR #105](https://github.com/akio-tomiya/LatticeDiracOperators.jl/pull/105)
+  for generalized domain-wall physical sources and residual-mass coefficient
+  gradients on CPU, GPU, and MPI, including multi-GPU calculations.
+- Extended physical-source import and propagator helpers from Shamir to
+  scalar Mobius and slice-dependent generalized coefficients, including
+  nonuniform fifth-direction scaling.
+- Added `domainwall_residual_mass_gradient` to compute derivatives with
+  respect to real, nonuniform `bs` and `cs` for even `L5`. Adjoint solves
+  include the coefficient dependence of the physical source, enabling
+  gradient-based coefficient tuning for a residual-mass ratio over selected
+  time slices.
+- Added coefficient-aware `Renew` methods for generalized domain-wall
+  operators and actions. Updates copy coefficient vectors, reuse gauge
+  links and workspaces, and rebuild physical and Pauli-Villars EO caches.
+- Fixed generic CG temporary-buffer cleanup on successful convergence,
+  nonconvergence, and exceptions.
+- Added regression coverage for coefficient renewal, physical sources,
+  finite-difference gradients, Grid reference correlators, and CG cleanup
+  to the standard, core, and MPI test runners.
+
 ## v1.1.4
 
 ### Generalized domain-wall even/odd preconditioning

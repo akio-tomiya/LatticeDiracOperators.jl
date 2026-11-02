@@ -515,6 +515,7 @@ function check_parameters(parameters, key, initial)
 end
 
 include("./DomainwallFermion/physical_propagator.jl")
+include("./DomainwallFermion/residual_mass_gradient.jl")
 
 function check_important_parameters(parameters, key, sample=nothing)
     if sample == nothing

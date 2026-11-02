@@ -170,3 +170,61 @@ function GeneralizedDomainwall_Dirac_operator(
 end
 
 export D5DW_GeneralizedDomainwall_operator_MPILattice
+
+"""
+    Renew(D, bs, cs; as=D.as)
+
+Return a generalized domain-wall operator with new fifth-direction coefficients.
+For a physical/PV operator pair, `as` defaults to `D.D5DW.as`. Coefficient
+vectors are copied; gauge links and scratch pools are shared with `D`. Old and
+renewed operators must therefore not be used concurrently. The EO inverses
+are rebuilt for both the physical mass and the Pauli--Villars mass.
+
+The physical propagator API accepts the renewed coefficients, including the
+coefficient-dependent physical source. No residual-mass measurement is performed
+by this operation.
+"""
+function Renew(D::D5DW_GeneralizedDomainwall_operator_MPILattice{Dim,TU,F,TD,R},
+    bs::AbstractVector, cs::AbstractVector; as::AbstractVector=D.as,
+) where {Dim,TU,F,TD,R}
+    for (name, coefficients) in (("as", as), ("bs", bs), ("cs", cs))
+        length(coefficients) == D.L5 || throw(DimensionMismatch(
+            "$name must have length L5=$(D.L5)"))
+        all(isfinite, coefficients) || throw(ArgumentError("$name must be finite"))
+    end
+    a, b, c = R.(collect(as)), R.(collect(bs)), R.(collect(cs))
+    all(isfinite, a) && all(isfinite, b) && all(isfinite, c) ||
+        throw(ArgumentError("coefficients must remain finite after conversion to $R"))
+    operator = D5DW_GeneralizedDomainwallOperator5D(
+        [link.U for link in D.U], D.L5, D.mass, D.M, a, b, c)
+    cache = if D.use_eo
+        field, token = get_temp(D._temporary_fermi)
+        try
+            _generalized_eo_cache(field, D.mass, D.M, a, b, c)
+        finally
+            unused!(D._temporary_fermi, token)
+        end
+    else
+        nothing
+    end
+    return D5DW_GeneralizedDomainwall_operator_MPILattice{
+        Dim,TU,F,typeof(operator),R,typeof(a),typeof(cache),
+    }(
+        D.U, operator, D.mass, D._temporary_fermi, D.L5,
+        D.eps_CG, D.MaxCGstep, D.verbose_level, D.method_CG, D.verbose_print,
+        D._temporary_fermion_forCG, D.boundarycondition, D.M, a, b, c,
+        D.use_eo, cache)
+end
+
+function Renew(D::GeneralizedDomainwall_Dirac_operator{Dim,T,F,W},
+    bs::AbstractVector, cs::AbstractVector; as::AbstractVector=D.D5DW.as,
+) where {Dim,T,F<:DomainwallFermion_5D_MPILattice,W}
+    physical = Renew(D.D5DW, bs, cs; as)
+    pv = Renew(D.D5DW_PV, bs, cs; as)
+    return GeneralizedDomainwall_Dirac_operator{Dim,T,F,W}(
+        D.U, physical, pv, D.mass, D.eps_CG, D.MaxCGstep,
+        D.verbose_level, D.method_CG, D.verbose_print, D.boundarycondition,
+        copy(physical.bs), copy(physical.cs))
+end
+
+export Renew

@@ -9,6 +9,8 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.2
 as its standard backend.
 
+Version 1.1.5 adds generalized domain-wall physical sources and residual-mass coefficient gradients for CPU, GPU, and MPI, including multi-GPU runs; see [changes.md](changes.md).
+
 Version 1.1.4 adds even/odd preconditioning for generalized domain-wall fermions; see [changes.md](changes.md).
 
 Version 1.1.3 adds analytic staggered/HISQ actions and native APE,

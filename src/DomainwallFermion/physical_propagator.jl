@@ -1,10 +1,71 @@
-function _require_shamir_physical_propagator(D::MobiusDomainwall_Dirac_operator)
-    D.D5DW isa D5DW_MobiusDomainwall_operator_MPILattice || throw(ArgumentError(
+const PhysicalDomainwallOperator = Union{
+    MobiusDomainwall_Dirac_operator, GeneralizedDomainwall_Dirac_operator}
+
+function _require_domainwall_physical_propagator(D::PhysicalDomainwallOperator)
+    D.D5DW isa Union{D5DW_MobiusDomainwall_operator_MPILattice,
+                    D5DW_GeneralizedDomainwall_operator_MPILattice} || throw(ArgumentError(
         "physical domain-wall propagators require the LatticeMatrices-backed MPILattice operator"))
-    D.b == 1 && D.c == 1 || throw(ArgumentError(
-        "this physical-source API currently supports Shamir domain-wall fermions " *
-        "(b=1, c=1); got b=$(D.b), c=$(D.c)"))
+    if D.D5DW isa D5DW_GeneralizedDomainwall_operator_MPILattice
+        all(!iszero, D.D5DW.as) || throw(ArgumentError(
+            "physical propagators require nonzero row coefficients as"))
+    end
     return nothing
+end
+
+function _domainwall_wilson!(result, raw, source)
+    # D4x_5D! adds the hopping term to its destination.
+    axpby!(4 + raw.M, source, 0, result)
+    LatticeMatrices.D4x_5D!(result.f, raw.D.U, source.f, -1)
+    return result
+end
+
+function _domainwall_source_coefficients(raw::D5DW_GeneralizedDomainwall_operator_MPILattice)
+    return raw.D.a, raw.D.c, all(isone, raw.as) && all(iszero, raw.cs)
+end
+
+function _domainwall_source_coefficients(raw::D5DW_MobiusDomainwall_operator_MPILattice)
+    # The scalar wrapper uses b=bs+cs, c=bs-cs, unlike the vector API.
+    return ntuple(_ -> 1.0, raw.L5), ntuple(_ -> (raw.b-raw.c)/2, raw.L5), raw.b == raw.c
+end
+
+function _kernel_domainwall_physical_source!(i, source, wilson, a, c, indexer,
+    ::Val{NC}, ::Val{nw}) where {NC,nw}
+    indices = delinearize(indexer, i, nw)
+    s = indices[5] - nw
+    @inbounds for spin in 1:4, color in 1:NC
+        source[color, spin, indices...] = a[s] * (
+            source[color, spin, indices...] - c[s] * wilson[color, spin, indices...])
+    end
+    return nothing
+end
+
+"""
+    import_domainwall_physical_source!(source5, D, source4)
+
+Embed a physical source and apply `A * (I - C * D_W)`. For the generalized
+operator, `A=diag(as)` and `C=diag(cs)`; coefficients may vary with the fifth
+coordinate. The scalar Mobius wrapper instead uses `cs=(b-c)/2`.
+The row factor `A` matches the row scaling of `D.D5DW` and cancels from the
+physical solution. This is Grid's Cayley `Dminus` source convention.
+"""
+function import_domainwall_physical_source!(source5::DomainwallFermion_5D_MPILattice,
+    D::PhysicalDomainwallOperator, source4::WilsonFermion_4D_MPILattice)
+    _require_domainwall_physical_propagator(D)
+    source5.L5 == D.D5DW.L5 || throw(DimensionMismatch("source and operator L5 differ"))
+    LatticeMatrices.domainwall_import_physical_source!(source5.f, source4.f)
+    a, c, identity_source = _domainwall_source_coefficients(D.D5DW)
+    identity_source && return source5
+    pool = D.D5DW._temporary_fermi
+    wilson, token = get_temp(pool)
+    try
+        _domainwall_wilson!(wilson, D.D5DW, source5)
+        LatticeMatrices.parallel_for_mutating!(source5.f, prod(source5.f.PN),
+            _kernel_domainwall_physical_source!, source5.f.A, wilson.f.A,
+            a, c, source5.f.indexer, Val(source5.f.NC1), Val(source5.f.nw))
+    finally
+        unused!(pool, token)
+    end
+    return source5
 end
 
 function _validate_domainwall_propagator_fields(solution5, solution4, source5, source4, D)
@@ -25,7 +86,7 @@ end
 """
     solve_domainwall_physical_propagator!(solution5, solution4, source5, D, source4)
 
-Solve the raw five-dimensional Shamir equation for a four-dimensional
+Solve the raw five-dimensional domain-wall equation for a four-dimensional
 physical source. `source5` is reusable workspace. The source embedding and
 solution projection follow Grid's `ImportPhysicalFermionSource` and
 `ExportPhysicalFermionSolution` conventions. The Pauli--Villars-composed outer
@@ -37,13 +98,14 @@ function solve_domainwall_physical_propagator!(
     solution5::DomainwallFermion_5D_MPILattice,
     solution4::WilsonFermion_4D_MPILattice,
     source5::DomainwallFermion_5D_MPILattice,
-    D::MobiusDomainwall_Dirac_operator,
+    D::PhysicalDomainwallOperator,
     source4::WilsonFermion_4D_MPILattice,
 )
-    _require_shamir_physical_propagator(D)
+    _require_domainwall_physical_propagator(D)
     _validate_domainwall_propagator_fields(
         solution5, solution4, source5, source4, D)
-    LatticeMatrices.domainwall_import_physical_source!(source5.f, source4.f)
+    solution5.f.A === source5.f.A && throw(ArgumentError("solution5 and source5 must not alias"))
+    import_domainwall_physical_source!(source5, D, source4)
     diagnostics = solve_DinvX!(solution5, D.D5DW, source5)
     LatticeMatrices.domainwall_export_physical_solution!(solution4.f, solution5.f)
     set_wing_fermion!(solution4, collect(D.boundarycondition[1:4]))
@@ -53,7 +115,7 @@ end
 function solve_domainwall_physical_propagator!(
     solution5::DomainwallFermion_5D_MPILattice,
     solution4::WilsonFermion_4D_MPILattice,
-    D::MobiusDomainwall_Dirac_operator,
+    D::PhysicalDomainwallOperator,
     source4::WilsonFermion_4D_MPILattice,
 )
     source5 = similar(solution5)
@@ -64,16 +126,17 @@ end
 """
     domainwall_physical_point_propagators(D, template5; source_position=(1,1,1,1))
 
-Compute all twelve color-spin columns of a Shamir physical point propagator.
+Compute all twelve color-spin columns of a domain-wall physical point propagator.
 The result contains `five_dimensional`, `physical`, and `diagnostics` tuples in
 color-major, spin-minor order, plus the one-based global `source_position`.
 """
 function domainwall_physical_point_propagators(
-    D::MobiusDomainwall_Dirac_operator,
+    D::PhysicalDomainwallOperator,
     template5::DomainwallFermion_5D_MPILattice;
     source_position::NTuple{4,<:Integer}=(1, 1, 1, 1),
 )
-    _require_shamir_physical_propagator(D)
+    _require_domainwall_physical_propagator(D)
+    template5.f.NC1 == 3 || throw(ArgumentError("point propagators require three colors"))
     template5.L5 == D.D5DW.L5 || throw(DimensionMismatch(
         "template field L5=$(template5.L5) differs from operator L5=$(D.D5DW.L5)"))
     source4 = Initialize_WilsonFermion(
@@ -138,5 +201,5 @@ function domainwall_residual_mass_correlator(
     return (PP=PP, J5qP=J5qP, ratio=J5qP ./ PP)
 end
 
-export solve_domainwall_physical_propagator!
+export import_domainwall_physical_source!, solve_domainwall_physical_propagator!
 export domainwall_physical_point_propagators, domainwall_residual_mass_correlator

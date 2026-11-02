@@ -794,85 +794,86 @@ function cg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
     =#
 
 
-    res, it_res = get_temp(temps)
-    #res = temps[1]
-    substitute_fermion!(res, b)
-    temp1, it_temp1 = get_temp(temps)
-    #temp1 = temps[2]
-    #println("in CG $(sum(abs.(x.f)))")
-    mul!(temp1, A, x)
+    it_res = it_temp1 = it_q = it_p = nothing
+    try
+        res, it_res = get_temp(temps)
+        #res = temps[1]
+        substitute_fermion!(res, b)
+        temp1, it_temp1 = get_temp(temps)
+        #temp1 = temps[2]
+        #println("in CG $(sum(abs.(x.f)))")
+        mul!(temp1, A, x)
 
 
-    add!(res, -1, temp1)
-    q, it_q = get_temp(temps)
-    p, it_p = get_temp(temps)
-    #q = temps[3]
-    #p = temps[4]
-    substitute_fermion!(p, res)
+        add!(res, -1, temp1)
+        q, it_q = get_temp(temps)
+        p, it_p = get_temp(temps)
+        #q = temps[3]
+        #p = temps[4]
+        substitute_fermion!(p, res)
 
-    #p = deepcopy(res)
+        #p = deepcopy(res)
 
-    rnorm = real(res ⋅ res)
+        rnorm = real(res ⋅ res)
 
-    #println(rnorm)
-
-    if rnorm < eps
-        unused!(temps, it_res)
-        unused!(temps, it_temp1)
-        unused!(temps, it_q)
-        unused!(temps, it_p)
-        return
-    end
-
-    c1 = p ⋅ p
-
-
-    for i = 1:maxsteps
-        mul!(q, A, p)
-        c2 = dot(p, q)
-
-        #c2 = p ⋅ q
-
-        α = c1 / c2
-        #! ...  x   = x   + alpha * p  
-        #println("add2")
-        add!(x, α, p)
-        #...  res = res - alpha * q 
-        #println("add1")
-        add!(res, -α, q)
-        c3 = res ⋅ res
-        rnorm = real(c3)
-        println_verbose_level3(verbose, "$i-th eps: $rnorm")
-
-
+        #println(rnorm)
 
         if rnorm < eps
-            #println("$i eps: $eps rnorm $rnorm")
-            println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
-            println_verbose_level3(verbose, "--------------------------------------")
-            unused!(temps, it_res)
-            unused!(temps, it_temp1)
-            unused!(temps, it_q)
-            unused!(temps, it_p)
             return
         end
 
-        β = c3 / c1
-        c1 = c3
+        c1 = p ⋅ p
 
-        #println("add3")
-        add!(β, p, 1, res) #p = beta*p + s
 
+        for i = 1:maxsteps
+            mul!(q, A, p)
+            c2 = dot(p, q)
+
+            #c2 = p ⋅ q
+
+            α = c1 / c2
+            #! ...  x   = x   + alpha * p
+            #println("add2")
+            add!(x, α, p)
+            #...  res = res - alpha * q
+            #println("add1")
+            add!(res, -α, q)
+            c3 = res ⋅ res
+            rnorm = real(c3)
+            println_verbose_level3(verbose, "$i-th eps: $rnorm")
+
+
+
+            if rnorm < eps
+                #println("$i eps: $eps rnorm $rnorm")
+                println_verbose_level3(verbose, "Converged at $i-th step. eps: $rnorm")
+                println_verbose_level3(verbose, "--------------------------------------")
+                return
+            end
+
+            β = c3 / c1
+            c1 = c3
+
+            #println("add3")
+            add!(β, p, 1, res) #p = beta*p + s
+
+        end
+
+
+
+        error("""
+        The CG is not converged! with maxsteps = $(maxsteps)
+        residual is $rnorm
+        maxsteps should be larger.""")
+
+
+    finally
+        # Also release partial acquisitions and failed operator applications.
+        it_p === nothing || unused!(temps, it_p)
+        it_q === nothing || unused!(temps, it_q)
+        it_temp1 === nothing || unused!(temps, it_temp1)
+        it_res === nothing || unused!(temps, it_res)
     end
-
-
-
-    error("""
-    The CG is not converged! with maxsteps = $(maxsteps)
-    residual is $rnorm
-    maxsteps should be larger.""")
-
-
 end
 
 function Base.:*(x::Array{T,1}, y::Array{T,1}) where {T<:Number}

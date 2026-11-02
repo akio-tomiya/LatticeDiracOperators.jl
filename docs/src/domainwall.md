@@ -71,10 +71,12 @@ require Enzyme.
 
 ## Physical propagators
 
-The current physical-source helpers support Shamir coefficients (`b=1`,
-`c=1`) on the standard MPILattice field. They import a four-dimensional
-source, solve the raw five-dimensional equation, and export the physical
-boundary solution.
+The physical-source helpers support Shamir, scalar Möbius, and slice-dependent
+generalized coefficients on the standard MPILattice field. They embed a
+four-dimensional source `eta`, apply `A*(I-C*D_W)` to the embedded source,
+solve the raw five-dimensional equation, and export the physical boundary
+solution. All `as` must be nonzero. The row factor `A` cancels from the solution.
+Only Shamir (`bs=1, cs=0`, or scalar `b=c=1`) has `Dminus=I`.
 
 ```julia
 propagators = domainwall_physical_point_propagators(
@@ -90,3 +92,52 @@ residual = domainwall_residual_mass_correlator(
 
 `residual` contains `PP`, `J5qP`, and their timeslice ratio. Plateau fitting
 belongs in the measurement layer rather than the operator helper.
+
+The source convention follows the equations in Grid's
+[Cayley implementation](https://github.com/paboyle/Grid/blob/0ac72cb6a30ccdc41d664e7e0759f0c8833078f1/Grid/qcd/action/fermion/implementation/CayleyFermion5DImplementation.h):
+`ImportPhysicalFermionSource`, `Dminus`, and `ContractJ5q`. The existing fifth
+coordinate and gamma-matrix conventions of LatticeMatrices are retained.
+
+## Updating coefficients and differentiating residual mass
+
+`Renew` copies new coefficient vectors while sharing the original gauge links
+and scratch pools. Both the physical and Pauli--Villars EO inverses are rebuilt.
+Old and renewed objects cannot be used concurrently because their scratch is shared.
+
+```julia
+generalized = Dirac_operator(U, x, merge(parameters, Dict(
+    "Dirac_operator" => "GeneralizedDomainwall",
+    "as" => ones(L5), "bs" => fill(1.5, L5), "cs" => fill(0.5, L5),
+    "evenodd" => true,
+)))
+action = FermiAction(generalized, Dict())
+
+# Select the measurement window explicitly; index 1 is zero separation.
+measurement = domainwall_residual_mass_gradient(generalized, x; timeslices=[2])
+rate = 1e-3
+updated = Renew(generalized,
+    generalized.bs - rate * measurement.db,
+    generalized.cs - rate * measurement.dc)
+updated_action = Renew(action, updated)
+```
+
+The differentiated scalar is the ratio of sums over the specified time window:
+
+```math
+R=\frac{\sum_{t\in T}J_{5q}P(t)}{\sum_{t\in T}PP(t)}.
+```
+
+An adjoint solve differentiates both `D5` and `A*(I-C*D_W)*eta`. In particular,
+the `cs` derivative includes the source derivative. There are twelve primal
+point-source solves and twelve adjoint solves, independent of `L5`. The method
+supports real, nonuniform `bs/cs`, even `L5`, CPU threads, CUDA through JACC,
+and MPI. It returns `value`, `db`, `dc`, the timeslice `correlators`, and solver
+diagnostics. It performs no optimizer update or HMC accept/reject decision.
+
+For the objective `L5*R^2/2`, multiply both gradients by `L5*R` before passing
+them to an optimizer. If `bs-cs` is constrained to be fixed, the derivative
+for a shared increment of `bs[s]` and `cs[s]` is `db[s]+dc[s]`.
+Apply learned coefficients between trajectories and keep them fixed throughout
+each HMC trajectory. This point-source ratio differs from the legacy stochastic
+`N/D-mass` objective; old measurements and timings cannot be interpreted as
+measurements of this new observable.

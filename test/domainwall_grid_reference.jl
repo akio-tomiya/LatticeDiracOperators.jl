@@ -70,4 +70,13 @@ include(joinpath(@__DIR__, "test_communicator.jl"))
     @test correlators.PP ≈ grid_PP rtol=2e-11 atol=2e-13
     @test correlators.J5qP ≈ grid_J5qP rtol=2e-11 atol=2e-13
     @test correlators.ratio ≈ grid_J5qP ./ grid_PP rtol=3e-11 atol=3e-13
+    # The generalized vector API must reproduce the independent Grid reference,
+    # even with nontrivial row scaling. Shamir here is bs=1, cs=0.
+    generalized = Dirac_operator(U, field5, merge(parameters, Dict(
+        "Dirac_operator" => "GeneralizedDomainwall", "as" => [0.8, 1.1, 0.9, 1.2],
+        "bs" => ones(L5), "cs" => zeros(L5), "evenodd" => true)))
+    generalized_propagators = domainwall_physical_point_propagators(generalized, field5)
+    generalized_correlators = domainwall_residual_mass_correlator(generalized_propagators.five_dimensional)
+    @test generalized_correlators.PP ≈ grid_PP rtol=2e-11 atol=2e-13
+    @test generalized_correlators.J5qP ≈ grid_J5qP rtol=2e-11 atol=2e-13
 end

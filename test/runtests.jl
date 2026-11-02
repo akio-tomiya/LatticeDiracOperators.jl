@@ -35,11 +35,9 @@ import LatticeMatrices
         withenv("LDO_TEST_EXPECT_NO_ENZYME" => "true") do
             include("hisq_mpialattice.jl")
         end
-        include("domainwall_mpialattice.jl")
         withenv("LDO_EO_BENCH_REPEATS" => get(ENV, "LDO_EO_BENCH_REPEATS", "1")) do
-            include("domainwall_eo.jl")
+            include("runtests_domainwall.jl")
         end
-        include("domainwall_grid_reference.jl")
     end
 
 end

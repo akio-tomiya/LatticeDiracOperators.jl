@@ -47,6 +47,35 @@ struct GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge} <:
         )
 
     end
+
+    function GeneralizedDomainwallFermiAction{Dim,Dirac,fermion,gauge}(
+        hascovnet::Bool, covneuralnet::Union{Nothing,CovNeuralnet{Dim}},
+        D::Dirac, temp_f::Temporalfields{fermion}, temp_g::Temporalfields{gauge},
+    ) where {Dim,Dirac,fermion,gauge}
+        return new{Dim,Dirac,fermion,gauge}(hascovnet, covneuralnet, D, temp_f, temp_g)
+    end
+end
+
+"""
+    Renew(action::GeneralizedDomainwallFermiAction, renewed_operator)
+
+Reuse an action's scratch fields with an operator obtained by `Renew` from its
+current operator. The old and new action share scratch and cannot run concurrently.
+Unrelated geometries, communicators and EO settings are rejected.
+"""
+function Renew(action::GeneralizedDomainwallFermiAction{Dim,D,F,G}, operator::D) where {
+    Dim,D<:GeneralizedDomainwall_Dirac_operator,F<:DomainwallFermion_5D_MPILattice,G,
+}
+    previous = action.diracoperator
+    for (old, new) in ((previous.D5DW, operator.D5DW), (previous.D5DW_PV, operator.D5DW_PV))
+        old._temporary_fermi === new._temporary_fermi &&
+            old._temporary_fermion_forCG === new._temporary_fermion_forCG &&
+            old.use_eo == new.use_eo || throw(ArgumentError(
+                "action scratch can only be reused with a renewed operator sharing its original pools and EO setting"))
+    end
+    return GeneralizedDomainwallFermiAction{Dim,D,F,G}(
+        action.hascovnet, action.covneuralnet, operator,
+        action._temporary_fermionfields, action._temporary_gaugefields)
 end
 
 function evaluate_FermiAction(

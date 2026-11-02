@@ -96,9 +96,12 @@ import .Dirac_operators:
     GeneralFermionAction,
     DomainwallFermion_5D_MPILattice,
     MobiusDomainwallFermion_5D_MPILattice,
+    import_domainwall_physical_source!,
     solve_domainwall_physical_propagator!,
     domainwall_physical_point_propagators,
     domainwall_residual_mass_correlator,
+    domainwall_residual_mass_gradient,
+    Renew,
     WilsonFermion_4D_wing
 
 include("./action/NHYPSmearedFermiAction.jl")
@@ -107,8 +110,10 @@ export GeneralFermion, DdagDgeneral
 export WilsonFermion_4D_MPILattice, StaggeredFermion_4D_MPILattice
 export DomainwallFermion_5D_MPILattice,
     MobiusDomainwallFermion_5D_MPILattice
-export solve_domainwall_physical_propagator!
+export import_domainwall_physical_source!, solve_domainwall_physical_propagator!
 export domainwall_physical_point_propagators, domainwall_residual_mass_correlator
+export domainwall_residual_mass_gradient
+export Renew
 export dSFdU!
 export apply_F_5D!, apply_δF_5D!, D4x_5D!, Z4_distribution_fermi!
 

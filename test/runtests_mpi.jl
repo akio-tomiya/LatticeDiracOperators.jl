@@ -20,9 +20,7 @@ using Test
         "wilson_lm_callback_ad.jl",
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
-        "domainwall_mpialattice.jl",
-        "domainwall_eo.jl",
-        "domainwall_grid_reference.jl",
+        "runtests_domainwall.jl",
     ]
     for test_file in test_files
         @info "Running isolated two-rank test" test_file

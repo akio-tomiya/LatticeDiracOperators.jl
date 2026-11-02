@@ -57,6 +57,9 @@ field semantics follow the LatticeMatrices API.
 solve_domainwall_physical_propagator!
 domainwall_physical_point_propagators
 domainwall_residual_mass_correlator
+import_domainwall_physical_source!
+domainwall_residual_mass_gradient
+Renew
 ```
 
 See [Legacy API and examples](howtouse.md) for the pre-v1 concrete types and
