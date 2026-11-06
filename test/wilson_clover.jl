@@ -223,9 +223,62 @@ function test_csw_zero_force(NC)
     end
 end
 
+site_array(y, NC, L) = ComplexF64[y[c, ix, iy, iz, it, alpha]
+                                  for c = 1:NC, ix = 1:L, iy = 1:L, iz = 1:L, it = 1:L, alpha = 1:4]
+
+# The standard clover term -κ c_SW Σ_{μ<ν} σ_μν F_μν x (Bridge++, LatticeMatrices.jl),
+# with σ_μν = [γ_μ, γ_ν]/2 and F_μν the traceless part of (Q_μν - Q_μν†)/8, Q_μν the
+# sum of the four counterclockwise leaves at x, written out here independently of the
+# package's clover code.
+function reference_clover_term(U, x, kappa, csw)
+    NC = U[1].NC
+    L = U[1].NX
+    gamma, _, _ = LDO.mk_gamma(1.0)
+    link(mu, s) = ComplexF64[U[mu][i, j, s...] for i = 1:NC, j = 1:NC]
+    shift(s, mu, k) = ntuple(d -> d == mu ? mod1(s[d] + k, L) : s[d], 4)
+    out = zeros(ComplexF64, NC, L, L, L, L, 4)
+    for it = 1:L, iz = 1:L, iy = 1:L, ix = 1:L
+        s = (ix, iy, iz, it)
+        psi = [ComplexF64[x[c, s..., beta] for c = 1:NC] for beta = 1:4]
+        for mu = 1:4, nu = mu+1:4
+            smu, snu = shift(s, mu, -1), shift(s, nu, -1)
+            Q = link(mu, s) * link(nu, shift(s, mu, 1)) * link(mu, shift(s, nu, 1))' * link(nu, s)' +
+                link(nu, s) * link(mu, shift(smu, nu, 1))' * link(nu, smu)' * link(mu, smu) +
+                link(mu, smu)' * link(nu, shift(smu, nu, -1))' * link(mu, shift(smu, nu, -1)) * link(nu, snu) +
+                link(nu, snu)' * link(mu, snu) * link(nu, shift(snu, mu, 1)) * link(mu, s)'
+            F = (Q - Q') / 8
+            F -= (tr(F) / NC) * I
+            sigma = (gamma[:, :, mu] * gamma[:, :, nu] - gamma[:, :, nu] * gamma[:, :, mu]) / 2
+            for alpha = 1:4, beta = 1:4
+                iszero(sigma[alpha, beta]) && continue
+                out[:, s..., alpha] .+= (-kappa * csw * sigma[alpha, beta]) .* (F * psi[beta])
+            end
+        end
+    end
+    return out
+end
+
+function test_clover_sign(NC; csw=0.7)
+    L = 3
+    U = make_gauge(NC; L=L, seed=2026110601)
+    x = make_spinor(U; seed=2026110602)
+    Dwilson = Dirac_operator(U, x, wilson_parameters())
+    Dclover = Dirac_operator(U, x, wilson_parameters(csw=csw))
+    clover_only = site_array(apply_operator(Dclover, x), NC, L) .- site_array(apply_operator(Dwilson, x), NC, L)
+    reference = reference_clover_term(U, x, KAPPA, csw)
+    @test norm(reference) > 1.0e-6
+    @test norm(clover_only - reference) / norm(reference) < 1.0e-12
+end
+
 @testset "Wilson-clover operator" begin
     for NC in (2, 3)
         test_operator(NC)
+    end
+end
+
+@testset "Wilson-clover sign convention" begin
+    for NC in (2, 3)
+        test_clover_sign(NC)
     end
 end
 
