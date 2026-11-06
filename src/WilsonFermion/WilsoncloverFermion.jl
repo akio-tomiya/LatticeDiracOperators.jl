@@ -1,5 +1,8 @@
 const CLOVER_DIRECTION_PAIRS = ((1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4))
 
+# The clover term is D_W - κ c_SW Σ_{μ<ν} σ_μν F_μν, with σ_μν = [γ_μ, γ_ν]/2 and F_μν the
+# traceless part of (Q_μν - Q_μν†)/8 (Bridge++, LatticeMatrices.jl WilsonDiracCloverOperator4D).
+# clover_coefficient = -cSW is the factor the operator and the force multiply κ σF by.
 struct WilsonClover
     cSW::Float64
     clover_coefficient::Float64
@@ -14,7 +17,7 @@ function WilsonClover(cSW, Dim, NV, U, hop)
     @assert NV == expected_NV "The fermion and gauge-field volumes must agree"
     clover = WilsonClover(
         Float64(cSW),
-        Float64(cSW),
+        -Float64(cSW),
         zeros(ComplexF64, NC, NC, NV, length(CLOVER_DIRECTION_PAIRS)),
         clover_sigma_matrices(),
     )

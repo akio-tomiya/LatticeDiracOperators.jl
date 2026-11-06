@@ -996,7 +996,7 @@ function cal_dFμν_old!(dFμν1, dFμν2, U::Array{<:AbstractGaugefields{NC},1}
     #function calc_dFμν!(dFμν1,dFμν2,U::Array{<:AbstractGaugefields{NC},1},fermi_action,μ,ν,iflag,work1,work4)
     D = fermi_action.diracoperator
     hop = D.κ
-    Clover_coefficient = D.cloverterm.cSW
+    Clover_coefficient = D.cloverterm.clover_coefficient
     coe = im * 0.125 * hop * Clover_coefficient
     #println("coe ",coe)
     #=
@@ -1239,7 +1239,7 @@ end
 function cal_dFμν!(dFμν1, dFμν2, U::Array{<:AbstractGaugefields{NC},1}, fermi_action, work1, work2, work3, work4, temp1, temp2, temp3, temp4, μ, ν, iflag) where {NC}
     D = fermi_action.diracoperator
     hop = D.κ
-    Clover_coefficient = D.cloverterm.cSW
+    Clover_coefficient = D.cloverterm.clover_coefficient
     coe = im * 0.125 * hop * Clover_coefficient
     #numbasis = ifelse(NC == 3,8,3)
     numbasis = NC^2 - 1
