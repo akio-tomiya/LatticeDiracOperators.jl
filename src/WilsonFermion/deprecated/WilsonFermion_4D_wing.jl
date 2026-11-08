@@ -1095,8 +1095,8 @@ function apply_γ5!(x::WilsonFermion_4D_wing{NC}) where {NC}
                     for i2 = 1:n2
                         #ix = i2+NDW
                         @simd for ic = 1:NC
-                            x.f[i1, i2, i3, i4, i5, i6] =
-                                x.f[i1, i2, i3, i4, i5, i6] * ifelse(i6 <= 2, -1, 1)
+                            x.f[ic, i2, i3, i4, i5, i6] =
+                                x.f[ic, i2, i3, i4, i5, i6] * ifelse(i6 <= 2, -1, 1)
                         end
                     end
                 end

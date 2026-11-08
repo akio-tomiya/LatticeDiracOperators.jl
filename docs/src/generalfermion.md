@@ -5,6 +5,31 @@ most naturally expressed as field operations. The callback may wrap a
 LatticeMatrices operator, but it may also define `D` directly from shifts,
 link products, spin/flavor matrices, and field additions.
 
+## Global vectors and eigensystems
+
+`length(x)` for a `GeneralFermion` counts the global interior components,
+excluding halos. `convert_to_normalvector(x)` gathers a host vector on every
+rank in `(color, column, x1, ..., xD)` order. All ranks in the field communicator
+must call it together. `substitute_fermion!(x, values)` loads a replicated global
+vector into the owning local blocks and refreshes halos; every rank must supply
+the same values. Both operations support JACC accelerator storage.
+
+Linear reads `x[i]` are collective and gather the global vector. Linear writes
+`x[i] = value` must use the same global index and value on all ranks; only the
+owning rank updates its storage through JACC. Call `set_wing_fermion!(x)` after
+a sequence of component writes. Use bulk conversion/loading for dense tools
+instead of component loops.
+
+`eigensystem(A, x, radius, origin, z2!, randomize!; ...)` supports these fields.
+The operator must provide `mul!` and its adjoint, and the randomization callbacks
+must produce consistent distributed fields. The method uses distributed JACC
+operator applications and vector algebra, with replicated dense moment matrices
+and a host SVD. Its dense storage therefore scales with global vector size.
+`residual_tolerance` controls eigenpair acceptance (default `1e-8`); `δ` controls
+relative singular-value truncation. Contour moments use coordinates centered
+at `origin` and scaled by the positive `radius`. Increasing the residual tolerance accepts
+less accurate eigenvectors and does not improve their accuracy.
+
 ## Callback contract
 
 Define an application function with this signature:

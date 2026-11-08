@@ -170,6 +170,11 @@ function Dirac_operator(
     elseif parameters["Dirac_operator"] in ("HISQ", "hisq")
         HISQ_Dirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson"
+        if check_parameters(parameters, "hasclover", false)
+            Base.depwarn("Use Dirac_operator=\"WilsonClover\" for Clover; " *
+                "initialize all fields with the LatticeMatrices backend.", :Dirac_operator)
+            return Wilson_Dirac_operator_clover(U, x, parameters)
+        end
         if Dim == 4
             fasterversion = check_parameters(parameters, "faster version", true)
         else
@@ -201,13 +206,7 @@ function Dirac_operator(
         if fasterversion
             @warn "The faster version is not supported but now \"faster version\" is true. We ignore it. "
         end
-        if Dim == 4 && eltype(U) <: Gaugefields_4D_MPILattice
-            Wilson_Dirac_operator_clover(U, x, parameters)
-        else
-            legacy_parameters = copy(parameters)
-            legacy_parameters["hasclover"] = true
-            Wilson_Dirac_operator(U, x, legacy_parameters)
-        end
+        Wilson_Dirac_operator_clover(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Wilson_general"
         Wilson_GeneralDirac_operator(U, x, parameters)
     elseif parameters["Dirac_operator"] == "Domainwall"
@@ -263,6 +262,13 @@ function get_temporaryvectors_forCG(A::T) where {T<:DdagD_operator}
     return A.dirac._temporary_fermion_forCG
 end
 
+# Backends with field-owned phases validate their operator/field contract here.
+_check_operator_field_boundaries(A, x, y) = nothing
+_check_operator_field_boundaries(A::Adjoint_Dirac_operator, x, y) =
+    _check_operator_field_boundaries(A.parent, x, y)
+_check_operator_field_boundaries(A::DdagD_operator, x, y) =
+    _check_operator_field_boundaries(A.dirac, x, y)
+
 """
     solve_DinvX!(solution, operator, source)
 
@@ -296,6 +302,7 @@ function solve_DinvX!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Dirac_operator,T3<:AbstractFermionfields}
+    _check_operator_field_boundaries(A, x, y)
     #println("print $(A.verbose_print)")
     diagnostics = if A.method_CG == "bicg"
         bicg(y, A, x; eps=A.eps_CG, maxsteps=A.MaxCGstep, verbose=A.verbose_print)#set_verbose(A.verbose_level)) 
@@ -349,6 +356,7 @@ function solve_DinvX!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:Adjoint_Dirac_operator,T3<:AbstractFermionfields}
+    _check_operator_field_boundaries(A, x, y)
     diagnostics = if A.parent.method_CG == "bicg"
         bicg(
             y,
@@ -427,6 +435,7 @@ function solve_DinvX!(
     A::T2,
     x::T3,
 ) where {T1<:AbstractFermionfields,T2<:DdagD_operator,T3<:AbstractFermionfields}
+    _check_operator_field_boundaries(A, x, y)
     eps = get_eps(A)
     maxsteps = get_maxsteps(A)
     verbose = get_verbose(A)
@@ -468,6 +477,7 @@ function LinearAlgebra.mul!(
     A::T,
     x::AbstractFermionfields{NC,Dim},
 ) where {T<:DdagD_operator,NC,Dim} #y = A*x
+    _check_operator_field_boundaries(A, x, y)
     temporary_fields = get_temporaryvectors(A.dirac)
     temp, it_temp = get_temp(temporary_fields)
     #temp = A.dirac._temporary_fermi[5]

@@ -120,7 +120,7 @@ barrier(x::WilsonFermion_4D_MPILattice) = communicator_barrier(x.f.comm)
 function Initialize_WilsonFermion(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW}
     ; nowing=false, boundarycondition=[1, 1, 1, -1]) where {NC,NX,NY,NZ,NT,T,AT,NDW}
-    @assert nowing == true "nowing should be false."
+    @assert nowing == true "nowing should be true."
     x = WilsonFermion_4D_MPILattice(
         NC,
         NX,

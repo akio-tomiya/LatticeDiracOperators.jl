@@ -26,7 +26,8 @@ function _wilson_clover_wrapper_core(field)
     return @view field.A[:, :, ranges...]
 end
 
-@testset "WilsonClover MPILattice wrapper" begin
+for boundarycondition in ([1,1,1,-1], [1,1,1,0])
+@testset "WilsonClover MPILattice wrapper $boundarycondition" begin
     nprocs = ldo_test_comm_size()
     global_size = (4 * nprocs, 4, 4, 4)
     process_grid = (nprocs, 1, 1, 1)
@@ -35,7 +36,7 @@ end
         condition="hot", isMPILattice=true, PEs=process_grid,
         verbose_level=0, seed=800,
     )
-    source = Initialize_pseudofermion_fields(gauge[1], "Wilson")
+    source = Initialize_pseudofermion_fields(gauge[1], "Wilson"; boundarycondition)
     rng = Random.MersenneTwister(801)
     source_values = randn(rng, ComplexF64, 3, 4, global_size...)
     source_lattice = LatticeMatrix(
@@ -162,4 +163,5 @@ end
     force_directional = ldo_test_allreduce_sum(local_force_directional)
     @test isapprox(
         force_directional, finite_difference; atol=2e-5, rtol=2e-4)
+end
 end

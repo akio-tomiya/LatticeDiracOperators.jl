@@ -13,10 +13,15 @@ using Test
     end
 
     test_files = [
+        "rhmc_tables.jl",
+        "rhmc_backends.jl",
+        "sakurai_sugiura_generalfermion.jl",
         joinpath("MPIJACC", "halo_epoch.jl"),
         joinpath("MPIJACC", "ad.jl"),
         joinpath("MPIJACC", "pseudofermion_md_action.jl"),
         "wilson_clover_wrapper.jl",
+        "clover_migration.jl",
+        "wilson_mpilattice_boundaries.jl",
         "wilson_lm_callback_ad.jl",
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",
