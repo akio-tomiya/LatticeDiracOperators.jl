@@ -6,7 +6,6 @@
 module AlgRemez
 using AlgRemez_jll
 # Write your package code here.
-const exe = algremez(x -> x)
 
 struct AlgRemez_coeffs
     α0::Float64
@@ -53,8 +52,14 @@ the inverse of the approximation to f(x) = x^(y/z).
 The default value of precision is 42. 
     """
 function calc_coefficients(y, z, n, lambda_low, lambda_high; precision = 42)
-    run(`$exe $y $z $n $n $lambda_low $lambda_high $precision`)
-    datas = readlines("approx.dat")
+    # Keep the JLL environment (library paths) and work in a private directory
+    # so that concurrent calls do not share approx.dat and error.dat.
+    exe = algremez()
+    datas = mktempdir() do directory
+        run(Cmd(`$exe $y $z $n $n $lambda_low $lambda_high $precision`;
+            env = exe.env, dir = directory))
+        readlines(joinpath(directory, "approx.dat"))
+    end
     icount = 3
     αplus0 = parse(Float64, split(datas[icount], "=")[2])
     #println(αplus0)
@@ -88,9 +93,6 @@ function calc_coefficients(y, z, n, lambda_low, lambda_high; precision = 42)
     #for data in datas
     #    println(data)
     #end
-
-    rm("approx.dat")
-    rm("error.dat")
 
     return coeff_plus, coeff_minus
 end

@@ -7,6 +7,14 @@ import LatticeMatrices
 @testset "LatticeDiracOperators.jl" begin
 
     include("public_api.jl")
+    include("rhmc_tables.jl")
+    include("rhmc_backends.jl")
+    include("sakurai_sugiura_generalfermion.jl")
+    include("gamma5_2d.jl")
+    include("gamma5.jl")
+    include("bicg_cleanup.jl")
+    include("wilson_action_cleanup.jl")
+    include("wilson_mpilattice_boundaries.jl")
 
     @testset "Solver diagnostics" begin
         include("solver_diagnostics.jl")
@@ -31,6 +39,7 @@ import LatticeMatrices
         include("lattice_staggered_fermi_action.jl")
         include("hisq_hmc_example.jl")
         include("wilson_clover_wrapper.jl")
+        include("clover_migration.jl")
         include("staggered_mpialattice.jl")
         withenv("LDO_TEST_EXPECT_NO_ENZYME" => "true") do
             include("hisq_mpialattice.jl")

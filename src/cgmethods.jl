@@ -35,6 +35,12 @@ _solver_axpby!(A, a, X, b, Y) = LinearAlgebra.axpby!(a, X, b, Y)
 _solver_mul!(Y, A, X) = mul!(Y, A, X)
 _solver_finish!(A, x) = nothing
 
+# Contour solves update many shifted vectors that are never stencil inputs.
+# Field backends may defer their halos until an operator application or return.
+_ss_axpby!(a, X, b, Y) = LinearAlgebra.axpby!(a, X, b, Y)
+_ss_axpy!(a, X, Y) = LinearAlgebra.axpy!(a, X, Y)
+_ss_prepare!(X) = nothing
+
 
 function add!(b, Y, a, X) #b*Y + a*X -> Y
     LinearAlgebra.axpby!(a, X, b, Y) #X*a + Y*b -> Y
@@ -72,21 +78,25 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
 
 
     temps = get_temporaryvectors_forCG(A)
-    #res = temps[1]
-    res, it_res = get_temp(temps)
-    _solver_copy!(A, res, b)
-    temp1, it_temp1 = get_temp(temps)
-    #temp1 = temps[2]
-    _solver_mul!(temp1, A, x)
-    _solver_axpby!(A, -1, temp1, 1, res)
-    p, it_p = get_temp(temps)
-    q, it_q = get_temp(temps)
-    s, it_s = get_temp(temps)
-    #p = temps[4]
-    #q = temps[5]
-    #s = temps[6]
-
+    it_res = nothing
+    it_temp1 = nothing
+    it_p = nothing
+    it_q = nothing
+    it_s = nothing
     try
+        #res = temps[1]
+        res, it_res = get_temp(temps)
+        _solver_copy!(A, res, b)
+        temp1, it_temp1 = get_temp(temps)
+        #temp1 = temps[2]
+        _solver_mul!(temp1, A, x)
+        _solver_axpby!(A, -1, temp1, 1, res)
+        p, it_p = get_temp(temps)
+        q, it_q = get_temp(temps)
+        s, it_s = get_temp(temps)
+        #p = temps[4]
+        #q = temps[5]
+        #s = temps[6]
         rnorm = real(res ⋅ res)
         initial_rnorm = rnorm
         if rnorm < eps
@@ -155,11 +165,11 @@ function bicg(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #Ax=b
         residual is $rnorm
         maxsteps should be larger.""")
     finally
-        unused!(temps, it_res)
-        unused!(temps, it_temp1)
-        unused!(temps, it_p)
-        unused!(temps, it_q)
-        unused!(temps, it_s)
+        it_res === nothing || unused!(temps, it_res)
+        it_temp1 === nothing || unused!(temps, it_temp1)
+        it_p === nothing || unused!(temps, it_p)
+        it_q === nothing || unused!(temps, it_q)
+        it_s === nothing || unused!(temps, it_s)
     end
 end
 
@@ -183,31 +193,34 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
 
 
     temps = get_temporaryvectors_forCG(A)
-    r, it_r = get_temp(temps)
-    #r = temps[1]
-    _solver_copy!(A, r, b)
-    temp1, it_temp1 = get_temp(temps)
-    #temp1 = temps[2]
-    _solver_mul!(temp1, A, x)
-    _solver_axpby!(A, -1, temp1, 1, r)
-
-    rs, it_rs = get_temp(temps)
-    #rs = temps[3]
-    _solver_copy!(A, rs, r)
-    p, it_p = get_temp(temps)
-    #p = temps[4]
-    _solver_copy!(A, p, r)
-    Ap, it_Ap = get_temp(temps)
-    #Ap = temps[5]
-    s, it_s = get_temp(temps)
-    #s = temps[6]
-    t, it_t = get_temp(temps)
-    #t = temps[7]
-
-
-
-
+    it_r = nothing
+    it_temp1 = nothing
+    it_rs = nothing
+    it_p = nothing
+    it_Ap = nothing
+    it_s = nothing
+    it_t = nothing
     try
+        r, it_r = get_temp(temps)
+        #r = temps[1]
+        _solver_copy!(A, r, b)
+        temp1, it_temp1 = get_temp(temps)
+        #temp1 = temps[2]
+        _solver_mul!(temp1, A, x)
+        _solver_axpby!(A, -1, temp1, 1, r)
+
+        rs, it_rs = get_temp(temps)
+        #rs = temps[3]
+        _solver_copy!(A, rs, r)
+        p, it_p = get_temp(temps)
+        #p = temps[4]
+        _solver_copy!(A, p, r)
+        Ap, it_Ap = get_temp(temps)
+        #Ap = temps[5]
+        s, it_s = get_temp(temps)
+        #s = temps[6]
+        t, it_t = get_temp(temps)
+        #t = temps[7]
         rnorm = real(r ⋅ r)
         initial_rnorm = rnorm
 
@@ -312,13 +325,13 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
         residual is $rnorm
         maxsteps should be larger.""")
     finally
-        unused!(temps, it_r)
-        unused!(temps, it_temp1)
-        unused!(temps, it_rs)
-        unused!(temps, it_p)
-        unused!(temps, it_Ap)
-        unused!(temps, it_s)
-        unused!(temps, it_t)
+        it_r === nothing || unused!(temps, it_r)
+        it_temp1 === nothing || unused!(temps, it_temp1)
+        it_rs === nothing || unused!(temps, it_rs)
+        it_p === nothing || unused!(temps, it_p)
+        it_Ap === nothing || unused!(temps, it_Ap)
+        it_s === nothing || unused!(temps, it_s)
+        it_t === nothing || unused!(temps, it_t)
     end
 end
 
@@ -1229,31 +1242,35 @@ function shiftedbicg_2003(σ, A, b; maxsteps=3000, eps=1e-15, verboselevel=2)
     for i = 1:maxsteps
         ρ = dot(rt, r)
         β = -ρ / ρold
-        axpby!(1, r, -β, u)
-        axpby!(1, rt, -β', ut)
+        _ss_axpby!(1, r, -β, u)
+        _ss_axpby!(1, rt, -β', ut)
+        _ss_prepare!(u)
         mul!(q, A, u)
         qrt = dot(rt, q)
         α = ρ / qrt
-        axpy!(α, u, x)
+        _ss_axpy!(α, u, x)
 
 
         for k = 1:N
             πknew[k] = (1 + α * σ[k]) * πk[k] + (α * β / αold) * (πkold[k] - πk[k])
             βk = (πkold[k] / πk[k])^2 * β
             αk = (πk[k] / πknew[k]) * α
-            axpby!(1 / πk[k], r, -βk, vec_u[k])
-            axpy!(αk, vec_u[k], vec_x[k])
+            _ss_axpby!(1 / πk[k], r, -βk, vec_u[k])
+            _ss_axpy!(αk, vec_u[k], vec_x[k])
         end
 
 
-        axpy!(-α, q, r)
+        _ss_axpy!(-α, q, r)
+        _ss_prepare!(ut)
         mul!(q, A', ut)
-        axpy!(-α', q, rt)
+        _ss_axpy!(-α', q, rt)
         αold = α
         ρold = ρ
 
         residual = dot(r, r)
-        ρMAX = maximum(abs.(1 / πknew))^2
+        # Each shifted residual is r / pi_k. Scalar/vector division computes
+        # a pseudoinverse and can hide the least-converged shifted system.
+        ρMAX = maximum(abs.(1 ./ πknew))^2
         residual = residual * ρMAX
 
         if verboselevel == 3
@@ -1265,6 +1282,7 @@ function shiftedbicg_2003(σ, A, b; maxsteps=3000, eps=1e-15, verboselevel=2)
                 println("Converged at $i-th step. eps: $residual")
                 println("--------------------------------------")
             end
+            foreach(_ss_prepare!, vec_x)
             return vec_x
         end
 

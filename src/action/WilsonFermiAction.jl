@@ -26,36 +26,41 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
         parameters_action,
     ) where {Dim}
         hascloverterm = has_cloverterm(D)
+        hascloverterm && !_is_lm_clover(D) && throw(_clover_migration_error())
         #println(hascloverterm)
         #hascloverterm = check_parameters(parameters_action, "hascloverterm", false)
         numU = 2
         num = 6
         x, it_x = get_temp(D._temporary_fermi)
-        NC = x.NC
-        numbasis = NC^2 - 1
-        if hascloverterm
-            numU += 9 + 2numbasis
-            num += 4 #+ 2numbasis
-            SUNgenerator = Generator(NC)
-        else
-            SUNgenerator = nothing
+        local xtype, _temporary_fermionfields, SUNgenerator
+        try
+            NC = x.NC
+            numbasis = NC^2 - 1
+            if hascloverterm
+                numU += 9 + 2numbasis
+                num += 4 #+ 2numbasis
+                SUNgenerator = Generator(NC)
+            else
+                SUNgenerator = nothing
+            end
+            #if hascloverterm
+            #NC,_,NN... = size(D.U[1])
+            #NV = prod(NN)
+            #clover_data = Wilsonclover_data(D,NV)
+            #numU += 2
+            #    error("not implemented yet.")
+            #else
+            #    clover_data = nothing
+
+            #end
+
+
+
+            xtype = typeof(x)
+            _temporary_fermionfields = Temporalfields(x; num)# Array{xtype,1}(undef, num)
+        finally
+            unused!(D._temporary_fermi, it_x)
         end
-        #if hascloverterm
-        #NC,_,NN... = size(D.U[1])
-        #NV = prod(NN)
-        #clover_data = Wilsonclover_data(D,NV)            
-        #numU += 2
-        #    error("not implemented yet.")
-        #else
-        #    clover_data = nothing
-
-        #end
-
-
-
-        xtype = typeof(x)
-        _temporary_fermionfields = Temporalfields(x; num)# Array{xtype,1}(undef, num)
-        unused!(D._temporary_fermi, it_x)
         #for i = 1:num
         #    _temporary_fermionfields[i] = similar(x)
         #end
@@ -83,6 +88,27 @@ struct WilsonFermiAction{Dim,Dirac,fermion,gauge,hascloverterm} <:
     end
 end
 
+# Batch acquisition in Temporalfields is not transactional. Track each token
+# before requesting the next field, and release only this call's acquisitions.
+function _with_wilson_temporary_fields(f, pool::Temporalfields{T}, count) where {T}
+    fields = Vector{T}(undef, count)
+    tokens = Vector{Int}(undef, count)
+    acquired = 0
+    try
+        for i in 1:count
+            field, token = get_temp(pool)
+            tokens[i] = token
+            acquired = i
+            fields[i] = field
+        end
+        return f(fields)
+    finally
+        for i in acquired:-1:1
+            unused!(pool, tokens[i])
+        end
+    end
+end
+
 function _calc_lm_clover_force_fromX!(
     force::Vector{TG},
     Y::TF,
@@ -95,11 +121,9 @@ function _calc_lm_clover_force_fromX!(
     mul!(Y, W, X)
     set_wing_fermion!(Y)
 
-    gauge_work, gauge_token = get_temp(
-        fermi_action._temporary_gaugefields, 5)
-    raw_gradient = gauge_work[1:4]
-    converted_gradient = gauge_work[5]
-    try
+    _with_wilson_temporary_fields(fermi_action._temporary_gaugefields, 5) do gauge_work
+        raw_gradient = gauge_work[1:4]
+        converted_gradient = gauge_work[5]
         clear_U!(raw_gradient)
         wilson_clover_link_pullback!(
             ntuple(mu -> raw_gradient[mu].U, Val(4)),
@@ -114,8 +138,6 @@ function _calc_lm_clover_force_fromX!(
             mul!(converted_gradient, U[mu], raw_gradient[mu]')
             add_U!(force[mu], converted_gradient)
         end
-    finally
-        unused!(fermi_action._temporary_gaugefields, gauge_token)
     end
     return nothing
 end
@@ -126,11 +148,11 @@ function evaluate_FermiAction(
     ϕ::AbstractFermionfields,
 ) where {Dim,Dirac,fermion,gauge}
     W = fermi_action.diracoperator(U)
-    η, it_eta = get_temp(fermi_action._temporary_fermionfields)#fermi_action._temporary_fermionfields[1]
-    solve_DinvX!(η, W', ϕ)
-    Sf = dot(η, η)
-    unused!(fermi_action._temporary_fermionfields, it_eta)
-    return real(Sf)
+    return _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 1) do fields
+        η = fields[1]
+        solve_DinvX!(η, W', ϕ)
+        return real(dot(η, η))
+    end
 end
 
 function calc_UdSfdU!(
@@ -142,34 +164,34 @@ function calc_UdSfdU!(
 
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
-    X, it_X = get_temp(fermi_action._temporary_fermionfields)
-    Y, it_Y = get_temp(fermi_action._temporary_fermionfields)
-    #X = fermi_action._temporary_fermionfields[end]
-    #Y = fermi_action._temporary_fermionfields[2]
-    #X = (D^dag D)^(-1) ϕ 
-    #
-    #println("Xd ",X[1,1,1,1,1,1])
-    #ϕ.f .= 1
-    #println("solve DinvX")
-    #mul!(X, WdagW, ϕ)
-    #println("----------------------")
-    #println("----------------------")
-    #set_wing_fermion!(X)
-    #println("----------------------")
-    #println("----------------------")
-    #return
+    _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 2) do fields
+        X, Y = fields
+        #X = fermi_action._temporary_fermionfields[end]
+        #Y = fermi_action._temporary_fermionfields[2]
+        #X = (D^dag D)^(-1) ϕ
+        #
+        #println("Xd ",X[1,1,1,1,1,1])
+        #ϕ.f .= 1
+        #println("solve DinvX")
+        #mul!(X, WdagW, ϕ)
+        #println("----------------------")
+        #println("----------------------")
+        #set_wing_fermion!(X)
+        #println("----------------------")
+        #println("----------------------")
+        #return
 
 
-    solve_DinvX!(X, WdagW, ϕ)
-    #error("ee")
-    #println("X ",X[1,1,1,1,1,1])
-    clear_U!(UdSfdU)
+        solve_DinvX!(X, WdagW, ϕ)
+        #error("ee")
+        #println("X ",X[1,1,1,1,1,1])
+        clear_U!(UdSfdU)
 
-    calc_UdSfdU_fromX!(UdSfdU, Y, fermi_action, U, X)
-    #println("----aa--")
-    set_wing_U!(UdSfdU)
-    unused!(fermi_action._temporary_fermionfields, it_X)
-    unused!(fermi_action._temporary_fermionfields, it_Y)
+        calc_UdSfdU_fromX!(UdSfdU, Y, fermi_action, U, X)
+        #println("----aa--")
+        set_wing_U!(UdSfdU)
+    end
+    return nothing
 end
 
 function calc_UdSfdU_fromX!(
@@ -189,85 +211,81 @@ function calc_UdSfdU_fromX!(
     mul!(Y, W, X)
     set_wing_fermion!(Y)
 
-    temp0_f, it_temp0_f = get_temp(fermi_action._temporary_fermionfields)
-    temp1_f, it_temp1_f = get_temp(fermi_action._temporary_fermionfields)
-    #temp0_f = fermi_action._temporary_fermionfields[3]
-    #temp1_f = fermi_action._temporary_fermionfields[4]
-    temp0_g, it_temp0_g = get_temp(fermi_action._temporary_gaugefields)
-    #temp0_g = fermi_action._temporary_gaugefields[1]
+    _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 2) do fields
+        temp0_f, temp1_f = fields
+        _with_wilson_temporary_fields(fermi_action._temporary_gaugefields, 1) do gauge_fields
+            temp0_g = gauge_fields[1]
+            if hascloverterm
+                D = fermi_action.diracoperator
+                hop = D.κ
+                Clover_coefficient = D.cloverterm.cSW
+                coe = im * 0.125 * hop * Clover_coefficient
+            end
 
-    if hascloverterm
-        D = fermi_action.diracoperator
-        hop = D.κ
-        Clover_coefficient = D.cloverterm.cSW
-        coe = im * 0.125 * hop * Clover_coefficient
+
+            for μ = 1:Dim
+                #!  Construct U(x,mu)*P1
+
+                # U_{k,μ} X_{k+μ}
+                Xplus = shift_fermion(X, μ)
+
+                #@time mul!(temp0_f,U[μ],X)
+
+                mul!(temp0_f, U[μ], Xplus)
+
+
+
+
+                # (r-γ_μ) U_{k,μ} X_{k+μ}
+                #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+                if W.r == 1 && Dim == 4
+                    mul_1minusγμx!(temp1_f, temp0_f, μ)
+                else
+                    mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+                end
+
+                #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+
+                # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp0_f, W.hopp[μ], temp1_f)
+
+                # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+                mul!(temp0_g, temp0_f, Y')
+
+                add_U!(UdSfdU[μ], -coeff, temp0_g)
+
+                #!  Construct P2*U_adj(x,mu)
+                # Y_{k+μ}^dag U_{k,μ}^dag
+                Yplus = shift_fermion(Y, μ)
+                mul!(temp0_f, Yplus', U[μ]')
+
+                # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                if W.r == 1 && Dim == 4
+                    mul_x1plusγμ!(temp1_f, temp0_f, μ)
+                else
+                    mul!(temp1_f, temp0_f, view(W.rplusγ, :, :, μ))
+                end
+
+                # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_f, W.hopm[μ], temp1_f)
+
+                # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_g, X, temp0_f)
+
+                add_U!(UdSfdU[μ], coeff, temp0_g)
+
+                if hascloverterm
+                    clear_U!(temp0_g)
+                    dSclover!(temp0_g, μ, X, Y, U, fermi_action)
+                    #println(sum(abs.(temp0_g.U)))
+                    add_U!(UdSfdU[μ], -coeff * 0, temp0_g)
+                    #add!(p[μ],-τ*mdparams.Δτ,c)
+                end
+
+            end
+        end
     end
-
-
-    for μ = 1:Dim
-        #!  Construct U(x,mu)*P1
-
-        # U_{k,μ} X_{k+μ}
-        Xplus = shift_fermion(X, μ)
-
-        #@time mul!(temp0_f,U[μ],X)
-
-        mul!(temp0_f, U[μ], Xplus)
-
-
-
-
-        # (r-γ_μ) U_{k,μ} X_{k+μ}
-        #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
-        if W.r == 1 && Dim == 4
-            mul_1minusγμx!(temp1_f, temp0_f, μ)
-        else
-            mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
-        end
-
-        #mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
-
-        # κ (r-γ_μ) U_{k,μ} X_{k+μ}
-        mul!(temp0_f, W.hopp[μ], temp1_f)
-
-        # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-        mul!(temp0_g, temp0_f, Y')
-
-        add_U!(UdSfdU[μ], -coeff, temp0_g)
-
-        #!  Construct P2*U_adj(x,mu)
-        # Y_{k+μ}^dag U_{k,μ}^dag
-        Yplus = shift_fermion(Y, μ)
-        mul!(temp0_f, Yplus', U[μ]')
-
-        # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        if W.r == 1 && Dim == 4
-            mul_x1plusγμ!(temp1_f, temp0_f, μ)
-        else
-            mul!(temp1_f, temp0_f, view(W.rplusγ, :, :, μ))
-        end
-
-        # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        mul!(temp0_f, W.hopm[μ], temp1_f)
-
-        # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        mul!(temp0_g, X, temp0_f)
-
-        add_U!(UdSfdU[μ], coeff, temp0_g)
-
-        if hascloverterm
-            clear_U!(temp0_g)
-            dSclover!(temp0_g, μ, X, Y, U, fermi_action)
-            #println(sum(abs.(temp0_g.U)))
-            add_U!(UdSfdU[μ], -coeff * 0, temp0_g)
-            #add!(p[μ],-τ*mdparams.Δτ,c)
-        end
-
-    end
-
-    unused!(fermi_action._temporary_fermionfields, it_temp0_f)
-    unused!(fermi_action._temporary_fermionfields, it_temp1_f)
-    unused!(fermi_action._temporary_gaugefields, it_temp0_g)
+    return nothing
 
 end
 
@@ -282,31 +300,32 @@ function calc_p_UdSfdU!(
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     if _is_lm_clover(fermi_action.diracoperator)
-        force, force_tokens = get_temp(
-            fermi_action._temporary_gaugefields, Dim)
-        clear_U!(force)
-        calc_UdSfdU!(force, fermi_action, U, ϕ)
-        for μ in 1:Dim
-            Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+        _with_wilson_temporary_fields(fermi_action._temporary_gaugefields, Dim) do force
+            clear_U!(force)
+            calc_UdSfdU!(force, fermi_action, U, ϕ)
+            for μ in 1:Dim
+                Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+            end
         end
-        unused!(fermi_action._temporary_gaugefields, force_tokens)
         return nothing
     end
     #println("------dd")
     W = fermi_action.diracoperator(U)
     WdagW = DdagD_Wilson_operator(W)
-    X = fermi_action._temporary_fermionfields[end]
-    Y = fermi_action._temporary_fermionfields[2]
-    #X = (D^dag D)^(-1) ϕ 
-    #
-    #println("Xd ",X[1,1,1,1,1,1])
-    solve_DinvX!(X, WdagW, ϕ)
-    #println("X ",X[1,1,1,1,1,1])
-    #clear_U!(UdSfdU)
+    _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 2) do fields
+        X, Y = fields
+        #X = (D^dag D)^(-1) ϕ
+        #
+        #println("Xd ",X[1,1,1,1,1,1])
+        solve_DinvX!(X, WdagW, ϕ)
+        #println("X ",X[1,1,1,1,1,1])
+        #clear_U!(UdSfdU)
 
-    calc_p_UdSfdU_fromX!(p, Y, fermi_action, U, X, coeff=coeff)
-    #println("----aa--")
-    #set_wing_U!(UdSfdU)
+        calc_p_UdSfdU_fromX!(p, Y, fermi_action, U, X, coeff=coeff)
+        #println("----aa--")
+        #set_wing_U!(UdSfdU)
+    end
+    return nothing
 end
 
 function calc_p_UdSfdU_fromX!(
@@ -318,81 +337,82 @@ function calc_p_UdSfdU_fromX!(
     coeff=1,
 ) where {Dim,Dirac,fermion,gauge,hascloverterm}
     if _is_lm_clover(fermi_action.diracoperator)
-        force, force_tokens = get_temp(
-            fermi_action._temporary_gaugefields, Dim)
-        clear_U!(force)
-        _calc_lm_clover_force_fromX!(
-            force, Y, fermi_action, U, X; coeff=1)
-        for μ in 1:Dim
-            Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+        _with_wilson_temporary_fields(fermi_action._temporary_gaugefields, Dim) do force
+            clear_U!(force)
+            _calc_lm_clover_force_fromX!(
+                force, Y, fermi_action, U, X; coeff=1)
+            for μ in 1:Dim
+                Traceless_antihermitian_add!(p[μ], coeff, force[μ])
+            end
         end
-        unused!(fermi_action._temporary_gaugefields, force_tokens)
         return nothing
     end
     W = fermi_action.diracoperator(U)
     mul!(Y, W, X)
     #set_wing_fermion!(Y)
 
-    temp0_f = fermi_action._temporary_fermionfields[3]
-    temp1_f = fermi_action._temporary_fermionfields[4]
-    temp0_g = fermi_action._temporary_gaugefields[1]
+    _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 2) do fields
+        temp0_f, temp1_f = fields
+        _with_wilson_temporary_fields(fermi_action._temporary_gaugefields, 1) do gauge_fields
+            temp0_g = gauge_fields[1]
+            for μ = 1:Dim
+                #!  Construct U(x,mu)*P1
 
-    for μ = 1:Dim
-        #!  Construct U(x,mu)*P1
+                # U_{k,μ} X_{k+μ}
+                Xplus = shift_fermion(X, μ)
 
-        # U_{k,μ} X_{k+μ}
-        Xplus = shift_fermion(X, μ)
+                #@time mul!(temp0_f,U[μ],X)
 
-        #@time mul!(temp0_f,U[μ],X)
-
-        mul!(temp0_f, U[μ], Xplus)
+                mul!(temp0_f, U[μ], Xplus)
 
 
-        # (r-γ_μ) U_{k,μ} X_{k+μ}
-        #println("1")
-        if W.r == 1 && Dim == 4
-            mul_1minusγμx!(temp1_f, temp0_f, μ)
-        else
-            mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+                # (r-γ_μ) U_{k,μ} X_{k+μ}
+                #println("1")
+                if W.r == 1 && Dim == 4
+                    mul_1minusγμx!(temp1_f, temp0_f, μ)
+                else
+                    mul!(temp1_f, view(W.rminusγ, :, :, μ), temp0_f)
+                end
+
+                # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp0_f, W.hopp[μ], temp1_f)
+
+                # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+                mul!(temp0_g, temp0_f, Y')
+
+                Traceless_antihermitian_add!(p[μ], -coeff, temp0_g)
+
+                #add_U!(UdSfdU[μ],-coeff,temp0_g)
+
+                #!  Construct P2*U_adj(x,mu)
+                # Y_{k+μ}^dag U_{k,μ}^dag
+                Yplus = shift_fermion(Y, μ)
+                mul!(temp0_f, Yplus', U[μ]')
+
+                # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+
+                if W.r == 1
+                    mul_x1plusγμ!(temp1_f, temp0_f, μ)
+                else
+                    mul!(temp1_f, temp0_f, view(W.rplusγ, :, :, μ))
+                end
+
+
+                # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_f, W.hopm[μ], temp1_f)
+
+                # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_g, X, temp0_f)
+
+                Traceless_antihermitian_add!(p[μ], coeff, temp0_g)
+
+                #add_U!(UdSfdU[μ],coeff,temp0_g)
+
+
+            end
         end
-
-        # κ (r-γ_μ) U_{k,μ} X_{k+μ}
-        mul!(temp0_f, W.hopp[μ], temp1_f)
-
-        # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-        mul!(temp0_g, temp0_f, Y')
-
-        Traceless_antihermitian_add!(p[μ], -coeff, temp0_g)
-
-        #add_U!(UdSfdU[μ],-coeff,temp0_g)
-
-        #!  Construct P2*U_adj(x,mu)
-        # Y_{k+μ}^dag U_{k,μ}^dag
-        Yplus = shift_fermion(Y, μ)
-        mul!(temp0_f, Yplus', U[μ]')
-
-        # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-
-        if W.r == 1
-            mul_x1plusγμ!(temp1_f, temp0_f, μ)
-        else
-            mul!(temp1_f, temp0_f, view(W.rplusγ, :, :, μ))
-        end
-
-
-        # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        mul!(temp0_f, W.hopm[μ], temp1_f)
-
-        # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-        mul!(temp0_g, X, temp0_f)
-
-        Traceless_antihermitian_add!(p[μ], coeff, temp0_g)
-
-        #add_U!(UdSfdU[μ],coeff,temp0_g)
-
-
     end
-
+    return nothing
 
 end
 

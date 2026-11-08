@@ -86,6 +86,11 @@ function Wilson_Dirac_operator(
     x,
     parameters,
 ) where {NC,Dim}
+    if check_parameters(parameters, "hasclover", false)
+        Base.depwarn("Use Dirac_operator with Dirac_operator=\"WilsonClover\" " *
+            "and initialize all fields with the LatticeMatrices backend.", :Wilson_Dirac_operator)
+        return Wilson_Dirac_operator_clover(U, x, parameters)
+    end
     xtype = typeof(x)
 
     num = check_parameters(parameters, "numtempvec", 7)
@@ -93,17 +98,7 @@ function Wilson_Dirac_operator(
     @assert haskey(parameters, "κ") "parameters should have the keyword κ"
     κ = parameters["κ"]
 
-    hasclover = check_parameters(parameters, "hasclover", false)
-    if hasclover
-        @assert Dim == 4 "Dimension should be 4 if you want to use Clover terms!"
-        cSW = check_parameters(parameters, "cSW", 1.5612)
-        NV = length(x) ÷ (NC * 4)
-        cloverterm = WilsonClover(cSW, Dim, NV, U, κ)
-        num += 6
-        #error("notsupported")
-    else
-        cloverterm = nothing
-    end
+    cloverterm = nothing
 
 
 

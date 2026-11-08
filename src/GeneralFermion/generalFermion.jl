@@ -72,6 +72,76 @@ function Base.similar(a::L1) where {L1<:GeneralFermion}
     return zero(a)
 end
 
+# Dense-vector interoperability uses global, halo-free column-major ordering:
+# (color, column, x1, ..., xD). Reads are collective on the field communicator.
+Base.length(a::GeneralFermion) = a.field.NC1 * a.field.NC2 * prod(a.field.gsize)
+
+"""
+    convert_to_normalvector(a::GeneralFermion)
+
+Collect the global interior into a host vector on every rank, in
+`(color, column, x1, ..., xD)` order. All ranks must call this operation.
+GPU fields use bulk host transfers; halos are excluded.
+"""
+convert_to_normalvector(a::GeneralFermion) = vec(gather_and_bcast_matrix(a.field))
+
+function Base.getindex(a::GeneralFermion, i::Integer)
+    1 <= i <= length(a) || throw(BoundsError(a, i))
+    return convert_to_normalvector(a)[i]
+end
+
+@inline function _set_general_component!(unused, storage, indices, value)
+    @inbounds storage[indices...] = value
+    return nothing
+end
+
+# Every rank supplies the same global index and value; only its owner writes.
+function Base.setindex!(a::GeneralFermion, value, i::Integer)
+    f = a.field
+    indices = Tuple(CartesianIndices((f.NC1, f.NC2, f.gsize...))[i])
+    stored_value = convert(eltype(f.A), value)
+    local_site = ntuple(d -> indices[d+2] - f.coords[d] * f.PN[d], length(f.PN))
+    if all(d -> 1 <= local_site[d] <= f.PN[d], eachindex(local_site))
+        stored = (indices[1], indices[2], (local_site .+ f.nw)...)
+        JACC.parallel_for(1, _set_general_component!, f.A, stored, stored_value)
+    end
+    LatticeMatrices.mark_halo_dirty!(f)
+    return value
+end
+
+"""
+    substitute_fermion!(a::GeneralFermion, values::AbstractVector)
+
+Load a replicated global interior vector into the owning local blocks and
+refresh halos. All ranks must supply the same vector and call together.
+"""
+function substitute_fermion!(a::GeneralFermion, values::AbstractVector)
+    length(values) == length(a) || throw(DimensionMismatch("expected $(length(a)) global entries"))
+    f = a.field
+    global_values = reshape(Array(values), f.NC1, f.NC2, f.gsize...)
+    ranges = ntuple(d -> (f.coords[d] * f.PN[d] + 1):((f.coords[d] + 1) * f.PN[d]), length(f.PN))
+    interior = ntuple(d -> (f.nw + 1):(f.nw + f.PN[d]), length(f.PN))
+    block = JACC.array(Array(view(global_values, :, :, ranges...)))
+    copyto!(view(f.A, :, :, interior...), block)
+    LatticeMatrices.mark_halo_dirty!(f)
+    set_halo!(f)
+    return a
+end
+
+_ss_load_vector!(a::GeneralFermion, values) = substitute_fermion!(a, values)
+
+function LinearAlgebra.axpy!(alpha::Number, x::GeneralFermion, y::GeneralFermion)
+    axpby!(alpha, x, 1, y)
+    return y
+end
+
+function _ss_axpby!(alpha, x::GeneralFermion, beta, y::GeneralFermion)
+    axpby!(alpha, x.field, beta, y.field)
+    return y
+end
+_ss_axpy!(alpha, x::GeneralFermion, y::GeneralFermion) = _ss_axpby!(alpha, x, 1, y)
+_ss_prepare!(x::GeneralFermion) = set_wing_fermion!(x)
+
 """
     mul!(result::GeneralFermion, operator, input::GeneralFermion)
 
@@ -270,6 +340,12 @@ struct DdagDgeneral{TmulD,TmulDdag,TG,TF} <: DdagD_operator
 end
 export DdagDgeneral
 
+function _check_operator_field_boundaries(A::DdagDgeneral, x::GeneralFermion, y::GeneralFermion)
+    all(field -> Tuple(field.field.phases) == Tuple(A.boundarycondition), (x,y)) ||
+        throw(ArgumentError("GeneralFermion boundary phases must match the operator"))
+    return nothing
+end
+
 function (D::DdagDgeneral)(U::Vector{TG}) where {TG<:Fields_4D_MPILattice}
     return DdagDgeneral(D.apply_D, D.apply_Ddag, U,
         D._temporary_gaugefield, D._temporary_fermion, D._temporary_fermion_forCG,
@@ -305,6 +381,7 @@ function get_boundarycondition(A::T2) where {T2<:DdagDgeneral}
 end
 
 function LinearAlgebra.mul!(y::L1, DdagD::DdagDgeneral, x::L1) where {L1<:GeneralFermion}
+    _check_operator_field_boundaries(DdagD, x, y)
     phitemp1, it_phitemp1 = get_block(DdagD._temporary_fermion)
     numtemp = DdagD.numtemp
     temp, ittemp = get_block(DdagD._temporary_gaugefield, numtemp)

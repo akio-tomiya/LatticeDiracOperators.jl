@@ -29,6 +29,27 @@ end
     return [link.U for link in U]
 end
 
+function _wilson_lm_boundarycondition(x, parameters)
+    phases = x.f.phases
+    boundarycondition = get(parameters, "boundarycondition", phases)
+    length(boundarycondition) == 4 || throw(ArgumentError(
+        "Wilson boundarycondition must contain four entries"))
+    all(phase -> phase == 0 || phase == 1 || phase == -1, boundarycondition) || throw(ArgumentError(
+        "Wilson boundarycondition must contain only 0, +1 or -1"))
+    all(boundarycondition .== phases) || throw(ArgumentError(
+        "Wilson boundarycondition must match the fermion field phases; " *
+        "initialize the field with the requested boundarycondition"))
+    return Int8.(real.(collect(boundarycondition)))
+end
+
+function _check_operator_field_boundaries(A::Wilson_Dirac_operator_improved, x, y)
+    for field in (x, y)
+        all(A.boundarycondition .== field.f.phases) || throw(ArgumentError(
+            "Wilson operator boundarycondition must match input and output field phases"))
+    end
+    return nothing
+end
+
 function _build_Wilson_Dirac_operator_LM(
     U::Array{<:AbstractGaugefields{NC,Dim},1},
     x,
@@ -43,13 +64,7 @@ function _build_Wilson_Dirac_operator_LM(
     #@assert κ == 1 "In this improved Dirac operator, κ should be 1. Now κ = $κ"
     @assert Dim == 4 "This improved Wilson Dirac operator is implemented only for 4D lattice. Now Dim = $Dim"
 
-    if Dim == 4
-        boundarycondition = check_parameters(parameters, "boundarycondition", [1, 1, 1, -1])
-    elseif Dim == 2
-        boundarycondition = check_parameters(parameters, "boundarycondition", [1, -1])
-    else
-        error("Dim should be 2 or 4!")
-    end
+    boundarycondition = _wilson_lm_boundarycondition(x, parameters)
 
     num = 5
     _temporary_fermi = Temporalfields(x; num)
@@ -210,6 +225,7 @@ function LinearAlgebra.mul!(
 
 
 
+    _check_operator_field_boundaries(A, x, y)
     clear_fermion!(y)
     temp1, it_temp1 = get_temp(A._temporary_fermi)
 
@@ -227,6 +243,7 @@ function LinearAlgebra.mul!(
 ) where {T1<:AbstractFermionfields,T,T3<:AbstractFermionfields}
 
 
+    _check_operator_field_boundaries(A, x, y)
     clear_fermion!(y)
     temp1, it_temp1 = get_temp(A.parent._temporary_fermi)
 
@@ -241,6 +258,7 @@ end
 function D4x!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:AbstractGaugefields,
     TA<:Wilson_Dirac_operator_improved}
 
+    _check_operator_field_boundaries(A, x, xout)
     Dwilson = new_UinDonly(A, U)
     mul!(xout.f, Dwilson.D, x.f)
     set_wing_fermion!(xout)
@@ -253,6 +271,7 @@ function D4dagx!(
     A::TA,
     Dim,
 ) where {T1,T2,G<:AbstractGaugefields,TA<:Wilson_Dirac_operator_improved}
+    _check_operator_field_boundaries(A, x, xout)
     Dwilson = new_UinDonly(A, U)
     mul!(xout.f, Dwilson.D', x.f)
     set_wing_fermion!(xout)

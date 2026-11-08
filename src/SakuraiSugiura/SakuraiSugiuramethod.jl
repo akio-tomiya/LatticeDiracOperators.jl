@@ -42,7 +42,7 @@ function estimate_numberofeigenvalues(
     S0 = Vector{xtype}(undef, L0)
     for j = 1:L0
         S0[j] = zero(x)
-        axpy!(1, Sk[j], S0[j])
+        _ss_axpy!(1, Sk[j], S0[j])
     end
 
     mst = evaluate_Eq26(S0, V, L0)
@@ -52,6 +52,13 @@ function estimate_numberofeigenvalues(
     println("Estimated number of eigenvalues: ", mst)
 
     return mst
+end
+
+function _ss_load_vector!(x, values)
+    for i in eachindex(values)
+        x[i] = values[i]
+    end
+    return x
 end
 
 function eigensystem(
@@ -69,7 +76,12 @@ function eigensystem(
     MaxCGstep = 3000,
     epsCG = 1e-16,
     α = 1,
+    residual_tolerance = 1e-8,
 )
+    isfinite(residual_tolerance) && residual_tolerance > 0 ||
+        throw(ArgumentError("residual_tolerance must be finite and positive"))
+    isfinite(δ) && 0 < δ < 1 || throw(ArgumentError("δ must lie between zero and one"))
+    isfinite(radius) && radius > 0 || throw(ArgumentError("radius must be finite and positive"))
     mst = estimate_numberofeigenvalues(
         A,
         x,
@@ -136,8 +148,10 @@ function eigensystem(
         for k = 0:Nmm*2-1
             ik = k * Nrh + i
             for j = 1:Nint
-                coeff = radius * w[j] * z[j]^k / Nint
-                axpy!(-coeff, Y[j], Sk[ik])
+                # Center and scale moments to avoid tiny or overflowing powers
+                # when the contour lies far from the unit circle.
+                coeff = radius * w[j] * ((z[j] - origin) / radius)^k / Nint
+                _ss_axpy!(-coeff, Y[j], Sk[ik])
                 #vec_Sk[:,ik] += ρ*vec_w[j]*vec_z[j]^k*vec_y[:,j]/Nq
             end
         end
@@ -173,19 +187,10 @@ function eigensystem(
     Σ = F.S
     W = F.V
 
-    eps = 1e-8
-
-    δ = 1e-10
-    j = 0
-    ratio = 1
-    while ratio > δ
-        j += 1
-        ratio = Σ[j] / Σ[1]
-        if j == length(Σ)
-            ratio = 0.0
-        end
-    end
-    ms = j
+    # Exclude the first singular value below the cutoff as well as the tail.
+    # Including it amplifies quadrature/roundoff noise in the reconstructed vectors.
+    ms = count(s -> s > δ * Σ[1], Σ)
+    ms == 0 && return ComplexF64[], ComplexF64[], xtype[], 0
     Σinv = zeros(ms, ms)
     for i = 1:ms
         Σinv[i, i] = 1 / Σ[i]
@@ -193,24 +198,15 @@ function eigensystem(
 
     H = U[:, 1:ms]' * Tv * W[:, 1:ms] * Σinv
     ε, v = eigen(H)
+    ε = origin .+ radius .* ε
     println(ε)
 
-    vec_xvec = zeros(ComplexF64, N, ms)
-    for is = 1:ms
-        for i = 1:Nmm
-            a = Σinv * v[:, is]
-            b = W[:, 1:ms] * a
-            c = S[:, 1:Nrh*Nmm] * b
-            vec_xvec[:, is] += c
-        end
-    end
+    vec_xvec = S[:, 1:Nrh*Nmm] * W[:, 1:ms] * Σinv * v
 
     vec_x = Array{typeof(x),1}(undef, ms)
     for i = 1:ms
         vec_x[i] = zero(x)
-        for j = 1:N
-            vec_x[i][j] = vec_xvec[j, i]
-        end
+        _ss_load_vector!(vec_x[i], view(vec_xvec, :, i))
     end
 
     Ax = similar(x)
@@ -236,7 +232,7 @@ function eigensystem(
         #println(residual)
         println("$(ε[i]) residual: $residual")
 
-        if residual < eps
+        if residual < residual_tolerance
             println("$(ε[i]) residual: $residual")
             is += 1
             push!(eigenvalues, ε[i])
@@ -401,7 +397,7 @@ function evaluate_Eq22!(Sk, V, A, x, radius, origin, α, L, Nq, M, MaxCGstep, ep
             ik = k * L + i
             for j = 1:Nq
                 coeff = radius * vec_w[j] * vec_z[j]^k / Nq
-                axpy!(-coeff, Y[j], Sk[ik])
+                _ss_axpy!(-coeff, Y[j], Sk[ik])
                 #vec_Sk[:,ik] += ρ*vec_w[j]*vec_z[j]^k*vec_y[:,j]/Nq
             end
         end

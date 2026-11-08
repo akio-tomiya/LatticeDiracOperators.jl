@@ -1,6 +1,16 @@
 import LatticeMatrices: WilsonDiracCloverOperator4D,
     mul_cached_clover!, mul_cached_clover_adjoint!
 
+function _clover_migration_error()
+    return ArgumentError("WilsonClover uses the LatticeMatrices backend. " *
+        "Create gauge links with Gaugefields.gauge_configuration or " *
+        "Initialize_Gaugefields(...; isMPILattice=true), load the original " *
+        "configuration with Gaugefields.load_configuration!, then recreate " *
+        "fermion fields, actions, momenta and force buffers from those links. " *
+        "CPU, GPU and MPI execution use the same initialization path; " *
+        "Dirac_operator does not copy or convert existing fields.")
+end
+
 """
     Wilson_Dirac_operator_clover(U, x, parameters)
 
@@ -15,6 +25,13 @@ function Wilson_Dirac_operator_clover(
 ) where {NC,Dim}
     Dim == 4 || throw(ArgumentError(
         "the LatticeMatrices Wilson--clover backend is implemented only in 4D"))
+    all(link -> link isa Gaugefields_4D_MPILattice, U) &&
+        x isa WilsonFermion_4D_MPILattice || throw(_clover_migration_error())
+    check_parameters(parameters, "r", 1.0) == 1 || throw(ArgumentError(
+        "WilsonClover currently implements the Wilson parameter r=1"))
+    check_parameters(parameters, "method_CG", "bicg") == "preconditiond_bicgstab" &&
+        throw(ArgumentError("the Wilson unit-diagonal even/odd solver is not a " *
+            "Clover Schur solver; use method_CG=\"bicg\" or \"bicgstab\""))
     @assert haskey(parameters, "κ") "parameters should have the keyword κ"
     check_parameters(parameters, "Donly", false) && throw(ArgumentError(
         "Donly=true is not supported for the Wilson--clover operator"))

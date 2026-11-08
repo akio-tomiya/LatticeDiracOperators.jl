@@ -344,7 +344,7 @@ const coeffs_m14_n10 = AlgRemez_coeffs(
     10,
 )
 
-const coeffs_m18_n10 = AlgRemez_coeffs(
+const coeffs_18_n10 = AlgRemez_coeffs(
     2.3792132499634393,
     [
         -1.6178331673230056e-5,
@@ -372,7 +372,7 @@ const coeffs_m18_n10 = AlgRemez_coeffs(
     ],
     10,
 )
-const coeffs_18_n10 = AlgRemez_coeffs(
+const coeffs_m18_n10 = AlgRemez_coeffs(
     0.4203070069550793,
     [
         0.00012205466614334875,
@@ -1207,10 +1207,6 @@ struct RHMC #type for the rational Hybrid Monte Carlo
         elseif n == 15 && num == 1 && den == 16
             coeffs = coeffs_116_n15
             coeffs_inverse = coeffs_m116_n15
-        elseif n == 15 && num == 1 && den == 2
-            coeffs = coeffs_12_n15
-            coeffs_inverse = coeffs_m12_n15
-
         elseif n == 15 && num == 3 && den == 8
             coeffs = coeffs_38_n15
             coeffs_inverse = coeffs_m38_n15
@@ -1229,9 +1225,6 @@ struct RHMC #type for the rational Hybrid Monte Carlo
         elseif n == 10 && num == -1 && den == 2
             coeffs = coeffs_m12
             coeffs_inverse = coeffs_12
-        elseif n == 15 && num == -1 && den == 2
-            coeffs = coeffs_m12_n15
-            coeffs_inverse = coeffs_12_n15
         elseif n == 15 && num == -1 && den == 4
             coeffs = coeffs_m14
             coeffs_inverse = coeffs_14
@@ -1239,10 +1232,10 @@ struct RHMC #type for the rational Hybrid Monte Carlo
             coeffs = coeffs_m14_n10
             coeffs_inverse = coeffs_14_n10
         elseif n == 15 && num == -1 && den == 8
-            coeffs = coeffs_18
+            coeffs = coeffs_m18
             coeffs_inverse = coeffs_18
         elseif n == 10 && num == -1 && den == 8
-            coeffs = coeffs_18_n10
+            coeffs = coeffs_m18_n10
             coeffs_inverse = coeffs_18_n10
         else
             verbose && println(

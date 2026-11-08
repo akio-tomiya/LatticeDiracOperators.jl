@@ -9,6 +9,12 @@ v1 configuration. For a `Gaugefields_4D_MPILattice`, `family` may be
 The returned Wilson, staggered, or domain-wall field uses LatticeMatrices
 storage and inherits the gauge link's lattice geometry, halo width, process
 grid, communicator, and precision. Pass `L5` for a domain-wall family.
+For Wilson fields, pass `boundarycondition=[1, 1, 1, 1]` for fully periodic
+boundaries; the default is `[1, 1, 1, -1]`. Wilson/Clover operator boundary
+conditions must match these field phases. Omitting the operator's
+`"boundarycondition"` parameter inherits the phases from the field.
+With LatticeMatrices zero-phase support, `[1, 1, 1, 0]` suppresses hopping
+across the temporal boundary in both directions without modifying gauge links.
 """
 function Initialize_pseudofermion_fields(
     u::Gaugefields_4D_MPILattice{NC,NX,NY,NZ,NT,T,AT,NDW},
@@ -34,7 +40,7 @@ function Initialize_pseudofermion_fields(
         if Dirac_operator == "staggered"
             x = Initialize_StaggeredFermion(u; nowing, kwargs...)
         elseif Dirac_operator == "Wilson"
-            x = Initialize_WilsonFermion(u, nowing=nowing)
+            x = Initialize_WilsonFermion(u; nowing, kwargs...)
         elseif Dirac_operator == "Domainwall"
             #@warn "Domainwall fermion is not well tested!!"
             x = Initialize_DomainwallFermion(u, L5, nowing=nowing)
