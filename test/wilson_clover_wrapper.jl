@@ -80,6 +80,25 @@ for boundarycondition in ([1,1,1,-1], [1,1,1,0])
         atol=3e-12, rtol=3e-12,
     )
 
+    # BiCGStab exchanges halos only where the stencil reads a field; the solution
+    # must still solve D x = b and leave the solver with a valid halo.
+    solve_parameters = merge(parameters, Dict(
+        "method_CG" => "bicgstab", "eps_CG" => 1e-24, "MaxCGstep" => 1000))
+    solve_operator = Dirac_operator(gauge, source, solve_parameters)
+    solution = similar(source)
+    clear_fermion!(solution)
+    solve_diagnostics = solve_DinvX!(solution, solve_operator, source)
+    @test solve_diagnostics.method === :bicgstab
+    mul!(actual, solve_operator, solution)
+    @test isapprox(
+        _wilson_clover_wrapper_core(actual.f),
+        _wilson_clover_wrapper_core(source.f);
+        atol=1e-10, rtol=1e-10,
+    )
+    solution_with_halo = copy(solution.f.A)
+    set_halo!(solution.f)
+    @test solution.f.A == solution_with_halo
+
     replacement = Initialize_Gaugefields(
         3, 1, global_size...;
         condition="hot", isMPILattice=true, PEs=process_grid,

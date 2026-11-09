@@ -1,5 +1,17 @@
 # Changes
 
+## Unreleased
+
+- Evaluate Wilson/Clover actions with `method_CG="cg"` by solving the positive
+  normal system and computing `real(phi' * (D' * D)^(-1) * phi)`, consistent
+  with the force path. Direct solves with D or D' still require a supported
+  non-Hermitian solver; fix the adjoint error message to report its parent method.
+- Adopt the BiCGStab improvements from [PR #109](https://github.com/akio-tomiya/LatticeDiracOperators.jl/pull/109): defer
+  Wilson/Clover vector-update halos until stencil use or solver return,
+  write unit-factor stencil results directly, and reuse three inner products.
+- Add action equivalence, true-residual, returned-halo, repeated-call, and
+  failure-cleanup regressions on JACC and MPI fields.
+
 ## v1.1.5
 
 ### RHMC coefficients and AlgRemez startup

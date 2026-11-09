@@ -254,6 +254,29 @@ function LinearAlgebra.mul!(
     set_wing_fermion!(y)
 end
 
+# Krylov vector algebra reads only physical sites. LatticeMatrices marks a field
+# dirty when a kernel writes it, and the Wilson and Wilson--clover stencils call
+# ensure_halo! on their input, so inside a solve a halo is exchanged only where an
+# operator reads the field, not after every vector update. The values equal those of
+# the public field operations, which refresh the halo after each update; the
+# solution leaves the solver with its halo set.
+_solver_copy!(::Wilson_Dirac_operator_improved, y, x) =
+    LatticeMatrices.substitute!(y.f, x.f)
+_solver_axpby!(::Wilson_Dirac_operator_improved, a, x, b, y) =
+    LinearAlgebra.axpby!(a, x.f, b, y.f)
+_solver_finish!(::Wilson_Dirac_operator_improved, x) =
+    LatticeMatrices.ensure_halo!(x.f)
+
+# With factor 1 the public mul! (clear y, apply the stencil to a temporary, add it
+# to y, set the halo of y) gives the stencil output itself; the solver writes it
+# into y directly.
+function _solver_mul!(y, A::Wilson_Dirac_operator_improved, x)
+    isone(A.factor) || return mul!(y, A, x)
+    _check_operator_field_boundaries(A, x, y)
+    _mul_Wilson_LM!(y.f, A.D, A.U, x.f)
+    return y
+end
+
 
 function D4x!(xout::T1, U::Array{G,1}, x::T2, A::TA, Dim) where {T1,T2,G<:AbstractGaugefields,
     TA<:Wilson_Dirac_operator_improved}
