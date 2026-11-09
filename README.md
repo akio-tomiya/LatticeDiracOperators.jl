@@ -1,5 +1,7 @@
 # LatticeDiracOperators
 
+Version 1.1.6 supports CG-based Wilson/Clover action evaluation, reduces BiCGStab halo exchanges and inner products, and removes an unused, incomplete LOBPCG prototype; see [changes.md](changes.md).
+
 [![CI](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/dev/)
 

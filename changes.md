@@ -1,5 +1,21 @@
 # Changes
 
+## v1.1.6
+
+- Evaluate Wilson/Clover actions with `method_CG="cg"` by solving the positive
+  normal system and computing `real(phi' * (D' * D)^(-1) * phi)`, consistent
+  with the force path. Direct solves with D or D' still require a supported
+  non-Hermitian solver; fix the adjoint error message to report its parent method.
+- Adopt the BiCGStab improvements from [PR #109](https://github.com/akio-tomiya/LatticeDiracOperators.jl/pull/109): defer
+  Wilson/Clover vector-update halos until stencil use or solver return,
+  write unit-factor stencil results directly, and reuse three inner products.
+- Add action equivalence, true-residual, returned-halo, repeated-call, and
+  failure-cleanup regressions on JACC and MPI fields.
+- Remove the incomplete, unreferenced `src/LOBPCG/lobpcg.jl` prototype reported
+  in g2-lattice-collab issue #8. It was neither loaded nor exported, and its
+  iteration did not update eigenpairs. No public eigensolver is removed;
+  the supported Sakurai-Sugiura `eigensystem` interface is unchanged.
+
 ## v1.1.5
 
 ### RHMC coefficients and AlgRemez startup

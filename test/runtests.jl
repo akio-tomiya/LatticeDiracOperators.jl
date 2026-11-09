@@ -39,6 +39,7 @@ import LatticeMatrices
         include("lattice_staggered_fermi_action.jl")
         include("hisq_hmc_example.jl")
         include("wilson_clover_wrapper.jl")
+        include("wilson_cg_action.jl")
         include("clover_migration.jl")
         include("staggered_mpialattice.jl")
         withenv("LDO_TEST_EXPECT_NO_ENZYME" => "true") do

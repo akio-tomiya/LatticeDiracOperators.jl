@@ -30,6 +30,10 @@ relative singular-value truncation. Contour moments use coordinates centered
 at `origin` and scaled by the positive `radius`. Increasing the residual tolerance accepts
 less accurate eigenvectors and does not improve their accuracy.
 
+LatticeDiracOperators does not provide a public LOBPCG solver. The unused,
+incomplete source prototype was removed in v1.1.6; `eigensystem` remains the
+supported contour-based interface described above.
+
 ## Callback contract
 
 Define an application function with this signature:

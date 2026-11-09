@@ -406,7 +406,7 @@ function solve_DinvX!(
         =#
 
     else
-        error("A.method_CG = $(A.method_CG) is not supported")
+        error("A.parent.method_CG = $(A.parent.method_CG) is not supported for an adjoint solve")
     end
 
     set_wing_fermion!(y, A.parent.boundarycondition)

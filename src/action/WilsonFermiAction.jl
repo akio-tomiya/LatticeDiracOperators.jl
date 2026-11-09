@@ -150,6 +150,13 @@ function evaluate_FermiAction(
     W = fermi_action.diracoperator(U)
     return _with_wilson_temporary_fields(fermi_action._temporary_fermionfields, 1) do fields
         η = fields[1]
+        if W.method_CG == "cg"
+            # CG applies to the Hermitian positive normal operator, not D†.
+            # Use the same phi† (D†D)^(-1) phi action as the force path.
+            clear_fermion!(η)
+            solve_DinvX!(η, DdagD_Wilson_operator(W), ϕ)
+            return real(dot(ϕ, η))
+        end
         solve_DinvX!(η, W', ϕ)
         return real(dot(η, η))
     end

@@ -122,3 +122,14 @@ solves, or the normal operator for CG. The historical
 `preconditiond_bicgstab` implementation assumes a unit on-site Wilson block
 and is not a Clover Schur solver; it is rejected for Clover. No new Clover
 even/odd preconditioner is introduced by this migration.
+
+## CG action evaluation and solver choice
+
+With `"method_CG" => "cg"`, Wilson and WilsonClover action evaluation solves
+`(D' * D) * X = phi` and returns `real(dot(phi, X))`. This uses the same normal
+operator as the force calculation. CG is not applied directly to D or D';
+use `"bicg"` or `"bicgstab"` for those non-Hermitian solves.
+
+The Wilson/Clover Krylov helpers defer vector-update halo exchanges until
+an operator reads the field. Successful solves still return synchronized
+solution halos, including with MPI and JACC accelerator storage.

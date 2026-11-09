@@ -33,6 +33,7 @@ using Test
         "mpi_optional.jl",
         "latticematrices_backend.jl",
         "wilson_clover_wrapper.jl",
+        "wilson_cg_action.jl",
         "clover_migration.jl",
         "staggered_mpialattice.jl",
         "hisq_mpialattice.jl",

@@ -20,6 +20,7 @@ using Test
         joinpath("MPIJACC", "ad.jl"),
         joinpath("MPIJACC", "pseudofermion_md_action.jl"),
         "wilson_clover_wrapper.jl",
+        "wilson_cg_action.jl",
         "clover_migration.jl",
         "wilson_mpilattice_boundaries.jl",
         "wilson_lm_callback_ad.jl",
