@@ -11,8 +11,8 @@
   write unit-factor stencil results directly, and reuse three inner products.
 - Add action equivalence, true-residual, returned-halo, repeated-call, and
   failure-cleanup regressions on JACC and MPI fields.
-- Remove the incomplete, unreferenced `src/LOBPCG/lobpcg.jl` prototype reported
-  in g2-lattice-collab issue #8. It was neither loaded nor exported, and its
+- Remove the incomplete, unreferenced `src/LOBPCG/lobpcg.jl` prototype.
+  It was neither loaded nor exported, and its
   iteration did not update eigenpairs. No public eigensolver is removed;
   the supported Sakurai-Sugiura `eigensystem` interface is unchanged.
 
