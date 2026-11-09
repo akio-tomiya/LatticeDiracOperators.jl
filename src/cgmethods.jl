@@ -223,6 +223,10 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
         #t = temps[7]
         rnorm = real(r ⋅ r)
         initial_rnorm = rnorm
+        # rs changes only on a restart and r ⋅ r is rnorm, so the restart test and
+        # the next c1 = rs ⋅ r reuse the products already computed.
+        rsnorm = rnorm
+        c1 = dot(rs, r)
 
         if rnorm < eps
             _solver_finish!(A, x)
@@ -240,12 +244,12 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
 
         restart_count = 0
         for i = 1:maxsteps
-            c1 = dot(rs, r)
-            rho_scale = sqrt(real(rs ⋅ rs) * real(r ⋅ r))
+            rho_scale = sqrt(rsnorm * rnorm)
             if abs(c1) <= Base.eps(Float64) * rho_scale
                 _solver_copy!(A, rs, r)
                 _solver_copy!(A, p, r)
                 c1 = rs ⋅ r
+                rsnorm = real(rs ⋅ rs)
                 restart_count += 1
                 println_verbose_level3(
                     verbose,
@@ -313,7 +317,9 @@ function bicgstab(x, A, b; eps=1e-10, maxsteps=1000, verbose=Verbose_print(2)) #
                 )
             end
 
-            β = (dot(rs, r) / c1) * (α / ω)
+            c1_next = dot(rs, r)
+            β = (c1_next / c1) * (α / ω)
+            c1 = c1_next
 
             #p = r + β*(1-ωA)*p
             _solver_axpby!(A, 1, r, β, p)
