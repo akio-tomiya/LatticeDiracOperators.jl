@@ -190,6 +190,11 @@ functions `conventional_hmc!` and `driver_hmc!` each perform one complete HMC
 trajectory. The fixed `accept_uniform` makes the example reproducible; a
 production application should draw one uniform random number per trajectory.
 
+Run the blocks of this section in order in one Julia session. The four
+trajectory blocks call the functions defined in the shared setup, and the two
+MD-driver blocks compare their results with `thin_conventional` and
+`stout_conventional` from the preceding conventional blocks.
+
 ```julia
 # README_V1_HMC_COMMON
 import JACC
@@ -759,8 +764,8 @@ along the first direction uses `process_grid=(2, 1, 1, 1)`.
 Gauge initialization, rank-to-device mapping, and backend-specific setup are
 documented by Gaugefields and LatticeMatrices:
 
-- [Gaugefields four-dimensional and multi-GPU tutorial](https://github.com/akio-tomiya/Gaugefields.jl/blob/main/docs/src/tutorial4d.md)
-- [Gaugefields randomness and reproducibility guide](https://github.com/akio-tomiya/Gaugefields.jl/blob/main/docs/src/randomness.md)
+- [Gaugefields four-dimensional and multi-GPU tutorial](https://github.com/akio-tomiya/Gaugefields.jl/blob/master/docs/src/tutorial4d.md)
+- [Gaugefields randomness and reproducibility guide](https://github.com/akio-tomiya/Gaugefields.jl/blob/master/docs/src/randomness.md)
 
 ## Documentation
 
