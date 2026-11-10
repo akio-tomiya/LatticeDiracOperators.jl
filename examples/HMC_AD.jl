@@ -1,8 +1,12 @@
+# Wilson-fermion HMC on a 4^4 SU(3) lattice in which the gauge force comes from
+# Enzyme automatic differentiation of the plaquette action and the Wilson operator
+# is a user-defined GeneralFermionAction callback. Needs Enzyme and PreallocatedArrays.
+# Run: julia -t 4 --project=. examples/HMC_AD.jl
+
 import JACC
 using Random
 using Enzyme
 JACC.@init_backend
-using MPI
 using Gaugefields
 using LatticeDiracOperators
 using PreallocatedArrays
@@ -129,7 +133,7 @@ function MDstep!(U, p, MDsteps, Dim, Uold, tempvec, β, η, ξ, fermi_action)
     dtemp, its_dtemp = get_block(tempvec, 9)
 
 
-    gauss_distribution!(p)
+    gaussian_momenta!(p)
     gauss_sampling_in_action!(ξ, U, fermi_action)
     sample_pseudofermions!(η, U, fermi_action, ξ)
     Sfold = real(dot(ξ, ξ))
@@ -137,7 +141,7 @@ function MDstep!(U, p, MDsteps, Dim, Uold, tempvec, β, η, ξ, fermi_action)
 
 
     Sold = calc_action(U..., β, NC, temp) + p * p / 2 + Sfold
-    substitute_U!(Uold, U)
+    copy_configuration!(Uold, U)
 
 
 
@@ -162,7 +166,7 @@ function MDstep!(U, p, MDsteps, Dim, Uold, tempvec, β, η, ξ, fermi_action)
 
 
     if rand() > ratio
-        substitute_U!(U, Uold)
+        copy_configuration!(U, Uold)
         return false
     else
         return true
@@ -235,16 +239,15 @@ function HMC_test_4D(NX, NY, NZ, NT, NC, β)
     Dim = 4
     Nwing = 1
     Random.seed!(123)
-    U = Initialize_Gaugefields(NC, Nwing, NX, NY, NZ, NT,
-        condition="cold";
-        isMPILattice=true)
+    U = gauge_configuration(
+        (NX, NY, NZ, NT);
+        colors=NC,
+        halo=Nwing,
+        start=:cold,
+        process_grid=(1, 1, 1, 1),
+    )
 
-
-    comb = 6 #4*3/2
-    factor = 1 / (comb * U[1].NV * U[1].NC)
     tempvec = PreallocatedArray(U[1]; num=30, haslabel=false)
-    temp1, ittemp1 = get_block(tempvec)
-    temp2, ittemp2 = get_block(tempvec)
 
     gsize = (NX, NY, NZ, NT)
     PEs = (1, 1, 1, 1)
@@ -264,15 +267,14 @@ function HMC_test_4D(NX, NY, NZ, NT, NC, β)
     ξ = similar(x)
 
 
-    @time plaq_t = calculate_Plaquette(U, temp1, temp2) * factor
+    @time plaq_t = measure_plaquette(U)
     println("0 plaq_t = $plaq_t")
-    poly = calculate_Polyakov_loop(U, temp1, temp2)
+    poly = measure_polyakov_loop(U)
     println("0 polyakov loop = $(real(poly)) $(imag(poly))")
 
     β = β / 2
-    p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
-    Uold = similar(U)
-    substitute_U!(Uold, U)
+    p = gauge_momenta(U) # traceless anti-Hermitian momenta with NC^2-1 real coefficients per link
+    Uold = copy_configuration(U)
     MDsteps = 10
     numaccepted = 0
 
@@ -283,15 +285,13 @@ function HMC_test_4D(NX, NY, NZ, NT, NC, β)
         numaccepted += ifelse(accepted, 1, 0)
 
         if itrj % 10 == 0
-            @time plaq_t = calculate_Plaquette(U, temp1, temp2) * factor
+            @time plaq_t = measure_plaquette(U)
             println("$itrj plaq_t = $plaq_t")
-            poly = calculate_Polyakov_loop(U, temp1, temp2)
+            poly = measure_polyakov_loop(U)
             println("$itrj polyakov loop = $(real(poly)) $(imag(poly))")
             println("acceptance ratio ", numaccepted / itrj)
         end
     end
-    unused!(tempvec, ittemp1)
-    unused!(tempvec, ittemp2)
 
     return plaq_t, numaccepted / numtrj
 end

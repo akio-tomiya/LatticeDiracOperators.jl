@@ -114,6 +114,6 @@ create a separate Dirac operator when applying the same action concurrently.
 `naik_epsilon` belongs to the quark operator and can differ by species.  A
 physical rooted `2+1` or `2+1+1` simulation should therefore compose separate
 light, strange, and optional charm action terms.  The existing
-`examples/HISQ_HMC_4x4.jl` remains an unrooted `GeneralFermionAction` smoke
-test and a regression oracle for the AD path, not a physical rooted ensemble
-generator.
+`examples/HISQ_HMC_4x4.jl` is an unrooted four-flavor smoke test of
+`StaggeredFermiAction` with `discretization=:hisq` and its analytic force, not
+a physical rooted ensemble generator.
