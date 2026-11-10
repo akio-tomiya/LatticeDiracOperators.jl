@@ -1,5 +1,15 @@
 # Changes
 
+## v1.1.7
+
+- Fix deprecated JACC Wilson inner products with the reduction keyword API
+  supported by JACC 0.6 and 1.x, including 1.4.
+- Add global component writes, dense-vector loading/conversion, and seeded
+  Z2 noise for v1 Wilson fields through JACC and existing MPI communication.
+  Wilson vectors retain `(color, x, y, z, t, spin)` ordering.
+- Add `setvalue_fermion!` for legacy domain-wall fields by forwarding to the
+  selected Wilson slice. Document component-write and halo-update contracts.
+
 ## v1.1.6
 
 - Evaluate Wilson/Clover actions with `method_CG="cg"` by solving the positive

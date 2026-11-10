@@ -3,6 +3,21 @@ abstract type Abstract_DomainwallFermion_5D{NC,WilsonFermion} <:
               AbstractFermionfields_5D{NC} end
 
 """
+    setvalue_fermion!(field::Abstract_DomainwallFermion_5D, value,
+                      color, x, y, z, t, spin, fifth)
+
+Set a component in a legacy domain-wall field using the same coordinates as
+its Wilson slices (local coordinates for legacy MPI fields). Refresh halos
+with `set_wing_fermion!` after writing source components.
+"""
+function setvalue_fermion!(field::Abstract_DomainwallFermion_5D, value,
+                          color::Integer, x::Integer, y::Integer, z::Integer,
+                          t::Integer, spin::Integer, fifth::Integer)
+    field.w[fifth][color, x, y, z, t, spin] = value
+    return value
+end
+
+"""
 Struct for DomainwallFermion
 """
 struct DomainwallFermion_5D{NC,WilsonFermion} <:
