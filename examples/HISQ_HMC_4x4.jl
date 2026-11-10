@@ -1,3 +1,7 @@
+# Four-flavor HISQ HMC smoke test on a 4^4 SU(3) lattice with the analytic
+# StaggeredFermiAction force (one short trajectory by default; see main()).
+# Run: julia -t 4 --project=. examples/HISQ_HMC_4x4.jl
+
 module HISQHMC4x4Example
 
 import JACC
@@ -5,7 +9,6 @@ JACC.@init_backend
 
 using Gaugefields
 using LatticeDiracOperators
-using LatticeMatrices
 using LinearAlgebra
 using Random
 
@@ -75,13 +78,13 @@ function trajectory!(
 )
     step = trajectory_length / mdsteps
 
-    gauss_distribution!(momentum)
+    gaussian_momenta!(momentum)
     gauss_sampling_in_action!(gaussian_fermion, U, fermion)
     sample_pseudofermions!(pseudofermion, U, fermion, gaussian_fermion)
     old_fermion_action = evaluate_FermiAction(
         fermion, U, pseudofermion)
 
-    substitute_U!(old_U, U)
+    copy_configuration!(old_U, U)
     old_hamiltonian = hamiltonian(gauge, U, momentum, old_fermion_action)
 
     for _ in 1:mdsteps
@@ -97,15 +100,11 @@ function trajectory!(
     delta_h = new_hamiltonian - old_hamiltonian
     acceptance_draw = rand()
     accepted = log(acceptance_draw) < -delta_h
-    accepted || substitute_U!(U, old_U)
+    accepted || copy_configuration!(U, old_U)
     return (; accepted, delta_h, old_hamiltonian, new_hamiltonian)
 end
 
-function plaquette(U, gauge)
-    temps = get_temporary_gaugefields(gauge)
-    normalization = 1 / (6 * U[1].NV * U[1].NC)
-    return real(calculate_Plaquette(U, temps[1], temps[2]) * normalization)
-end
+plaquette(U) = real(measure_plaquette(U))
 
 """
     run_hisq_hmc(; kwargs...)
@@ -133,15 +132,14 @@ function run_hisq_hmc(;
     Random.seed!(seed)
 
     # Full HISQ smearing and the three-link Naik term need three halo layers.
-    U = Initialize_Gaugefields(
-        NC,
-        3,
-        LATTICE_SIZE...;
-        condition="cold",
-        isMPILattice=true,
-        PEs=PROCESS_GRID,
+    U = gauge_configuration(
+        LATTICE_SIZE;
+        colors=NC,
+        halo=3,
+        start=:cold,
+        process_grid=PROCESS_GRID,
         comm=communicator,
-        verbose_level=0,
+        verbose=0,
     )
     gauge = gauge_action(U, beta)
 
@@ -169,16 +167,15 @@ function run_hisq_hmc(;
 
     pseudofermion = fermion_template
     gaussian_fermion = similar(fermion_template)
-    momentum = initialize_TA_Gaugefields(U)
-    old_U = similar(U)
-    substitute_U!(old_U, U)
+    momentum = gauge_momenta(U)
+    old_U = copy_configuration(U)
 
     report = verbose
     report && println(
         "HISQ HMC: lattice=4^4 PEs=$PROCESS_GRID ",
         "beta=$beta mass=$mass mdsteps=$mdsteps",
     )
-    report && println("initial plaquette = ", plaquette(U, gauge))
+    report && println("initial plaquette = ", plaquette(U))
 
     accepted_count = 0
     last_result = nothing
@@ -198,11 +195,11 @@ function run_hisq_hmc(;
         last_result = result
         report && println(
             "trajectory $trajectory_number: accepted=$(result.accepted) ",
-            "deltaH=$(result.delta_h) plaquette=$(plaquette(U, gauge))",
+            "deltaH=$(result.delta_h) plaquette=$(plaquette(U))",
         )
     end
 
-    final_plaquette = plaquette(U, gauge)
+    final_plaquette = plaquette(U)
     acceptance_rate = accepted_count / trajectories
     report && println("acceptance rate = $acceptance_rate")
     return (;
