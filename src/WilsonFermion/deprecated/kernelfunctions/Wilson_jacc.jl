@@ -544,7 +544,7 @@ function LinearAlgebra.dot(
 
     N = A.NX * A.NY * A.NZ * A.NT
     #CUDA.@sync begin
-    s = JACC.parallel_reduce(N, +, jacckernel_dot!, A.f, B.f, NC; init=zero(eltype(A.f)))
+    s = JACC.parallel_reduce(N, jacckernel_dot!, A.f, B.f, NC; op=+, init=zero(eltype(A.f)))
     #end
     #s = CUDA.reduce(+, A.temp_volume)
 

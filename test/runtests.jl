@@ -7,6 +7,9 @@ import LatticeMatrices
 @testset "LatticeDiracOperators.jl" begin
 
     include("public_api.jl")
+    include("wilson_sources.jl")
+    test_wilson_sources()
+    test_legacy_fermion_fixes()
     include("rhmc_tables.jl")
     include("rhmc_backends.jl")
     include("sakurai_sugiura_generalfermion.jl")

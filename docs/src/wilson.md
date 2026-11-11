@@ -133,3 +133,44 @@ use `"bicg"` or `"bicgstab"` for those non-Hermitian solves.
 The Wilson/Clover Krylov helpers defer vector-update halo exchanges until
 an operator reads the field. Successful solves still return synchronized
 solution halos, including with MPI and JACC accelerator storage.
+
+## Point sources, vectors, and Z2 noise
+
+The public v1 Wilson APIs work through JACC on CPU and GPU and use the field's
+MPI communicator. For a point source, all ranks execute the same writes:
+
+```julia
+source = Initialize_pseudofermion_fields(U[1], "Wilson")
+clear_fermion!(source)
+# value, color, x, y, z, t, spin (global, one-based coordinates)
+setvalue_fermion!(source, 1.0, 1, 1, 1, 1, 1, 1)
+set_wing_fermion!(source)
+```
+
+Component writes mark halos dirty. Batch any number of writes, then call
+`set_wing_fermion!` collectively before using a stencil. The assignment
+`source[color, x, y, z, t, spin] = value` follows the same contract.
+
+`substitute_fermion!(source, values)` loads a replicated global vector and
+refreshes halos. `convert_to_normalvector(source)` collects the interior into
+a host vector on every rank. Both operations are collective and exclude
+halos. Wilson vectors use `(color, x, y, z, t, spin)` order, preserving the
+historical Wilson convention; GeneralFermion vectors instead use
+`(color, spin, x, y, z, t)` order. For example:
+
+```julia
+values = zeros(ComplexF64, size(source))
+values[1, 1, 1, 1, 1, 1] = 1
+substitute_fermion!(source, vec(values))
+@assert convert_to_normalvector(source) == vec(values)
+Z2_distribution_fermion!(source; seed=0x1234, sweep=0)
+```
+
+Z2 noise fills the interior with real `-1` or `1` and refreshes halos. An
+explicit seed and sweep produce the same global field on every backend and
+MPI decomposition. Without a seed, rank zero draws and broadcasts a fresh one.
+
+Legacy domain-wall fields also accept
+`setvalue_fermion!(field, value, color, x, y, z, t, spin, fifth)`.
+Its coordinates follow the underlying legacy Wilson slice (local coordinates
+on legacy MPI fields); call `set_wing_fermion!` after component writes.

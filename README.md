@@ -1,5 +1,7 @@
 # LatticeDiracOperators
 
+Version 1.1.7 fixes legacy JACC Wilson inner products, adds v1 Wilson component writes, dense-vector loading/conversion and seeded Z2 noise for CPU, GPU, MPI and MPI+GPU, and restores the missing legacy domain-wall setter; see [changes.md](changes.md) and the [Wilson source guide](docs/src/wilson.md#point-sources-vectors-and-z2-noise).
+
 Version 1.1.6 supports CG-based Wilson/Clover action evaluation, reduces BiCGStab halo exchanges and inner products, and removes an unused, incomplete LOBPCG prototype; see [changes.md](changes.md).
 
 [![CI](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml)
