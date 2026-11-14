@@ -1,5 +1,21 @@
 # Changes
 
+## v1.1.8
+
+- Include the Dirac operator `factor` in Wilson and Wilson-clover forces and
+  momentum updates. For a fixed pseudofermion source and `D = factor * D0`,
+  the force now scales as `factor^(-2)`, consistently with the action; previously
+  it scaled as `factor^(-3)`. This affects the factored legacy faster-Wilson and
+  LatticeMatrices implementations, including the clover pullback.
+- Honor `eps_CG` in the legacy staggered constructor. Retain `eps` as a fallback
+  and give `eps_CG` precedence when both are supplied, matching the
+  LatticeMatrices constructor.
+- Add finite-difference action/force and momentum-projection regressions with
+  `factor = 1, 2, 0.5, -1`. Verify Wilson/Clover agreement on CPU, GPU, MPI,
+  and MPI+GPU through JACC and the existing communication paths.
+- Verify existing Wilson temporary-field cleanup, clover boundary-condition,
+  and CG/deferred-halo regressions.
+
 ## v1.1.7
 
 - Fix deprecated JACC Wilson inner products with the reduction keyword API

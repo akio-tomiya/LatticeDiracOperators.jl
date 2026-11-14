@@ -1,5 +1,7 @@
 # LatticeDiracOperators
 
+Version 1.1.8 fixes Wilson/Clover force and momentum scaling for non-unit `factor`, honors `eps_CG` in legacy staggered solvers, and adds finite-difference regressions for CPU, GPU, MPI, and MPI+GPU; see [changes.md](changes.md).
+
 Version 1.1.7 fixes legacy JACC Wilson inner products, adds v1 Wilson component writes, dense-vector loading/conversion and seeded Z2 noise for CPU, GPU, MPI and MPI+GPU, and restores the missing legacy domain-wall setter; see [changes.md](changes.md) and the [Wilson source guide](docs/src/wilson.md#point-sources-vectors-and-z2-noise).
 
 Version 1.1.6 supports CG-based Wilson/Clover action evaluation, reduces BiCGStab halo exchanges and inner products, and removes an unused, incomplete LOBPCG prototype; see [changes.md](changes.md).

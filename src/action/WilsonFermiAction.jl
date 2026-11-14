@@ -131,7 +131,7 @@ function _calc_lm_clover_force_fromX!(
             ntuple(mu -> U[mu].U, Val(4)),
             Y.f,
             X.f;
-            coefficient=coeff,
+            coefficient=coeff * W.factor,
         )
 
         for mu in 1:4
@@ -214,6 +214,8 @@ function calc_UdSfdU_fromX!(
             UdSfdU, Y, fermi_action, U, X; coeff)
     end
     W = fermi_action.diracoperator(U)
+    # d(f D)/dU = f dD/dU; the legacy, unfactored operator has no factor.
+    coeff *= hasproperty(W, :factor) ? W.factor : 1
     #set_wing_fermion!(X)
     mul!(Y, W, X)
     set_wing_fermion!(Y)
@@ -355,6 +357,8 @@ function calc_p_UdSfdU_fromX!(
         return nothing
     end
     W = fermi_action.diracoperator(U)
+    # d(f D)/dU = f dD/dU; the legacy, unfactored operator has no factor.
+    coeff *= hasproperty(W, :factor) ? W.factor : 1
     mul!(Y, W, X)
     #set_wing_fermion!(Y)
 
