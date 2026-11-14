@@ -17,6 +17,7 @@ import LatticeMatrices
     include("gamma5.jl")
     include("bicg_cleanup.jl")
     include("wilson_action_cleanup.jl")
+    include("wilson_force_factor.jl")
     include("wilson_mpilattice_boundaries.jl")
 
     @testset "Solver diagnostics" begin

@@ -29,7 +29,8 @@ function Staggered_Dirac_operator(
     else
         error("Dim should be 2 or 4!")
     end
-    eps_CG = check_parameters(parameters, "eps", default_eps_CG)
+    eps_CG = check_parameters(
+        parameters, "eps_CG", check_parameters(parameters, "eps", default_eps_CG))
     MaxCGstep = check_parameters(parameters, "MaxCGstep", default_MaxCGstep)
     verbose_level = check_parameters(parameters, "verbose_level", 2)
     method_CG = check_parameters(parameters, "method_CG", "bicg")

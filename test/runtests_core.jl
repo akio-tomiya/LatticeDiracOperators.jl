@@ -24,6 +24,7 @@ using Test
         "gamma5.jl",
         "bicg_cleanup.jl",
         "wilson_action_cleanup.jl",
+        "wilson_force_factor.jl",
         "readme_examples.jl",
         "solver_diagnostics.jl",
         "wilson_boundary_conditions.jl",
