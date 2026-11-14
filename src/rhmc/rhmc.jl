@@ -1180,7 +1180,18 @@ struct RHMC #type for the rational Hybrid Monte Carlo
         @assert num != 0 "numerator should not be zero!"
         @assert num * den != 1 "$(num ÷ den) should not be 1!"
 
-        if n == 10 && num == 1 && den == 2
+        n isa Integer && n > 0 || throw(ArgumentError("n must be a positive integer"))
+        precision isa Integer && precision > 0 || throw(ArgumentError("precision must be a positive integer"))
+        isfinite(lambda_low) && isfinite(lambda_high) && 0 < lambda_low < lambda_high ||
+            throw(ArgumentError("RHMC bounds must be finite and satisfy 0 < lambda_low < lambda_high"))
+
+        if lambda_low != 0.0004 || lambda_high != 64
+            verbose && println("Generating RHMC coefficients on [$lambda_low, $lambda_high]")
+            coeff_plus, coeff_minus = calc_coefficients(
+                abs(num), den, n, lambda_low, lambda_high; precision, verbose)
+            coeffs, coeffs_inverse = num > 0 ?
+                (coeff_plus, coeff_minus) : (coeff_minus, coeff_plus)
+        elseif n == 10 && num == 1 && den == 2
             coeffs = coeffs_12
             coeffs_inverse = coeffs_m12
         elseif n == 10 && num == 3 && den == 8
@@ -1248,6 +1259,7 @@ struct RHMC #type for the rational Hybrid Monte Carlo
                 lambda_low,
                 lambda_high,
                 precision = precision,
+                verbose = verbose,
             )
             if num > 0
                 coeffs = coeff_plus

@@ -222,6 +222,7 @@ function evaluate_FermiAction(
         solution,
         DdagD,
         pseudofermion;
+        seed_shift=minimum(get_β_inverse(rhmc)),
         eps=DdagD.eps_CG,
         maxsteps=DdagD.MaxCGstep,
         verbose=DdagD.verbose_print,
@@ -272,6 +273,7 @@ function sample_pseudofermions!(
         pseudofermion,
         DdagD,
         gaussian;
+        seed_shift=minimum(get_β(rhmc)),
         eps=DdagD.eps_CG,
         maxsteps=DdagD.MaxCGstep,
         verbose=DdagD.verbose_print,
@@ -372,6 +374,7 @@ function calc_UdSfdU!(
         solution,
         DdagD,
         pseudofermion;
+        seed_shift=minimum(get_β_inverse(rhmc)),
         eps=DdagD.eps_CG,
         maxsteps=DdagD.MaxCGstep,
         verbose=DdagD.verbose_print,

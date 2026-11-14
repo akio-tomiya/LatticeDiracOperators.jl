@@ -15,6 +15,7 @@ using Test
     test_files = [
         "rhmc_tables.jl",
         "rhmc_backends.jl",
+        "shiftedcg.jl",
         "sakurai_sugiura_generalfermion.jl",
         joinpath("MPIJACC", "halo_epoch.jl"),
         joinpath("MPIJACC", "ad.jl"),

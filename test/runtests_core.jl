@@ -19,6 +19,7 @@ using Test
         "public_api.jl",
         "rhmc_tables.jl",
         "rhmc_backends.jl",
+        "shiftedcg.jl",
         "sakurai_sugiura_generalfermion.jl",
         "gamma5_2d.jl",
         "gamma5.jl",

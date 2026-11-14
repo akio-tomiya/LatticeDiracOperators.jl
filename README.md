@@ -1,10 +1,6 @@
 # LatticeDiracOperators
 
-Version 1.1.8 fixes Wilson/Clover force and momentum scaling for non-unit `factor`, honors `eps_CG` in legacy staggered solvers, and adds finite-difference regressions for CPU, GPU, MPI, and MPI+GPU; see [changes.md](changes.md).
-
-Version 1.1.7 fixes legacy JACC Wilson inner products, adds v1 Wilson component writes, dense-vector loading/conversion and seeded Z2 noise for CPU, GPU, MPI and MPI+GPU, and restores the missing legacy domain-wall setter; see [changes.md](changes.md) and the [Wilson source guide](docs/src/wilson.md#point-sources-vectors-and-z2-noise).
-
-Version 1.1.6 supports CG-based Wilson/Clover action evaluation, reduces BiCGStab halo exchanges and inner products, and removes an unused, incomplete LOBPCG prototype; see [changes.md](changes.md).
+Version 1.1.8 fixes Wilson/Clover force and momentum scaling for non-unit `factor`, honors `eps_CG` in legacy staggered solvers, respects RHMC spectral bounds, handles zero modes in shifted RHMC solves, and improves AlgRemez failure diagnostics; see [changes.md](changes.md).
 
 [![CI](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeDiracOperators.jl/actions/workflows/CI.yml)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://akio-tomiya.github.io/LatticeDiracOperators.jl/dev/)
@@ -14,25 +10,6 @@ actions, solvers, and fermion forces for lattice QCD. Version 1 uses
 [Gaugefields.jl](https://github.com/akio-tomiya/Gaugefields.jl) v1 and
 [LatticeMatrices.jl](https://github.com/cometscome/LatticeMatrices.jl) v1.2
 as its standard backend.
-
-Version 1.1.5 adds generalized domain-wall sources and gradients, corrects RHMC coefficients and AlgRemez startup on macOS, enables GeneralFermion eigensystems through JACC and MPI, and fixes Wilson/Clover boundaries, gamma5, and temporary-field cleanup; see [changes.md](changes.md).
-
-Version 1.1.4 adds even/odd preconditioning for generalized domain-wall fermions; see [changes.md](changes.md).
-
-Version 1.1.3 adds analytic staggered/HISQ actions and native APE,
-stout/EXP, HYP, HEX, and nHYP-smeared fermion HMC; see [changes.md](changes.md).
-
-Version 1.1.2 adds a public trajectory-state reset hook for portable HMC
-restart; see [changes.md](changes.md).
-
-Version 1.1.1 enables HISQ for SU(N); see [changes.md](changes.md).
-
-Version 1.1.0 makes MPI.jl optional. Serial CPU and single-GPU calculations no
-longer install or load MPI. See [changes.md](changes.md) for details.
-
-Version 1.0.2 adds stout-smearing support to the pseudofermion MD driver. See [changes.md](changes.md) for details.
-
-Version 1.0.1 adds Gaugefields MD-driver integration and corrected Z4 noise. See [changes.md](changes.md) for details.
 
 The package supports Julia 1.11 and 1.12, threaded CPU execution, MPI domain
 decomposition, and the GPU backends provided by JACC and LatticeMatrices.
@@ -757,6 +734,23 @@ a four-direction stencil:
 The callback force requires Enzyme. Built-in standard operators should use
 `Dirac_operator` and `FermiAction` directly unless a custom composition is
 needed.
+
+## RHMC spectral bounds and shifted solves
+
+RHMC uses built-in coefficient tables only for their original interval `[0.0004, 64]`.
+Other intervals generate coefficients with AlgRemez, even for tabulated powers
+and orders. Wide intervals may require a higher `precision` (for example, 100).
+Generation failures report the interval, order, precision, and executable diagnostics.
+
+`LatticeDiracOperators.Dirac_operators.shiftedcg(xs, shifts, A, b)` uses the
+smallest shift as its CG seed, allowing positive shifts to regularize zero
+modes of `A`. The existing five-argument form `shiftedcg(xs, shifts, x, A, b)`
+still returns the unshifted solution in `x` by default; use
+`seed_shift=minimum(shifts)` when `x` should instead hold the shifted seed
+solution. The five-argument form also supports complex shifts. Both forms check
+true squared residuals against `eps`; real-shifted systems can receive CG
+corrections when recurrence drift exceeds the tolerance. RHMC action, sampling, and force
+calculations use the shifted seed through the existing CPU, GPU, and MPI field operations.
 
 ## MPI and GPU execution
 
