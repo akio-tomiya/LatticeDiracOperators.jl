@@ -2,6 +2,23 @@
 
 ## v1.1.8
 
+- Honor custom RHMC spectral bounds for tabulated powers and orders. Use the
+  built-in tables only on `[0.0004, 64]` and generate other intervals with
+  AlgRemez. Reject invalid bounds, orders, and precision values before generation.
+- Include AlgRemez's executable diagnostics, interval, order, and precision in
+  generation errors, including successful process exits without `approx.dat`.
+  Preserve the JLL library environment and isolated temporary directories;
+  display successful iteration logs only when `verbose=true`.
+- Seed RHMC shifted CG with the smallest pole, so positive shifts regularize
+  zero modes of the normal operator. Add a four-argument `shiftedcg` form for
+  shifted solutions only. Preserve the five-argument form's unshifted output
+  by default and expose `seed_shift` for callers that use it as scratch space.
+- Check actual residuals of every shifted and seed solution before returning;
+  correct recurrence drift with per-system CG for real shifts when necessary.
+  Preserve complex shifts in the five-argument API with true-residual checks. Handle zero
+  sources and initialize outputs independently of their previous contents.
+- Add custom-range, AlgRemez-failure, and massless periodic Wilson regressions,
+  with existing RHMC action and force checks across JACC and MPI backends.
 - Include the Dirac operator `factor` in Wilson and Wilson-clover forces and
   momentum updates. For a fixed pseudofermion source and `D = factor * D0`,
   the force now scales as `factor^(-2)`, consistently with the action; previously
@@ -18,6 +35,8 @@
 
 ## v1.1.7
 
+Version 1.1.7 fixes legacy JACC Wilson inner products, adds v1 Wilson component writes, dense-vector loading/conversion and seeded Z2 noise for CPU, GPU, MPI and MPI+GPU, and restores the missing legacy domain-wall setter; see the [Wilson source guide](docs/src/wilson.md#point-sources-vectors-and-z2-noise).
+
 - Fix deprecated JACC Wilson inner products with the reduction keyword API
   supported by JACC 0.6 and 1.x, including 1.4.
 - Add global component writes, dense-vector loading/conversion, and seeded
@@ -27,6 +46,8 @@
   selected Wilson slice. Document component-write and halo-update contracts.
 
 ## v1.1.6
+
+Version 1.1.6 supports CG-based Wilson/Clover action evaluation, reduces BiCGStab halo exchanges and inner products, and removes an unused, incomplete LOBPCG prototype.
 
 - Evaluate Wilson/Clover actions with `method_CG="cg"` by solving the positive
   normal system and computing `real(phi' * (D' * D)^(-1) * phi)`, consistent
@@ -43,6 +64,8 @@
   the supported Sakurai-Sugiura `eigensystem` interface is unchanged.
 
 ## v1.1.5
+
+Version 1.1.5 adds generalized domain-wall sources and gradients, corrects RHMC coefficients and AlgRemez startup on macOS, enables GeneralFermion eigensystems through JACC and MPI, and fixes Wilson/Clover boundaries, gamma5, and temporary-field cleanup.
 
 ### RHMC coefficients and AlgRemez startup
 
@@ -171,6 +194,8 @@
 
 ## v1.1.4
 
+Version 1.1.4 adds even/odd preconditioning for generalized domain-wall fermions.
+
 ### Generalized domain-wall even/odd preconditioning
 
 - Added opt-in four-dimensional even/odd (EO) preconditioning for
@@ -222,6 +247,8 @@
 
 ## v1.1.3
 
+Version 1.1.3 adds analytic staggered/HISQ actions and native APE, stout/EXP, HYP, HEX, and nHYP-smeared fermion HMC.
+
 ### Native-smeared fermion HMC
 
 - Added `SmearedFermiAction` for evaluating a fermion action on Gaugefields'
@@ -264,6 +291,8 @@
 
 ## v1.1.2
 
+Version 1.1.2 adds a public trajectory-state reset hook for portable HMC restart.
+
 - Added `reset_trajectory_state!(::PseudofermionMDAction)` as the public hook
   for clearing action-owned chronological solver guesses at trajectory
   boundaries. Restarting applications no longer need to inspect LDO action
@@ -279,6 +308,8 @@
 
 ## v1.1.1
 
+Version 1.1.1 enables HISQ for SU(N).
+
 - Allow the LatticeMatrices HISQ wrapper to use its generic-color U(N)
   projection for SU(N), while retaining color-dimension consistency checks.
 - Accept Wilsonloop.jl v1 in addition to v0.1.5.
@@ -288,6 +319,8 @@
   CI jobs; Enzyme-dependent tests remain covered by the dedicated Enzyme job.
 
 ## v1.1.0
+
+Version 1.1.0 makes MPI.jl optional. Serial CPU and single-GPU calculations no longer install or load MPI.
 
 - Made MPI.jl a weak dependency. Serial CPU and single-GPU applications can
   load and use LDO without installing MPI.jl.
@@ -307,6 +340,8 @@
 
 ## v1.0.2
 
+Version 1.0.2 adds stout-smearing support to the pseudofermion MD driver.
+
 - Made `PseudofermionMDAction` automatically honor stout smearing configured
   by `FermiAction(...; covneuralnet=smearing)` for pseudofermion refresh,
   action evaluation, and force evaluation. The force is pulled back to the
@@ -315,6 +350,8 @@
   the Gaugefields MD driver, both with and without stout smearing.
 
 ## v1.0.1
+
+Version 1.0.1 adds Gaugefields MD-driver integration and corrected Z4 noise.
 
 - Added `PseudofermionMDAction` and `refresh_pseudofermion!` so LDO fermion
   actions can be used directly by Gaugefields' deterministic MD driver,

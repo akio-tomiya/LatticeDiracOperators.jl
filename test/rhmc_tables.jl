@@ -10,6 +10,40 @@ function _rhmc_max_relative_error(coefficients, power; low=0.0004, high=64)
     return maximum(abs(f(x) / x^power - 1) for x in xs)
 end
 
+@testset "RHMC honors custom bounds for tabulated powers" begin
+    for power in (-1//4, 1//8), n in (10, 15)
+        low, high = 1e-7, 1e3
+        generated = _Rhmc.RHMC(power; n, lambda_low=low, lambda_high=high, precision=100)
+        table = _Rhmc.RHMC(power; n)
+        @test generated.coeffs.β != table.coeffs.β
+        tolerance = n == 10 ? 1e-2 : 1e-4
+        @test _rhmc_max_relative_error(generated.coeffs, power; low, high) < tolerance
+        @test _rhmc_max_relative_error(generated.coeffs_inverse, -power; low, high) < tolerance
+    end
+    for (low, high) in ((0, 64), (-1, 64), (1, 1), (64, 1), (NaN, 64), (1, Inf))
+        @test_throws ArgumentError _Rhmc.RHMC(-1//4; lambda_low=low, lambda_high=high)
+    end
+end
+
+@testset "AlgRemez failures retain numerical diagnostics" begin
+    err = try
+        _Rhmc.RHMC(-1//4; n=16, lambda_low=1e-9, lambda_high=64)
+        nothing
+    catch exception
+        exception
+    end
+    @test err isa ErrorException
+    message = sprint(showerror, err)
+    @test occursin("AlgRemez failed", message)
+    @test occursin("precision=42", message)
+    @test occursin("n=16", message)
+    @test occursin("1.0e-9", message)
+    @test occursin("Delta too small", message)
+    @test occursin("precision=100", message)
+    rhmc = _Rhmc.RHMC(-1//4; n=16, lambda_low=1e-9, lambda_high=64, precision=100)
+    @test _rhmc_max_relative_error(rhmc.coeffs, -1/4; low=1e-9, high=64) < 3e-5
+end
+
 @testset "Concurrent AlgRemez calls preserve caller files" begin
     mktempdir() do directory
         cd(directory) do

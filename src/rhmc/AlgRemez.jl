@@ -51,14 +51,27 @@ The parameters y and z must be positive, the approximation to f(x) = x^(-y/z) is
 the inverse of the approximation to f(x) = x^(y/z).
 The default value of precision is 42. 
     """
-function calc_coefficients(y, z, n, lambda_low, lambda_high; precision = 42)
+function calc_coefficients(y, z, n, lambda_low, lambda_high; precision = 42, verbose = false)
     # Keep the JLL environment (library paths) and work in a private directory
     # so that concurrent calls do not share approx.dat and error.dat.
     exe = algremez()
     datas = mktempdir() do directory
-        run(Cmd(`$exe $y $z $n $n $lambda_low $lambda_high $precision`;
-            env = exe.env, dir = directory))
-        readlines(joinpath(directory, "approx.dat"))
+        output = IOBuffer()
+        command = Cmd(`$exe $y $z $n $n $lambda_low $lambda_high $precision`;
+            env = exe.env, dir = directory, ignorestatus = true)
+        process = run(pipeline(command; stdout = output, stderr = output))
+        log = String(take!(output))
+        verbose && print(log)
+        filename = joinpath(directory, "approx.dat")
+        if !success(process) || !isfile(filename) || filesize(filename) == 0
+            lines = split(log, '\n'; keepempty = false)
+            tail = join(last(lines, min(12, length(lines))), '\n')
+            error("AlgRemez failed to generate coefficients for $y//$z, n=$n, " *
+                  "range=[$lambda_low, $lambda_high], precision=$precision " *
+                  "(exit code $(process.exitcode)). Try increasing precision " *
+                  "(for example, precision=100) or the approximation order.\n$tail")
+        end
+        readlines(filename)
     end
     icount = 3
     αplus0 = parse(Float64, split(datas[icount], "=")[2])

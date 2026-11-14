@@ -901,102 +901,147 @@ end
 
 
 
-function shiftedcg(
-    vec_x,
-    vec_β,
-    x,
-    A,
-    b;
-    eps=1e-10,
-    maxsteps=1000,
-    verbose=Verbose_print(2),
-) #Ax=b
+_shiftedcg_copy!(y, x) = substitute_fermion!(y, x)
+_shiftedcg_copy!(y::AbstractArray, x::AbstractArray) = copyto!(y, x)
 
-    println_verbose_level3(verbose, "--------------------------------------")
-    println_verbose_level3(verbose, "shifted cg method")
-    N = length(vec_β)
-    temp1 = similar(b)
-    r = deepcopy(b)
-    p = deepcopy(b)
-    q = similar(b)
+function _shiftedcg_mul!(y, A, x, shift)
+    mul!(y, A, x)
+    iszero(shift) || add!(y, shift, x)
+    return y
+end
 
-    vec_r = Array{typeof(r),1}(undef, N)
-    vec_p = Array{typeof(p),1}(undef, N)
-    for j = 1:N
-        vec_r[j] = deepcopy(b)
-        vec_p[j] = deepcopy(b)
+function _shiftedcg_residual!(r, A, x, b, shift)
+    _shiftedcg_mul!(r, A, x, shift)
+    add!(-1, r, 1, b)
+    return real(dot(r, r))
+end
+
+# Correct recurrence drift using the actual residual of one shifted system.
+# This path is only used when the shared recurrence fails its true-residual check.
+function _shiftedcg_refine!(x, A, b, shift, eps, maxsteps)
+    r, p, q = similar(b), similar(b), similar(b)
+    rr = _shiftedcg_residual!(r, A, x, b, shift)
+    rr <= eps && return rr
+    # Complex shifts retain the shared recurrence, but their non-Hermitian
+    # systems cannot be corrected with ordinary CG. Report a failed check.
+    isreal(shift) || return rr
+    _shiftedcg_copy!(p, r)
+    for _ in 1:maxsteps
+        _shiftedcg_mul!(q, A, p, shift)
+        pAp = real(dot(p, q))
+        isfinite(pAp) && pAp > 0 && isfinite(rr) || break
+        alpha = rr / pAp
+        add!(x, alpha, p)
+        add!(r, -alpha, q)
+        next_rr = real(dot(r, r))
+        if next_rr <= eps
+            next_rr = _shiftedcg_residual!(r, A, x, b, shift)
+            next_rr <= eps && return next_rr
+            _shiftedcg_copy!(p, r)
+        else
+            add!(next_rr / rr, p, 1, r)
+        end
+        rr = next_rr
     end
+    return _shiftedcg_residual!(r, A, x, b, shift)
+end
 
-    αm = 1.0
-    βm = 0.0
+"""
+    shiftedcg(vec_x, shifts, x, A, b; seed_shift=0, eps=1e-10, maxsteps=1000, verbose=Verbose_print(2))
+    shiftedcg(vec_x, shifts, A, b; kwargs...)
 
-    ρm = ones(ComplexF64, N)
-    ρ0 = ones(ComplexF64, N)
-    ρp = ones(ComplexF64, N)
-    residual = 0
+Solve `(A + shifts[j]) * vec_x[j] = b` with a shared CG recurrence.
+`eps` bounds the squared, absolute true residual of every returned solution.
+The operator must be Hermitian; the seed and real-shifted systems must be
+positive definite. The five-argument form also accepts complex shifts through
+the shared recurrence, with a true-residual check but no ordinary CG correction.
+Outputs are initialized to zero, independently of their previous contents.
 
+The five-argument form also returns `(A + seed_shift)^(-1) * b` in `x`.
+Its default `seed_shift=0` preserves the unshifted solution contract. If `A`
+has zero modes and only shifted solutions are needed, use the four-argument
+form, which seeds with `minimum(shifts)`, or explicitly set `seed_shift`.
+RHMC uses the smallest shift so a positive shift regularizes zero modes of A.
 
-    for i = 1:maxsteps
-        mul!(q, A, p)
+True residuals are checked before return. If roundoff has spoiled the shared
+recurrence, each affected solution gets at most `maxsteps` CG correction
+iterations, in addition to the shared recurrence's `maxsteps` limit.
+"""
+function shiftedcg(vec_x, shifts, A, b; kwargs...)
+    isempty(shifts) && throw(ArgumentError("shifted CG requires at least one shift"))
+    all(s -> s isa Real && isfinite(s), shifts) || throw(ArgumentError(
+        "automatic seed selection requires finite real shifts; use the five-argument form for complex shifts"))
+    return shiftedcg(vec_x, shifts, similar(b), A, b;
+        seed_shift=minimum(shifts), kwargs...)
+end
 
-        pAp = p ⋅ q
-
-        rr = dot(r, r)
+function shiftedcg(
+    vec_x, vec_β, x, A, b;
+    eps=1e-10, maxsteps=1000, verbose=Verbose_print(2), seed_shift=0,
+)
+    N = length(vec_β)
+    N > 0 && length(vec_x) == N || throw(ArgumentError("one output is required for each shift"))
+    all(s -> s isa Number && isfinite(s), vec_β) ||
+        throw(ArgumentError("shifted CG requires finite shifts"))
+    seed_shift isa Real && isfinite(seed_shift) ||
+        throw(ArgumentError("seed_shift must be finite and real"))
+    isfinite(eps) && eps > 0 || throw(ArgumentError("eps must be finite and positive"))
+    maxsteps isa Integer && maxsteps > 0 || throw(ArgumentError("maxsteps must be a positive integer"))
+    println_verbose_level3(verbose, "shifted CG with seed shift $seed_shift")
+    r, p, q = deepcopy(b), deepcopy(b), similar(b)
+    rr = real(dot(r, r))
+    isfinite(rr) || throw(ArgumentError("shifted CG requires a finite right-hand side"))
+    for output in (x, vec_x...)
+        _shiftedcg_copy!(output, b)
+        add!(0, output, 0, b)
+    end
+    rr <= eps && return nothing
+    vec_p = [deepcopy(b) for _ in 1:N]
+    Tρ = eltype(vec_β) <: Real ? Float64 : ComplexF64
+    ρm, ρ0, ρp = ones(Tρ, N), ones(Tρ, N), ones(Tρ, N)
+    αm, βm = 1.0, 0.0
+    for _ in 1:maxsteps
+        _shiftedcg_mul!(q, A, p, seed_shift)
+        pAp = real(dot(p, q))
+        isfinite(pAp) && pAp > 0 && isfinite(rr) || break
         αk = rr / pAp
-
-
-        #! ...  x   = x   + alpha * p   
         add!(x, αk, p)
-
-        #...  r = r - alpha * q 
         add!(r, -αk, q)
-
-        βk = dot(r, r) / rr
-        add!(βk, p, 1, r) #p = beta*p + r
-
-        for j = 1:N
-            ρkj = ρ0[j]
-            if abs(ρkj) < eps
+        next_rr = real(dot(r, r))
+        βk = next_rr / rr
+        add!(βk, p, 1, r)
+        for j in 1:N
+            # An underflowed shifted residual is verified directly below.
+            if iszero(ρ0[j])
+                ρp[j] = 0
                 continue
             end
-            ρkmj = ρm[j]
-            ρp[j] =
-                ρkj * ρkmj * αm /
-                (ρkmj * αm * (1.0 + αk * vec_β[j]) + αk * βm * (ρkmj - ρkj))
-            αkj = (ρp[j] / ρkj) * αk
-
-            add!(vec_x[j], αkj, vec_p[j])
-            βkj = (ρp[j] / ρkj)^2 * βk
-            add!(βkj, vec_p[j], ρp[j], r)
-
+            ρp[j] = ρ0[j] * ρm[j] * αm /
+                (ρm[j] * αm * (1 + αk * (vec_β[j] - seed_shift)) +
+                 αk * βm * (ρm[j] - ρ0[j]))
+            ratio = ρp[j] / ρ0[j]
+            add!(vec_x[j], ratio * αk, vec_p[j])
+            add!(ratio^2 * βk, vec_p[j], ρp[j], r)
         end
-
-        ρm[:] = ρ0[:]
-        ρ0[:] = ρp[:]
-        αm = αk
-        βm = βk
-
-
-        ρMAX = maximum(abs.(ρp))^2
-        residual = abs(rr * ρMAX)
-        println_verbose_level3(verbose, "$i-th eps: $residual")
-
-        if abs(residual) < eps
-            println_verbose_level3(verbose, "Converged at $i-th step. eps: $residual")
-            println_verbose_level3(verbose, "--------------------------------------")
-            return
+        ρm .= ρ0
+        ρ0 .= ρp
+        αm, βm, rr = αk, βk, next_rr
+        residual = rr * max(1, maximum(abs2, ρp))
+        if !isfinite(residual) || residual <= eps
+            break
         end
-
-
     end
-
-
-    error("""
-    The shifted CG is not converged! with maxsteps = $(maxsteps)
-    residual is $residual
-    maxsteps should be larger.""")
-
-
+    # Never report convergence from recurrence estimates alone, including x.
+    for (solution, shift) in zip((x, vec_x...), (seed_shift, vec_β...))
+        residual = _shiftedcg_refine!(solution, A, b, shift, eps, maxsteps)
+        isfinite(residual) && residual <= eps || error(
+            "Shifted CG failed the true-residual check for shift=$shift: " *
+            "residual_squared=$residual, target=$eps, maxsteps=$maxsteps. " *
+            "The seed system must be positive definite. If A has zero modes " *
+            "and only positive-shift solutions are needed, use the four-argument " *
+            "shiftedcg(vec_x, shifts, A, b) or seed_shift=minimum(shifts).")
+    end
+    return nothing
 end
 
 function shiftedbicg(

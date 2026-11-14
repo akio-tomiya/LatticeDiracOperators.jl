@@ -12,6 +12,7 @@ import LatticeMatrices
     test_legacy_fermion_fixes()
     include("rhmc_tables.jl")
     include("rhmc_backends.jl")
+    include("shiftedcg.jl")
     include("sakurai_sugiura_generalfermion.jl")
     include("gamma5_2d.jl")
     include("gamma5.jl")
